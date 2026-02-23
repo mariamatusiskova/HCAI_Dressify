@@ -1,0 +1,16 @@
+{
+  "name": "Dressify",
+  "short_name": "Dressify",
+  "description": "AI-powered outfit generator",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#c8942e",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
