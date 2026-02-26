@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Welcome to your Lovable project
 
 ## Project info
@@ -245,3 +246,6 @@ Hook->>LS: setItem("dressify-outfits", filteredArray)
 Index-->>U: Outfit removed from list
 end
 5
+=======
+abc
+>>>>>>> master

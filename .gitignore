@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Logs
 logs
 *.log
@@ -27,3 +28,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+=======
+# IDE/editor
+.idea/
+.vscode/
+*.iml
+.venv
+>>>>>>> master
