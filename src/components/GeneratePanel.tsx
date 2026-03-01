@@ -5,6 +5,9 @@ import { Shirt, Footprints, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { GeneratedItem } from "@/hooks/useOutfits";
 import { generateClothingItem } from "@/services/sanaSprintApi";
+import StyleTemplateSelector from "@/components/StyleTemplateSelector";
+import type { StyleTemplate } from "@/types/styleTemplates";
+import { DEFAULT_STYLE_TEMPLATES, GLOBAL_SYSTEM_PROMPT } from "@/types/styleTemplates";
 
 interface GeneratePanelProps {
   onItemGenerated: (item: GeneratedItem) => void;
@@ -23,26 +26,43 @@ const GeneratePanel = ({ onItemGenerated }: GeneratePanelProps) => {
     trousers: "",
     shoes: "",
   });
+  const [selectedTemplates, setSelectedTemplates] = useState<Record<"top" | "trousers" | "shoes", StyleTemplate | null>>({
+    top: DEFAULT_STYLE_TEMPLATES[0], // Default to first template
+    trousers: DEFAULT_STYLE_TEMPLATES[0],
+    shoes: DEFAULT_STYLE_TEMPLATES[0],
+  });
 
   const handlePromptChange = (category: "top" | "trousers" | "shoes", value: string) => {
     setPrompts((prev) => ({ ...prev, [category]: value }));
   };
 
+  const handleTemplateChange = (category: "top" | "trousers" | "shoes", template: StyleTemplate) => {
+    setSelectedTemplates((prev) => ({ ...prev, [category]: template }));
+  };
+
   const handleGenerate = async (category: "top" | "trousers" | "shoes") => {
-    const prompt = prompts[category].trim();
-    if (!prompt) {
+    const userPrompt = prompts[category].trim();
+    if (!userPrompt) {
       toast.error(`Please enter a description for the ${category} item`);
+      return;
+    }
+
+    const template = selectedTemplates[category];
+    if (!template) {
+      toast.error("Please select a style template");
       return;
     }
 
     setLoading(category);
     try {
-      const imageUrl = await generateClothingItem(prompt, category);
+      // Combine: user input + global system prompt + style descriptor
+      const fullPrompt = `${userPrompt}. ${GLOBAL_SYSTEM_PROMPT}. ${template.styleDescriptor}`;
+      const imageUrl = await generateClothingItem(fullPrompt, category, template);
       const item: GeneratedItem = {
         id: crypto.randomUUID(),
         category,
         imageUrl,
-        prompt: prompt,
+        prompt: userPrompt, // Store only user input, not full prompt
         createdAt: new Date().toISOString(),
       };
       onItemGenerated(item);
@@ -69,45 +89,65 @@ const GeneratePanel = ({ onItemGenerated }: GeneratePanelProps) => {
         {categories.map(({ key, label, icon: Icon }) => {
           const prompt = prompts[key];
           const isLoading = loading === key;
+          const selectedTemplate = selectedTemplates[key];
 
           return (
-            <div key={key} className="space-y-2">
+            <div key={key} className="space-y-3 p-3 border rounded-lg">
               <div className="flex items-center gap-2">
                 <Icon className="h-4 w-4 text-muted-foreground" />
                 <label htmlFor={`prompt-${key}`} className="text-xs font-medium text-muted-foreground">
                   {label}
                 </label>
               </div>
-              <div className="flex gap-2">
-                <Textarea
-                  id={`prompt-${key}`}
-                  placeholder={`e.g., red cotton t-shirt with logo...`}
-                  value={prompt}
-                  onChange={(e) => handlePromptChange(key, e.target.value)}
-                  className="min-h-[60px] resize-none flex-1"
-                  disabled={loading !== null}
-                  onKeyDown={(e) => {
-                    // Allow Ctrl/Cmd + Enter to generate
-                    if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && prompt.trim()) {
-                      e.preventDefault();
-                      handleGenerate(key);
-                    }
-                  }}
-                />
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="shrink-0"
-                  disabled={loading !== null || !prompt.trim()}
-                  onClick={() => handleGenerate(key)}
-                  title={`Generate ${label}`}
-                >
-                  {isLoading ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  ) : (
-                    <Icon className="h-4 w-4" />
-                  )}
-                </Button>
+              
+              {/* Style Template Selector */}
+              <StyleTemplateSelector
+                category={key}
+                selectedTemplate={selectedTemplate}
+                onTemplateChange={(template) => handleTemplateChange(key, template)}
+              />
+
+              {/* User Input */}
+              <div className="space-y-2">
+                <label htmlFor={`prompt-${key}`} className="text-xs font-medium text-muted-foreground">
+                  Item Description
+                </label>
+                <div className="flex gap-2">
+                  <Textarea
+                    id={`prompt-${key}`}
+                    placeholder={`e.g., green jacket, blue jeans, white sneakers...`}
+                    value={prompt}
+                    onChange={(e) => handlePromptChange(key, e.target.value)}
+                    className="min-h-[60px] resize-none flex-1"
+                    disabled={loading !== null || !selectedTemplate}
+                    onKeyDown={(e) => {
+                      // Allow Ctrl/Cmd + Enter to generate
+                      if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && prompt.trim()) {
+                        e.preventDefault();
+                        handleGenerate(key);
+                      }
+                    }}
+                  />
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="shrink-0"
+                    disabled={loading !== null || !prompt.trim() || !selectedTemplate}
+                    onClick={() => handleGenerate(key)}
+                    title={`Generate ${label}`}
+                  >
+                    {isLoading ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    ) : (
+                      <Icon className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                {selectedTemplate && (
+                  <p className="text-xs text-muted-foreground">
+                    Your input + global product prompt + "{selectedTemplate.name}" style
+                  </p>
+                )}
               </div>
             </div>
           );

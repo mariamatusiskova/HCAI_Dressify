@@ -17,6 +17,7 @@ export interface CanvasItem {
   width: number;
   height: number;
   rotation: number;
+  zIndex: number; // Layer order - higher values appear on top
 }
 
 export interface Outfit {

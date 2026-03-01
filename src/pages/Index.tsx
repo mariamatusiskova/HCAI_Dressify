@@ -30,18 +30,42 @@ const Index = () => {
     toast.success(`${item.category} generated`);
   }, []);
 
+  const handleItemUpdate = useCallback((itemId: string, updatedItem: GeneratedItem) => {
+    setGeneratedItems((prev) => {
+      const updated = prev.map((item) => (item.id === itemId ? updatedItem : item));
+      // Also update canvas items if they use this image
+      const oldItem = prev.find((gi) => gi.id === itemId);
+      if (oldItem) {
+        setCanvasItems((currentCanvasItems) =>
+          currentCanvasItems.map((canvasItem) => {
+            if (canvasItem.imageUrl === oldItem.imageUrl) {
+              return { ...canvasItem, imageUrl: updatedItem.imageUrl };
+            }
+            return canvasItem;
+          })
+        );
+      }
+      return updated;
+    });
+  }, []);
+
   const handleAddToCanvas = useCallback((item: GeneratedItem) => {
-    const ci: CanvasItem = {
-      id: crypto.randomUUID(),
-      imageUrl: item.imageUrl,
-      category: item.category,
-      x: 40 + Math.random() * 80,
-      y: 40 + Math.random() * 80,
-      width: 80,
-      height: 80,
-      rotation: 0,
-    };
-    setCanvasItems((prev) => [...prev, ci]);
+    setCanvasItems((prev) => {
+      // Get the highest zIndex and add 1 for new item (brings it to front)
+      const maxZIndex = prev.length > 0 ? Math.max(...prev.map((i) => i.zIndex ?? 0)) : -1;
+      const ci: CanvasItem = {
+        id: crypto.randomUUID(),
+        imageUrl: item.imageUrl,
+        category: item.category,
+        x: 40 + Math.random() * 80,
+        y: 40 + Math.random() * 80,
+        width: 80,
+        height: 80,
+        rotation: 0,
+        zIndex: maxZIndex + 1,
+      };
+      return [...prev, ci];
+    });
   }, []);
 
   const handleDeleteItem = useCallback((id: string) => {
@@ -62,12 +86,13 @@ const Index = () => {
     const outfit = loadOutfit(id);
     if (outfit) {
       setUserPhoto(outfit.userPhoto);
-      // Ensure backward compatibility: add default width, height, rotation if missing
-      const normalizedItems = outfit.canvasItems.map((item) => ({
+      // Ensure backward compatibility: add default width, height, rotation, zIndex if missing
+      const normalizedItems = outfit.canvasItems.map((item, index) => ({
         ...item,
         width: item.width ?? 80,
         height: item.height ?? 80,
         rotation: item.rotation ?? 0,
+        zIndex: item.zIndex ?? index, // Assign zIndex based on order if missing
       }));
       setCanvasItems(normalizedItems);
       toast.info(`Loaded "${outfit.name}"`);
@@ -95,7 +120,11 @@ const Index = () => {
         <aside className="w-full lg:w-72 border-b lg:border-b-0 lg:border-r border-border p-4 space-y-6 overflow-y-auto">
           <UploadSection photo={userPhoto} onPhotoChange={setUserPhoto} />
           <GeneratePanel onItemGenerated={handleItemGenerated} />
-          <GeneratedItemsList items={generatedItems} onAddToCanvas={handleAddToCanvas} />
+          <GeneratedItemsList
+            items={generatedItems}
+            onAddToCanvas={handleAddToCanvas}
+            onItemUpdate={handleItemUpdate}
+          />
         </aside>
 
         {/* Canvas */}

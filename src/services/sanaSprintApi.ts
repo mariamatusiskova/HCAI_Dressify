@@ -23,16 +23,22 @@ interface GenerateImageOptions {
   use_resolution_binning?: boolean;
 }
 
+import type { StyleTemplate } from "@/types/styleTemplates";
+
 /**
  * Generate a clothing item image using Sana Sprint API
  */
 export async function generateClothingItem(
   prompt: string,
-  category: "top" | "trousers" | "shoes"
+  category: "top" | "trousers" | "shoes",
+  template?: StyleTemplate
 ): Promise<string> {
   try {
-    // Build the full prompt with category context
-    const fullPrompt = `A ${category} item: ${prompt}. High quality fashion photography, white background, product shot, detailed, professional lighting`;
+    // The prompt already includes the system prompt from the template
+    // Just add category context if not already included
+    const fullPrompt = prompt.toLowerCase().includes(category)
+      ? prompt
+      : `A ${category} item: ${prompt}`;
 
     // Connect to Gradio client
     const client = await Client.connect(SANA_SPRINT_URL);
