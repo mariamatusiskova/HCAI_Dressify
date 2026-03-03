@@ -3,15 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Upload, X } from "lucide-react";
 
 interface UploadSectionProps {
+  // string | null → the current photo (stored as a string URL, usually a Base64 data: URL) or null if none
   photo: string | null;
+  // a callback to update the photo in the parent component
   onPhotoChange: (photo: string | null) => void;
 }
 
 const UploadSection = ({ photo, onPhotoChange }: UploadSectionProps) => {
+  // Keeps a hidden file input
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback(
     (file: File) => {
+      // Converts an uploaded image into a usable string
       const reader = new FileReader();
       reader.onload = (e) => onPhotoChange(e.target?.result as string);
       reader.readAsDataURL(file);
@@ -28,6 +32,7 @@ const UploadSection = ({ photo, onPhotoChange }: UploadSectionProps) => {
     [handleFile]
   );
 
+  // Supports drag-and-drop upload onDrop or onDragOver
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">

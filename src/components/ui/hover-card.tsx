@@ -3,10 +3,13 @@ import * as HoverCardPrimitive from "@radix-ui/react-hover-card";
 
 import { cn } from "@/lib/utils";
 
+// Root component that manages open/close state
 const HoverCard = HoverCardPrimitive.Root;
 
+// The clickable element that triggers the hover card to open.
 const HoverCardTrigger = HoverCardPrimitive.Trigger;
 
+// The content that appears when the trigger is hovered.
 const HoverCardContent = React.forwardRef<
   React.ElementRef<typeof HoverCardPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content>

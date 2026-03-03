@@ -4,18 +4,25 @@ import { Check, ChevronRight, Circle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+// the container for the entire context menu, which also provides context to subcomponents
 const ContextMenu = ContextMenuPrimitive.Root;
 
+// the element that the context menu will be attached to, usually a div or button
 const ContextMenuTrigger = ContextMenuPrimitive.Trigger;
 
+// the actual content of the context menu, which will be rendered in a portal at the end of the document
 const ContextMenuGroup = ContextMenuPrimitive.Group;
 
+// the individual items in the context menu, which can be clicked or hovered to trigger actions or submenus
 const ContextMenuPortal = ContextMenuPrimitive.Portal;
 
+// a submenu, which can contain its own trigger and content, and will be displayed when the parent item is hovered or clicked
 const ContextMenuSub = ContextMenuPrimitive.Sub;
 
+// a group of radio items, where only one can be selected at a time
 const ContextMenuRadioGroup = ContextMenuPrimitive.RadioGroup;
 
+// a trigger for a submenu, which will display the submenu when hovered or clicked
 const ContextMenuSubTrigger = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.SubTrigger>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubTrigger> & {
@@ -37,6 +44,7 @@ const ContextMenuSubTrigger = React.forwardRef<
 ));
 ContextMenuSubTrigger.displayName = ContextMenuPrimitive.SubTrigger.displayName;
 
+// the content of a submenu, which will be displayed when the parent item is hovered or clicked
 const ContextMenuSubContent = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubContent>
@@ -52,6 +60,7 @@ const ContextMenuSubContent = React.forwardRef<
 ));
 ContextMenuSubContent.displayName = ContextMenuPrimitive.SubContent.displayName;
 
+// the actual content of the context menu, which will be rendered in a portal at the end of the document
 const ContextMenuContent = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Content>
@@ -69,6 +78,7 @@ const ContextMenuContent = React.forwardRef<
 ));
 ContextMenuContent.displayName = ContextMenuPrimitive.Content.displayName;
 
+// the individual items in the context menu, which can be clicked or hovered to trigger actions or submenus
 const ContextMenuItem = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Item> & {
@@ -87,6 +97,7 @@ const ContextMenuItem = React.forwardRef<
 ));
 ContextMenuItem.displayName = ContextMenuPrimitive.Item.displayName;
 
+// a checkbox item, which can be toggled on or off, and will show a checkmark when checked
 const ContextMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.CheckboxItem>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.CheckboxItem>
@@ -110,6 +121,7 @@ const ContextMenuCheckboxItem = React.forwardRef<
 ));
 ContextMenuCheckboxItem.displayName = ContextMenuPrimitive.CheckboxItem.displayName;
 
+// a radio item, which can be selected as part of a group, and will show a filled circle when selected
 const ContextMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.RadioItem>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.RadioItem>
@@ -132,6 +144,7 @@ const ContextMenuRadioItem = React.forwardRef<
 ));
 ContextMenuRadioItem.displayName = ContextMenuPrimitive.RadioItem.displayName;
 
+// a label for a group of items, which can be used to provide context or instructions for the items below it
 const ContextMenuLabel = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.Label>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Label> & {
@@ -146,6 +159,7 @@ const ContextMenuLabel = React.forwardRef<
 ));
 ContextMenuLabel.displayName = ContextMenuPrimitive.Label.displayName;
 
+// a separator between items, which can be used to visually group related items together
 const ContextMenuSeparator = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Separator>
@@ -154,6 +168,7 @@ const ContextMenuSeparator = React.forwardRef<
 ));
 ContextMenuSeparator.displayName = ContextMenuPrimitive.Separator.displayName;
 
+// the keyboard shortcut hint on the right side of a command item
 const ContextMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => {
   return <span className={cn("ml-auto text-xs tracking-widest text-muted-foreground", className)} {...props} />;
 };

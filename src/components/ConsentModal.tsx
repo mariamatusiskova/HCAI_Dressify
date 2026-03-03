@@ -9,12 +9,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 
+// what the parent controls
 interface ConsentModalProps {
   open: boolean;
   onAgree: () => void;
   onCancel: () => void;
 }
 
+// The modal component
 const ConsentModal = ({ open, onAgree, onCancel }: ConsentModalProps) => {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>

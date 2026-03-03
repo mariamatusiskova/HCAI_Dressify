@@ -2,6 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Trash2, FolderOpen } from "lucide-react";
 import type { Outfit } from "@/hooks/useOutfits";
 
+// outfits: Outfit[] → the saved outfits to display
+// onLoad(id) → callback when the user clicks “open/load”
+// onDelete(id) → callback when the user clicks “delete”
 interface OutfitLibraryProps {
   outfits: Outfit[];
   onLoad: (id: string) => void;

@@ -17,6 +17,7 @@ type ChartContextProps = {
   config: ChartConfig;
 };
 
+// Context: ChartContainer provides the config
 const ChartContext = React.createContext<ChartContextProps | null>(null);
 
 function useChart() {
@@ -29,6 +30,7 @@ function useChart() {
   return context;
 }
 
+// styling + responsive container + unique id
 const ChartContainer = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
@@ -58,6 +60,7 @@ const ChartContainer = React.forwardRef<
 });
 ChartContainer.displayName = "Chart";
 
+// injects CSS variables for series colors
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(([_, config]) => config.theme || config.color);
 
@@ -87,6 +90,7 @@ ${colorConfig
   );
 };
 
+// Tooltip helpers: ChartTooltip + ChartTooltipContent
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
 const ChartTooltipContent = React.forwardRef<
@@ -225,6 +229,7 @@ const ChartTooltipContent = React.forwardRef<
 );
 ChartTooltipContent.displayName = "ChartTooltip";
 
+// Legend helpers: ChartLegend + ChartLegendContent
 const ChartLegend = RechartsPrimitive.Legend;
 
 const ChartLegendContent = React.forwardRef<

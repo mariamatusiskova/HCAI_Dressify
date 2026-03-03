@@ -3,12 +3,18 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 
 import { cn } from "@/lib/utils";
 
+// controls
+// - hover delay before showing
+// - skipping delay when moving between tooltips
 const TooltipProvider = TooltipPrimitive.Provider;
 
+// It manages open/close state internally unless you control it.
 const Tooltip = TooltipPrimitive.Root;
 
+// This is the element you hover/focus.
 const TooltipTrigger = TooltipPrimitive.Trigger;
 
+// This is the element you hover/focus.
 const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>

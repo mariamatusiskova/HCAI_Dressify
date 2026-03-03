@@ -7,9 +7,11 @@ import { buttonVariants } from "@/components/ui/button";
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
+// component
 function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
   return (
     <DayPicker
+      // showOutsideDays = true means it shows the “extra” days from the previous/next month in the grid (usually dimmed).
       showOutsideDays={showOutsideDays}
       className={cn("p-3", className)}
       classNames={{

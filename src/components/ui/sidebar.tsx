@@ -12,6 +12,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+// cookie + sizes + shortcut
 const SIDEBAR_COOKIE_NAME = "sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = "16rem";
@@ -19,6 +20,7 @@ const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
+// context
 type SidebarContext = {
   state: "expanded" | "collapsed";
   open: boolean;
@@ -40,6 +42,7 @@ function useSidebar() {
   return context;
 }
 
+// the provider that wraps the app and makes the sidebar context available
 const SidebarProvider = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
@@ -70,6 +73,7 @@ const SidebarProvider = React.forwardRef<
     [setOpenProp, open],
   );
 
+  // Mobile vs desktop toggling
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);

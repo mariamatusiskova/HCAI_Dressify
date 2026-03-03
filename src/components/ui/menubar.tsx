@@ -4,16 +4,22 @@ import { Check, ChevronRight, Circle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+// one menu section (e.g., “File” menu)
 const MenubarMenu = MenubarPrimitive.Menu;
 
+// a group of menu items, which can be used to group related items together (e.g., “New”, “Open” under the “File” menu)
 const MenubarGroup = MenubarPrimitive.Group;
 
+// the content of the menu, which will be rendered in a portal at the end of the document
 const MenubarPortal = MenubarPrimitive.Portal;
 
+// a submenu, which can contain its own trigger and content, and will be displayed when the parent item is hovered or clicked
 const MenubarSub = MenubarPrimitive.Sub;
 
+// a group of radio items, where only one can be selected at a time
 const MenubarRadioGroup = MenubarPrimitive.RadioGroup;
 
+// the main component for the menubar, which will render the menubar and manage the state of the menus
 const Menubar = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Root>
@@ -26,6 +32,7 @@ const Menubar = React.forwardRef<
 ));
 Menubar.displayName = MenubarPrimitive.Root.displayName;
 
+// the trigger element for each menu, which will display the menu when clicked
 const MenubarTrigger = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Trigger>
@@ -41,6 +48,7 @@ const MenubarTrigger = React.forwardRef<
 ));
 MenubarTrigger.displayName = MenubarPrimitive.Trigger.displayName;
 
+// the content of the menu, which will be displayed when the trigger is clicked
 const MenubarSubTrigger = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.SubTrigger>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubTrigger> & {
@@ -62,6 +70,7 @@ const MenubarSubTrigger = React.forwardRef<
 ));
 MenubarSubTrigger.displayName = MenubarPrimitive.SubTrigger.displayName;
 
+// the content of a submenu, which will be displayed when the parent item is hovered or clicked
 const MenubarSubContent = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubContent>
@@ -77,6 +86,7 @@ const MenubarSubContent = React.forwardRef<
 ));
 MenubarSubContent.displayName = MenubarPrimitive.SubContent.displayName;
 
+// the actual content of the menu, which will be rendered in a portal at the end of the document
 const MenubarContent = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Content>

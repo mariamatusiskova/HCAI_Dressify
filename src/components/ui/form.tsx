@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 
 const Form = FormProvider;
 
+// the context for a single form field, which will be used to provide the field name to the child components
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
@@ -15,8 +16,10 @@ type FormFieldContextValue<
   name: TName;
 };
 
+// the main component for a form field, which will provide context to the child components and render the Controller from react-hook-form
 const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFieldContextValue);
 
+// the main component for a form field, which will provide context to the child components and render the Controller from react-hook-form
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
@@ -30,6 +33,7 @@ const FormField = <
   );
 };
 
+// a hook that can be used by child components to access the form field context and get the field state from react-hook-form
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext);
   const itemContext = React.useContext(FormItemContext);
@@ -57,6 +61,7 @@ type FormItemContextValue = {
   id: string;
 };
 
+// the container for a single form field, which will provide context to the child components and render the label, description, and error message
 const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue);
 
 const FormItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
@@ -72,6 +77,7 @@ const FormItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
 );
 FormItem.displayName = "FormItem";
 
+// a wrapper for the label of a form field, which will be used to display the label and associate it with the form control
 const FormLabel = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
@@ -99,6 +105,7 @@ const FormControl = React.forwardRef<React.ElementRef<typeof Slot>, React.Compon
 );
 FormControl.displayName = "FormControl";
 
+// a wrapper for the description of a form field, which will be used to provide additional information about the field
 const FormDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => {
     const { formDescriptionId } = useFormField();
@@ -108,6 +115,7 @@ const FormDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttribu
 );
 FormDescription.displayName = "FormDescription";
 
+// a wrapper for the error message of a form field, which will be used to display validation errors
 const FormMessage = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, children, ...props }, ref) => {
     const { error, formMessageId } = useFormField();

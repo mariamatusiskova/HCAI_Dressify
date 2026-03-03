@@ -4,15 +4,22 @@ import { Button } from "@/components/ui/button";
 import { X, RotateCw } from "lucide-react";
 import type { CanvasItem } from "@/hooks/useOutfits";
 
+// inputs to the component
 interface CanvasEditorProps {
+  // URL/base64 string for the user image (background), or null
   userPhoto: string | null;
+  // array of CanvasItem objects (each item has id, x, y, width, height, rotation, imageUrl, category)
   items: CanvasItem[];
+  // callback whenever the user moves/resizes/rotates something
   onItemsChange: (items: CanvasItem[]) => void;
+  // callback when user clicks delete on an item
   onDeleteItem: (id: string) => void;
 }
 
+// Key internal state
 type InteractionMode = "none" | "drag" | "resize" | "rotate";
 
+// How interactions work
 const CanvasEditor = ({ userPhoto, items, onItemsChange, onDeleteItem }: CanvasEditorProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [interactionMode, setInteractionMode] = useState<InteractionMode>("none");
@@ -118,6 +125,7 @@ const CanvasEditor = ({ userPhoto, items, onItemsChange, onDeleteItem }: CanvasE
     [onDeleteItem]
   );
 
+  // Rendering: what you see on screen
   return (
     <div className="space-y-3 flex-1 flex flex-col min-h-0">
       <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">

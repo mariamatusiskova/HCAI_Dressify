@@ -5,14 +5,19 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+// the main container that holds the sheet content and overlay
 const Sheet = SheetPrimitive.Root;
 
+// the button that opens the sheet
 const SheetTrigger = SheetPrimitive.Trigger;
 
+// the button inside the sheet to close it
 const SheetClose = SheetPrimitive.Close;
 
+// the portal that renders the sheet content and overlay
 const SheetPortal = SheetPrimitive.Portal;
 
+// the semi-transparent backdrop behind the sheet
 const SheetOverlay = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
@@ -28,6 +33,7 @@ const SheetOverlay = React.forwardRef<
 ));
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
+// the style
 const sheetVariants = cva(
   "fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
   {
@@ -51,6 +57,7 @@ interface SheetContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
     VariantProps<typeof sheetVariants> {}
 
+// the floating panel that slides in from the side
 const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Content>, SheetContentProps>(
   ({ side = "right", className, children, ...props }, ref) => (
     <SheetPortal>
@@ -67,6 +74,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
 );
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 
+// optional header, footer, title, description components for inside the sheet
 const SheetHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("flex flex-col space-y-2 text-center sm:text-left", className)} {...props} />
 );

@@ -2,11 +2,15 @@ import { Badge } from "@/components/ui/badge";
 import type { GeneratedItem, CanvasItem } from "@/hooks/useOutfits";
 
 interface GeneratedItemsListProps {
+  // the generated items to display
   items: GeneratedItem[];
+  // function to run when the user clicks an item
   onAddToCanvas: (item: GeneratedItem) => void;
 }
 
+// Component behaviour
 const GeneratedItemsList = ({ items, onAddToCanvas }: GeneratedItemsListProps) => {
+  // If there are no items, it returns null, meaning nothing is rendered.
   if (items.length === 0) return null;
 
   return (

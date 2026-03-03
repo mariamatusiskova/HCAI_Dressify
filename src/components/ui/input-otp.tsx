@@ -4,6 +4,7 @@ import { Dot } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+// the main component for the OTP input, which will render the input and manage the state of the slots
 const InputOTP = React.forwardRef<React.ElementRef<typeof OTPInput>, React.ComponentPropsWithoutRef<typeof OTPInput>>(
   ({ className, containerClassName, ...props }, ref) => (
     <OTPInput
@@ -16,11 +17,13 @@ const InputOTP = React.forwardRef<React.ElementRef<typeof OTPInput>, React.Compo
 );
 InputOTP.displayName = "InputOTP";
 
+// the container for the OTP input slots, which will be used to group the slots together and provide context to the child components
 const InputOTPGroup = React.forwardRef<React.ElementRef<"div">, React.ComponentPropsWithoutRef<"div">>(
   ({ className, ...props }, ref) => <div ref={ref} className={cn("flex items-center", className)} {...props} />,
 );
 InputOTPGroup.displayName = "InputOTPGroup";
 
+// the individual slot for each character of the OTP input, which will display the character and a fake caret if it's active
 const InputOTPSlot = React.forwardRef<
   React.ElementRef<"div">,
   React.ComponentPropsWithoutRef<"div"> & { index: number }
@@ -49,6 +52,7 @@ const InputOTPSlot = React.forwardRef<
 });
 InputOTPSlot.displayName = "InputOTPSlot";
 
+// a simple separator component that can be used to separate the OTP input slots, which will display a dot
 const InputOTPSeparator = React.forwardRef<React.ElementRef<"div">, React.ComponentPropsWithoutRef<"div">>(
   ({ ...props }, ref) => (
     <div ref={ref} role="separator" {...props}>

@@ -6,16 +6,25 @@ import { toast } from "sonner";
 import type { GeneratedItem } from "@/hooks/useOutfits";
 import { generateClothingItem } from "@/services/sanaSprintApi";
 
+// When a new item is generated, this component calls onItemGenerated(item) so the parent 
+// can store it (and later display it / add to canvas).
 interface GeneratePanelProps {
   onItemGenerated: (item: GeneratedItem) => void;
 }
 
+// Categories list (Top / Trousers / Shoes)
+// - This array is used to render 3 identical UI blocks (one per category) by mapping over it.
 const categories = [
   { key: "top" as const, label: "Top", icon: Shirt },
   { key: "trousers" as const, label: "Trousers", icon: Sparkles },
   { key: "shoes" as const, label: "Shoes", icon: Footprints },
 ];
 
+// State it manages
+// - null means nothing is generating
+// - otherwise it stores the category key ("top" | "trousers" | "shoes")
+// - This is used to disable inputs/buttons and show a spinner.
+// - Stores the textarea content separately for each category. -> the ""
 const GeneratePanel = ({ onItemGenerated }: GeneratePanelProps) => {
   const [loading, setLoading] = useState<string | null>(null);
   const [prompts, setPrompts] = useState<Record<"top" | "trousers" | "shoes", string>>({
@@ -24,10 +33,14 @@ const GeneratePanel = ({ onItemGenerated }: GeneratePanelProps) => {
     shoes: "",
   });
 
+  // Updating text in a box
+  // - So typing in the “Top” textbox only updates prompts.top, etc.
   const handlePromptChange = (category: "top" | "trousers" | "shoes", value: string) => {
     setPrompts((prev) => ({ ...prev, [category]: value }));
   };
 
+  // Generating an item (main logic)
+  // - Validate the prompt
   const handleGenerate = async (category: "top" | "trousers" | "shoes") => {
     const prompt = prompts[category].trim();
     if (!prompt) {
@@ -35,8 +48,11 @@ const GeneratePanel = ({ onItemGenerated }: GeneratePanelProps) => {
       return;
     }
 
+    // Set loading state
     setLoading(category);
+    // Call the generation API
     try {
+      // Create a GeneratedItem object and pass it to the parent via onItemGenerated
       const imageUrl = await generateClothingItem(prompt, category);
       const item: GeneratedItem = {
         id: crypto.randomUUID(),
@@ -45,15 +61,18 @@ const GeneratePanel = ({ onItemGenerated }: GeneratePanelProps) => {
         prompt: prompt,
         createdAt: new Date().toISOString(),
       };
+      // Send it to the parent
       onItemGenerated(item);
       // Clear prompt after successful generation
       setPrompts((prev) => ({ ...prev, [category]: "" }));
       toast.success(`${category} generated successfully`);
     } catch (error) {
+      // Error handling
       const errorMessage = error instanceof Error ? error.message : "Failed to generate item";
       toast.error(errorMessage);
       console.error("Generation error:", error);
     } finally {
+      // Finally, stop loading
       setLoading(null);
     }
   };

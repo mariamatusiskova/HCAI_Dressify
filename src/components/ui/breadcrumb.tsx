@@ -4,6 +4,7 @@ import { ChevronRight, MoreHorizontal } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+// the container
 const Breadcrumb = React.forwardRef<
   HTMLElement,
   React.ComponentPropsWithoutRef<"nav"> & {
@@ -12,6 +13,9 @@ const Breadcrumb = React.forwardRef<
 >(({ ...props }, ref) => <nav ref={ref} aria-label="breadcrumb" {...props} />);
 Breadcrumb.displayName = "Breadcrumb";
 
+// the list of crumbs
+// - Renders an ordered list <ol>.
+// - Uses flex layout, wraps if needed, and sets the default breadcrumb text style (smaller, muted)
 const BreadcrumbList = React.forwardRef<HTMLOListElement, React.ComponentPropsWithoutRef<"ol">>(
   ({ className, ...props }, ref) => (
     <ol
@@ -26,6 +30,8 @@ const BreadcrumbList = React.forwardRef<HTMLOListElement, React.ComponentPropsWi
 );
 BreadcrumbList.displayName = "BreadcrumbList";
 
+// one crumb container
+// - Renders a <li> with spacing so the link and separator sit nicely.
 const BreadcrumbItem = React.forwardRef<HTMLLIElement, React.ComponentPropsWithoutRef<"li">>(
   ({ className, ...props }, ref) => (
     <li ref={ref} className={cn("inline-flex items-center gap-1.5", className)} {...props} />
@@ -33,6 +39,13 @@ const BreadcrumbItem = React.forwardRef<HTMLLIElement, React.ComponentPropsWitho
 );
 BreadcrumbItem.displayName = "BreadcrumbItem";
 
+// a clickable crumb
+// - Normally renders an <a>.
+// - If asChild is true, it uses Radix Slot so you can pass a custom component (like a router Link) while keeping the same styling.
+// - example:
+// -- <BreadcrumbLink asChild>
+//      <Link to="/shop">Shop</Link>
+//    </BreadcrumbLink>
 const BreadcrumbLink = React.forwardRef<
   HTMLAnchorElement,
   React.ComponentPropsWithoutRef<"a"> & {
@@ -45,6 +58,9 @@ const BreadcrumbLink = React.forwardRef<
 });
 BreadcrumbLink.displayName = "BreadcrumbLink";
 
+// the current page, not clickable
+// - Used for the last breadcrumb (current page).
+// - It’s a <span> (not a link), marked as the current page for accessibility.
 const BreadcrumbPage = React.forwardRef<HTMLSpanElement, React.ComponentPropsWithoutRef<"span">>(
   ({ className, ...props }, ref) => (
     <span
@@ -59,6 +75,10 @@ const BreadcrumbPage = React.forwardRef<HTMLSpanElement, React.ComponentPropsWit
 );
 BreadcrumbPage.displayName = "BreadcrumbPage";
 
+// the “>” icon between crumbs
+// - A non-interactive element that displays a separator.
+// - Default separator is the ChevronRight icon.
+// - You can override it by passing children.
 const BreadcrumbSeparator = ({ children, className, ...props }: React.ComponentProps<"li">) => (
   <li role="presentation" aria-hidden="true" className={cn("[&>svg]:size-3.5", className)} {...props}>
     {children ?? <ChevronRight />}
@@ -66,6 +86,9 @@ const BreadcrumbSeparator = ({ children, className, ...props }: React.ComponentP
 );
 BreadcrumbSeparator.displayName = "BreadcrumbSeparator";
 
+// the “…” for collapsed breadcrumbs
+// - Shows a “…” icon when you don’t want to display every breadcrumb.
+// - sr-only text is for screen readers (“More”).
 const BreadcrumbEllipsis = ({ className, ...props }: React.ComponentProps<"span">) => (
   <span
     role="presentation"
@@ -77,7 +100,7 @@ const BreadcrumbEllipsis = ({ className, ...props }: React.ComponentProps<"span"
     <span className="sr-only">More</span>
   </span>
 );
-BreadcrumbEllipsis.displayName = "BreadcrumbElipssis";
+BreadcrumbEllipsis.displayName = "BreadcrumbEllipsis";
 
 export {
   Breadcrumb,

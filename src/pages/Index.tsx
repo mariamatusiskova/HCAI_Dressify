@@ -11,6 +11,8 @@ import CanvasEditor from "@/components/CanvasEditor";
 import OutfitLibrary from "@/components/OutfitLibrary";
 import { useOutfits, type GeneratedItem, type CanvasItem } from "@/hooks/useOutfits";
 
+
+// consent → upload photo → generate items → place them on the canvas → save/load outfits
 const Index = () => {
   const [consented, setConsented] = useState(false);
   const [showConsent, setShowConsent] = useState(true);

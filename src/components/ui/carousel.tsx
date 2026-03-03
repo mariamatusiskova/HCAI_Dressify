@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
+// for options + API
 type CarouselApi = UseEmblaCarouselType[1];
 type UseCarouselParameters = Parameters<typeof useEmblaCarousel>;
 type CarouselOptions = UseCarouselParameters[0];
@@ -17,6 +18,7 @@ type CarouselProps = {
   setApi?: (api: CarouselApi) => void;
 };
 
+// the context type for the carousel, which includes the API and helper functions
 type CarouselContextProps = {
   carouselRef: ReturnType<typeof useEmblaCarousel>[0];
   api: ReturnType<typeof useEmblaCarousel>[1];
@@ -26,6 +28,7 @@ type CarouselContextProps = {
   canScrollNext: boolean;
 } & CarouselProps;
 
+// how subcomponents talk to each other
 const CarouselContext = React.createContext<CarouselContextProps | null>(null);
 
 function useCarousel() {
@@ -38,6 +41,7 @@ function useCarousel() {
   return context;
 }
 
+// sets up Embla + keyboard + state + provides context to subcomponents
 const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & CarouselProps>(
   ({ orientation = "horizontal", opts, setApi, plugins, className, children, ...props }, ref) => {
     const [carouselRef, api] = useEmblaCarousel(
@@ -47,6 +51,8 @@ const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
       },
       plugins,
     );
+
+    // Track whether arrows should be enabled
     const [canScrollPrev, setCanScrollPrev] = React.useState(false);
     const [canScrollNext, setCanScrollNext] = React.useState(false);
 
@@ -55,6 +61,7 @@ const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
         return;
       }
 
+      // Navigation functions
       setCanScrollPrev(api.canScrollPrev());
       setCanScrollNext(api.canScrollNext());
     }, []);
@@ -67,6 +74,7 @@ const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
       api?.scrollNext();
     }, [api]);
 
+    // Keyboard support (ArrowLeft / ArrowRight)
     const handleKeyDown = React.useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
         if (event.key === "ArrowLeft") {
@@ -80,6 +88,7 @@ const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
       [scrollPrev, scrollNext],
     );
 
+    // Expose the API to parent if needed
     React.useEffect(() => {
       if (!api || !setApi) {
         return;
@@ -93,6 +102,7 @@ const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
         return;
       }
 
+      // Keep button states updated
       onSelect(api);
       api.on("reInit", onSelect);
       api.on("select", onSelect);
@@ -131,6 +141,7 @@ const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
 );
 Carousel.displayName = "Carousel";
 
+// the scroll viewport + flex track
 const CarouselContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => {
     const { carouselRef, orientation } = useCarousel();
@@ -148,6 +159,7 @@ const CarouselContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HT
 );
 CarouselContent.displayName = "CarouselContent";
 
+// one slide
 const CarouselItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => {
     const { orientation } = useCarousel();
@@ -165,6 +177,7 @@ const CarouselItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLD
 );
 CarouselItem.displayName = "CarouselItem";
 
+// Arrow buttons: CarouselPrevious and CarouselNext
 const CarouselPrevious = React.forwardRef<HTMLButtonElement, React.ComponentProps<typeof Button>>(
   ({ className, variant = "outline", size = "icon", ...props }, ref) => {
     const { orientation, scrollPrev, canScrollPrev } = useCarousel();

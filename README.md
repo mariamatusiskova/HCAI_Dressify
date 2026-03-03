@@ -132,7 +132,7 @@ Public assets
 • public/sw.js: service worker scaffold.
 • public/robots.txt: crawler directives.
 1
-• public/favicon.ico: favicon.
+• public/outfit.png: favicon.
 • public/placeholder.svg: placeholder image asset.
 Notes
 • src/App.css is mostly Vite starter CSS and appears largely unused.
