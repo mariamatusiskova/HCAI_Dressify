@@ -19,6 +19,7 @@ export interface CanvasItem {
   width: number;
   height: number;
   rotation: number;
+  zIndex: number; // Layer order - higher values appear on top
 }
 
 // Represents a saved outfit, which includes metadata and the items on the canvas when the user saved it.

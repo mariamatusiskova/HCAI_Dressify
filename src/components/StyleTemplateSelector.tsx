@@ -1,0 +1,227 @@
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Settings, Edit2, Save } from "lucide-react";
+import { toast } from "sonner";
+import type { StyleTemplate } from "@/types/styleTemplates";
+import { DEFAULT_STYLE_TEMPLATES, GLOBAL_SYSTEM_PROMPT } from "@/types/styleTemplates";
+
+interface StyleTemplateSelectorProps {
+  category: "top" | "trousers" | "shoes";
+  selectedTemplate: StyleTemplate | null;
+  onTemplateChange: (template: StyleTemplate) => void;
+}
+
+const StyleTemplateSelector = ({
+  category,
+  selectedTemplate,
+  onTemplateChange,
+}: StyleTemplateSelectorProps) => {
+  const [isEditingGlobal, setIsEditingGlobal] = useState(false);
+  const [isEditingStyle, setIsEditingStyle] = useState(false);
+  const [editedGlobalPrompt, setEditedGlobalPrompt] = useState(GLOBAL_SYSTEM_PROMPT);
+  const [editedStyleDescriptor, setEditedStyleDescriptor] = useState(selectedTemplate?.styleDescriptor || "");
+
+  // Update edited style descriptor when selected template changes
+  useEffect(() => {
+    if (selectedTemplate) {
+      setEditedStyleDescriptor(selectedTemplate.styleDescriptor);
+    }
+  }, [selectedTemplate]);
+
+  // Filter templates that apply to this category or all categories
+  const availableTemplates = DEFAULT_STYLE_TEMPLATES.filter(
+    (t) => t.category === category || t.category === "all"
+  );
+
+  const handleTemplateSelect = (templateId: string) => {
+    const template = DEFAULT_STYLE_TEMPLATES.find((t) => t.id === templateId);
+    if (template) {
+      onTemplateChange(template);
+      setEditedStyleDescriptor(template.styleDescriptor);
+      setIsEditingStyle(false);
+      setIsEditingGlobal(false);
+      toast.success(`Style "${template.name}" selected`);
+    }
+  };
+
+  const handleEditGlobalPrompt = () => {
+    setIsEditingGlobal(true);
+  };
+
+  const handleSaveGlobalPrompt = () => {
+    // Note: This would need to be stored in state/context if you want it to persist
+    // For now, we'll just show it can be edited
+    setIsEditingGlobal(false);
+    toast.success("Global prompt updated (applies to all generations)");
+  };
+
+  const handleEditStyleDescriptor = () => {
+    setIsEditingStyle(true);
+  };
+
+  const handleSaveStyleDescriptor = () => {
+    if (!selectedTemplate) return;
+
+    const updatedTemplate: StyleTemplate = {
+      ...selectedTemplate,
+      styleDescriptor: editedStyleDescriptor.trim(),
+    };
+    onTemplateChange(updatedTemplate);
+    setIsEditingStyle(false);
+    toast.success("Style descriptor updated");
+  };
+
+  const handleCancelEdit = () => {
+    setEditedGlobalPrompt(GLOBAL_SYSTEM_PROMPT);
+    setEditedStyleDescriptor(selectedTemplate?.styleDescriptor || "");
+    setIsEditingGlobal(false);
+    setIsEditingStyle(false);
+  };
+
+  // Build full prompt preview
+  const fullPromptPreview = selectedTemplate
+    ? `${GLOBAL_SYSTEM_PROMPT}. ${selectedTemplate.styleDescriptor}`
+    : GLOBAL_SYSTEM_PROMPT;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs font-medium text-muted-foreground">Style</Label>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-6 px-2">
+              <Settings className="h-3 w-3" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>System Prompt Configuration</DialogTitle>
+              <DialogDescription>
+                View and edit the prompts that will be combined with your item description
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {/* Global System Prompt */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Global System Prompt (applies to all)</Label>
+                  {!isEditingGlobal ? (
+                    <Button variant="outline" size="sm" onClick={handleEditGlobalPrompt}>
+                      <Edit2 className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={handleCancelEdit}>
+                        Cancel
+                      </Button>
+                      <Button size="sm" onClick={handleSaveGlobalPrompt}>
+                        <Save className="h-3 w-3 mr-1" />
+                        Save
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                {isEditingGlobal ? (
+                  <Textarea
+                    value={editedGlobalPrompt}
+                    onChange={(e) => setEditedGlobalPrompt(e.target.value)}
+                    className="min-h-[100px] font-mono text-xs"
+                    placeholder="Enter global system prompt..."
+                  />
+                ) : (
+                  <div className="p-3 bg-muted rounded-md font-mono text-xs whitespace-pre-wrap break-words">
+                    {GLOBAL_SYSTEM_PROMPT}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  This prompt ensures all generated items are product-style images suitable for outfit mixing (frontal shot, white background, professional lighting).
+                </p>
+              </div>
+
+              {/* Style Descriptor */}
+              {selectedTemplate && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Style Descriptor: {selectedTemplate.name}</Label>
+                    {!isEditingStyle ? (
+                      <Button variant="outline" size="sm" onClick={handleEditStyleDescriptor}>
+                        <Edit2 className="h-3 w-3 mr-1" />
+                        Edit
+                      </Button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={handleCancelEdit}>
+                          Cancel
+                        </Button>
+                        <Button size="sm" onClick={handleSaveStyleDescriptor}>
+                          <Save className="h-3 w-3 mr-1" />
+                          Save
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  {isEditingStyle ? (
+                    <Textarea
+                      value={editedStyleDescriptor}
+                      onChange={(e) => setEditedStyleDescriptor(e.target.value)}
+                      className="min-h-[80px] font-mono text-xs"
+                      placeholder="Enter style descriptor..."
+                    />
+                  ) : (
+                    <div className="p-3 bg-muted rounded-md font-mono text-xs whitespace-pre-wrap break-words">
+                      {selectedTemplate.styleDescriptor}
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Style-specific descriptors that modify the aesthetic (e.g., "oversized", "streetwear style").
+                  </p>
+                </div>
+              )}
+
+              {/* Full Prompt Preview */}
+              <div className="space-y-2 pt-2 border-t">
+                <Label>Full Prompt Preview</Label>
+                <div className="p-3 bg-primary/5 rounded-md font-mono text-xs whitespace-pre-wrap break-words border border-primary/20">
+                  {fullPromptPreview}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Your item description will be added to this prompt. Example: "green jacket" + this prompt = full generation prompt.
+                </p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+      <Select
+        value={selectedTemplate?.id || ""}
+        onValueChange={handleTemplateSelect}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select a style..." />
+        </SelectTrigger>
+        <SelectContent>
+          {availableTemplates.map((template) => (
+            <SelectItem key={template.id} value={template.id}>
+              <div className="flex flex-col">
+                <span className="font-medium">{template.name}</span>
+                <span className="text-xs text-muted-foreground">{template.description}</span>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {selectedTemplate && (
+        <p className="text-xs text-muted-foreground">
+          Style: <span className="font-medium">{selectedTemplate.name}</span>
+        </p>
+      )}
+    </div>
+  );
+};
+
+export default StyleTemplateSelector;
