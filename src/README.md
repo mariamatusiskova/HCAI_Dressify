@@ -16,3 +16,4 @@ Main React app source.
 - `pages/`: Route-level page components.
 - `services/`: API/service integrations.
 - `test/`: Vitest setup and tests.
+- `types/`: Shared TypeScript types and prompt/style template constants.

@@ -24,14 +24,14 @@ Status legend:
 - `collapsible.tsx` (`inactive`): Single collapsible section wrapper.
 - `command.tsx` (`inactive`): Command palette / quick search dialog.
 - `context-menu.tsx` (`inactive`): Right-click context menu.
-- `dialog.tsx` (`active`): Modal primitives; used by `ConsentModal`.
+- `dialog.tsx` (`active`): Modal primitives; used by `ConsentModal` and `StyleTemplateSelector`.
 - `drawer.tsx` (`inactive`): Bottom/side drawer panel (mobile-friendly).
 - `dropdown-menu.tsx` (`inactive`): Menu popover from trigger button.
 - `form.tsx` (`inactive`): `react-hook-form` field wrappers.
 - `hover-card.tsx` (`inactive`): Hover-triggered info popup.
 - `input-otp.tsx` (`inactive`): OTP segmented input.
 - `input.tsx` (`active`): Text input; used for outfit name field.
-- `label.tsx` (`inactive`): Form label primitive.
+- `label.tsx` (`active`): Form label primitive; used by `StyleTemplateSelector`.
 - `menubar.tsx` (`inactive`): Desktop menubar primitives.
 - `navigation-menu.tsx` (`inactive`): Top navigation with dropdown content.
 - `pagination.tsx` (`inactive`): Pagination controls.
@@ -40,7 +40,7 @@ Status legend:
 - `radio-group.tsx` (`inactive`): Radio option group.
 - `resizable.tsx` (`inactive`): Resizable split panels.
 - `scroll-area.tsx` (`inactive`): Custom scrollable area + scrollbar.
-- `select.tsx` (`inactive`): Dropdown select primitive.
+- `select.tsx` (`active`): Dropdown select primitive; used by `StyleTemplateSelector`.
 - `separator.tsx` (`inactive`): Horizontal/vertical divider.
 - `sheet.tsx` (`indirect`): Side sheet panel; used by `sidebar.tsx`.
 - `sidebar.tsx` (`inactive`): Full sidebar system (provider, trigger, content, menu).
@@ -59,4 +59,4 @@ Status legend:
 - `use-toast.ts` (`inactive`): Re-export wrapper; active path uses `src/hooks/use-toast.ts` directly.
 
 ## Active runtime UI set
-`badge.tsx`, `button.tsx`, `dialog.tsx`, `input.tsx`, `sonner.tsx`, `textarea.tsx`, `toast.tsx`, `toaster.tsx`, `tooltip.tsx`.
+`badge.tsx`, `button.tsx`, `dialog.tsx`, `input.tsx`, `label.tsx`, `select.tsx`, `sonner.tsx`, `textarea.tsx`, `toast.tsx`, `toaster.tsx`, `tooltip.tsx`.
