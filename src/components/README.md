@@ -11,6 +11,7 @@ Feature-level components used by pages.
 - `OutfitLibrary.tsx`: Saved outfits list with load/delete actions.
 - `StyleTemplateSelector.tsx`: Template picker/editor used by `GeneratePanel` to apply global/style prompt descriptors.
 - `UploadSection.tsx`: Photo upload via click or drag/drop + preview/remove.
+- `WardrobeLibrary.tsx`: Wardrobe gallery UI with add-to-canvas and delete actions.
 
 ## Subfolder
 - `ui/`: shadcn/Radix-based UI primitives.

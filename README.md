@@ -63,7 +63,28 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+### Deploy to GitHub Pages
+
+This repo is now configured with a GitHub Actions workflow at:
+
+- `.github/workflows/deploy-pages.yml`
+
+Steps:
+
+1. Push this project to a GitHub repository (branch `main`).
+2. In GitHub repo settings, add Actions secrets:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+3. In GitHub repo settings, enable Pages:
+   - `Settings -> Pages -> Build and deployment -> Source: GitHub Actions`
+4. Push to `main` (or run the workflow manually from Actions tab).
+5. Open: `https://<your-username>.github.io/<repo-name>/`
+
+Notes:
+
+- Build automatically sets `VITE_BASE_PATH=/<repo-name>/` for correct asset/routing paths on Pages.
+- Router uses `basename={import.meta.env.BASE_URL}` so refresh/navigation works under the repo subpath.
+- Data is saved to Supabase only when signed in (magic link). If not signed in, app runs in local mode.
 
 ## Can I connect a custom domain to my Lovable project?
 
