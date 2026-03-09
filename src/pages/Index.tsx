@@ -1,15 +1,19 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Save, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { createId } from "@/lib/id";
 import ConsentModal from "@/components/ConsentModal";
 import UploadSection from "@/components/UploadSection";
 import GeneratePanel from "@/components/GeneratePanel";
 import GeneratedItemsList from "@/components/GeneratedItemsList";
 import CanvasEditor from "@/components/CanvasEditor";
 import OutfitLibrary from "@/components/OutfitLibrary";
+import WardrobeLibrary from "@/components/WardrobeLibrary";
+import AuthPanel from "@/components/AuthPanel";
 import { useOutfits, type GeneratedItem, type CanvasItem } from "@/hooks/useOutfits";
+import { useWardrobe } from "@/hooks/useWardrobe";
 
 
 // consent → upload photo → generate items → place them on the canvas → save/load outfits
@@ -20,7 +24,27 @@ const Index = () => {
   const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
   const [canvasItems, setCanvasItems] = useState<CanvasItem[]>([]);
   const [outfitName, setOutfitName] = useState("");
-  const { outfits, saveOutfit, deleteOutfit, loadOutfit } = useOutfits();
+  const { outfits, saveOutfit, deleteOutfit, loadOutfit, isLoading, isCloudSyncEnabled, syncError } = useOutfits();
+  const {
+    items: wardrobeItems,
+    addItem: addWardrobeItem,
+    deleteItem: deleteWardrobeItem,
+    isLoading: wardrobeLoading,
+    isCloudSyncEnabled: isWardrobeCloudSyncEnabled,
+    syncError: wardrobeSyncError,
+  } = useWardrobe();
+
+  useEffect(() => {
+    if (syncError) {
+      toast.warning(syncError);
+    }
+  }, [syncError]);
+
+  useEffect(() => {
+    if (wardrobeSyncError) {
+      toast.warning(wardrobeSyncError);
+    }
+  }, [wardrobeSyncError]);
 
   const handleAgree = () => {
     setConsented(true);
@@ -56,7 +80,25 @@ const Index = () => {
       // Get the highest zIndex and add 1 for new item (brings it to front)
       const maxZIndex = prev.length > 0 ? Math.max(...prev.map((i) => i.zIndex ?? 0)) : -1;
       const ci: CanvasItem = {
-        id: crypto.randomUUID(),
+        id: createId(),
+        imageUrl: item.imageUrl,
+        category: item.category,
+        x: 40 + Math.random() * 80,
+        y: 40 + Math.random() * 80,
+        width: 80,
+        height: 80,
+        rotation: 0,
+        zIndex: maxZIndex + 1,
+      };
+      return [...prev, ci];
+    });
+  }, []);
+
+  const handleAddWardrobeToCanvas = useCallback((item: { imageUrl: string; category: string }) => {
+    setCanvasItems((prev) => {
+      const maxZIndex = prev.length > 0 ? Math.max(...prev.map((i) => i.zIndex ?? 0)) : -1;
+      const ci: CanvasItem = {
+        id: createId(),
         imageUrl: item.imageUrl,
         category: item.category,
         x: 40 + Math.random() * 80,
@@ -74,12 +116,12 @@ const Index = () => {
     setCanvasItems((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!outfitName.trim()) {
       toast.error("Enter an outfit name");
       return;
     }
-    saveOutfit(outfitName.trim(), userPhoto, canvasItems);
+    await saveOutfit(outfitName.trim(), userPhoto, canvasItems);
     setOutfitName("");
     toast.success("Outfit saved");
   };
@@ -101,6 +143,43 @@ const Index = () => {
     }
   };
 
+  const handleDeleteOutfit = useCallback(
+    async (id: string) => {
+      await deleteOutfit(id);
+      toast.success("Outfit deleted");
+    },
+    [deleteOutfit]
+  );
+
+  const handleAddGeneratedToWardrobe = useCallback(
+    async (item: GeneratedItem) => {
+      await addWardrobeItem(item.category, item.imageUrl);
+      toast.success("Added to wardrobe");
+    },
+    [addWardrobeItem]
+  );
+
+  const handleDeleteWardrobeItem = useCallback(
+    async (id: string) => {
+      await deleteWardrobeItem(id);
+      toast.success("Wardrobe item deleted");
+    },
+    [deleteWardrobeItem]
+  );
+
+  const handleAddPhotoToWardrobe = useCallback(
+    async (imageUrl: string, category: string) => {
+      try {
+        await addWardrobeItem(category, imageUrl);
+        toast.success("Photo added to wardrobe");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to add photo to wardrobe";
+        toast.error(message);
+      }
+    },
+    [addWardrobeItem]
+  );
+
   if (!consented) {
     return <ConsentModal open={showConsent} onAgree={handleAgree} onCancel={() => {}} />;
   }
@@ -113,20 +192,40 @@ const Index = () => {
           <Sparkles className="h-5 w-5 text-primary" />
           <h1 className="text-lg font-display font-semibold tracking-tight">Dressify</h1>
         </div>
-        <span className="text-[10px] text-muted-foreground uppercase tracking-widest">AI Outfit Generator</span>
+        <div className="flex flex-col items-end">
+          <span className="text-[10px] text-muted-foreground uppercase tracking-widest">AI Outfit Generator</span>
+          <span className="text-[10px] text-muted-foreground">
+            Outfits: {isCloudSyncEnabled ? "Supabase" : "Local"} | Wardrobe:{" "}
+            {isWardrobeCloudSyncEnabled ? "Supabase" : "Local"}
+          </span>
+        </div>
       </header>
 
       {/* Main */}
       <div className="flex-1 flex flex-col lg:flex-row gap-0">
         {/* Sidebar */}
         <aside className="w-full lg:w-72 border-b lg:border-b-0 lg:border-r border-border p-4 space-y-6 overflow-y-auto">
+          <AuthPanel />
           <UploadSection photo={userPhoto} onPhotoChange={setUserPhoto} />
           <GeneratePanel onItemGenerated={handleItemGenerated} />
           <GeneratedItemsList
             items={generatedItems}
             onAddToCanvas={handleAddToCanvas}
             onItemUpdate={handleItemUpdate}
+            onAddToWardrobe={(item) => void handleAddGeneratedToWardrobe(item)}
           />
+          <div className="space-y-2">
+            <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
+              Wardrobe
+            </h3>
+            <WardrobeLibrary
+              items={wardrobeItems}
+              onAddToCanvas={handleAddWardrobeToCanvas}
+              onDelete={(id) => void handleDeleteWardrobeItem(id)}
+              onAddPhoto={(imageUrl, category) => void handleAddPhotoToWardrobe(imageUrl, category)}
+              isLoading={wardrobeLoading}
+            />
+          </div>
         </aside>
 
         {/* Canvas */}
@@ -145,9 +244,9 @@ const Index = () => {
               value={outfitName}
               onChange={(e) => setOutfitName(e.target.value)}
               className="flex-1"
-              onKeyDown={(e) => e.key === "Enter" && handleSave()}
+              onKeyDown={(e) => e.key === "Enter" && void handleSave()}
             />
-            <Button onClick={handleSave} className="gap-1.5">
+            <Button onClick={() => void handleSave()} className="gap-1.5" disabled={isLoading}>
               <Save className="h-4 w-4" />
               Save
             </Button>
@@ -158,7 +257,7 @@ const Index = () => {
             <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
               Saved Outfits
             </h3>
-            <OutfitLibrary outfits={outfits} onLoad={handleLoad} onDelete={deleteOutfit} />
+            <OutfitLibrary outfits={outfits} onLoad={handleLoad} onDelete={handleDeleteOutfit} />
           </div>
         </main>
       </div>

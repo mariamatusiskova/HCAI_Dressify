@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Shirt, Footprints, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { createId } from "@/lib/id";
 import type { GeneratedItem } from "@/hooks/useOutfits";
 import { generateClothingItem } from "@/services/sanaSprintApi";
 import StyleTemplateSelector from "@/components/StyleTemplateSelector";
@@ -71,7 +72,7 @@ const GeneratePanel = ({ onItemGenerated }: GeneratePanelProps) => {
       const fullPrompt = `${userPrompt}. ${GLOBAL_SYSTEM_PROMPT}. ${template.styleDescriptor}`;
       const imageUrl = await generateClothingItem(fullPrompt, category, template);
       const item: GeneratedItem = {
-        id: crypto.randomUUID(),
+        id: createId(),
         category,
         imageUrl,
         prompt: userPrompt, // Store only user input, not full prompt

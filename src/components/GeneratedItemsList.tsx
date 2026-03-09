@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, LibraryBig } from "lucide-react";
 import { toast } from "sonner";
-import type { GeneratedItem, CanvasItem } from "@/hooks/useOutfits";
+import type { GeneratedItem } from "@/hooks/useOutfits";
 import { removeBackgroundAdvanced } from "@/services/backgroundRemoval";
 
 interface GeneratedItemsListProps {
@@ -12,9 +12,10 @@ interface GeneratedItemsListProps {
   // function to run when the user clicks an item
   onAddToCanvas: (item: GeneratedItem) => void;
   onItemUpdate?: (itemId: string, updatedItem: GeneratedItem) => void;
+  onAddToWardrobe?: (item: GeneratedItem) => void;
 }
 
-const GeneratedItemsList = ({ items, onAddToCanvas, onItemUpdate }: GeneratedItemsListProps) => {
+const GeneratedItemsList = ({ items, onAddToCanvas, onItemUpdate, onAddToWardrobe }: GeneratedItemsListProps) => {
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
   const handleRemoveBackground = async (e: React.MouseEvent, item: GeneratedItem) => {
@@ -83,6 +84,20 @@ const GeneratedItemsList = ({ items, onAddToCanvas, onItemUpdate }: GeneratedIte
                   <Sparkles className="h-3 w-3" />
                 )}
               </Button>
+              {onAddToWardrobe && (
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="absolute bottom-1 left-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddToWardrobe(item);
+                  }}
+                  title="Add to wardrobe"
+                >
+                  <LibraryBig className="h-3 w-3" />
+                </Button>
+              )}
             </div>
           );
         })}
