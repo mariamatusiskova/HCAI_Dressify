@@ -153,8 +153,16 @@ const Index = () => {
 
   const handleAddGeneratedToWardrobe = useCallback(
     async (item: GeneratedItem) => {
-      await addWardrobeItem(item.category, item.imageUrl);
-      toast.success("Added to wardrobe");
+      const result = await addWardrobeItem(item.category, item.imageUrl);
+      if (result.savedToCloud) {
+        toast.success("Added to wardrobe");
+      } else {
+        toast.warning(
+          result.cloudError
+            ? `Saved locally only: ${result.cloudError}`
+            : "Saved locally only (no active Supabase session).",
+        );
+      }
     },
     [addWardrobeItem]
   );
@@ -170,8 +178,16 @@ const Index = () => {
   const handleAddPhotoToWardrobe = useCallback(
     async (imageUrl: string, category: string) => {
       try {
-        await addWardrobeItem(category, imageUrl);
-        toast.success("Photo added to wardrobe");
+        const result = await addWardrobeItem(category, imageUrl);
+        if (result.savedToCloud) {
+          toast.success("Photo added to wardrobe");
+        } else {
+          toast.warning(
+            result.cloudError
+              ? `Photo saved locally only: ${result.cloudError}`
+              : "Photo saved locally only (no active Supabase session).",
+          );
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to add photo to wardrobe";
         toast.error(message);

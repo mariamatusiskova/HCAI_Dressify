@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { createId } from "@/lib/id";
+import { describeUnknownError } from "@/lib/error";
 import {
   createSupabaseOutfit,
   deleteSupabaseOutfit,
@@ -103,7 +104,7 @@ export function useOutfits() {
         setSyncError(null);
       } catch (error) {
         if (!mounted) return;
-        const message = error instanceof Error ? error.message : "Unknown Supabase error";
+        const message = describeUnknownError(error, "Unknown Supabase error");
         setIsCloudSyncEnabled(false);
         setUserId(null);
         setSyncError(`Supabase sync failed (${message}). Using local mode.`);

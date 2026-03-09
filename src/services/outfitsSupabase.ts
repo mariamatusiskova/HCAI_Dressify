@@ -91,7 +91,11 @@ async function ensureWardrobe(userId: string): Promise<string> {
 
   const inserted = await client
     .from("wardrobe")
-    .insert({ user_id: userId })
+    .insert({
+      user_id: userId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
     .select("id")
     .single();
 
@@ -197,6 +201,7 @@ export async function createSupabaseOutfit(
     .insert({
       user_id: userId,
       name,
+      created_at: new Date().toISOString(),
     })
     .select("id, name, created_at")
     .single();
@@ -215,6 +220,8 @@ export async function createSupabaseOutfit(
       image_path: item.imageUrl,
       thumb_path: item.imageUrl,
       tags: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }));
 
     const wardrobeItemsInsert = await client

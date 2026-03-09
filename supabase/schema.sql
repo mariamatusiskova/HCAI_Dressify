@@ -205,3 +205,9 @@ create policy "outfit_items_delete_own" on public.outfit_items
     )
   );
 
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on table public.wardrobe to anon, authenticated;
+grant select, insert, update, delete on table public.wardrobe_items to anon, authenticated;
+grant select, insert, update, delete on table public.outfits to anon, authenticated;
+grant select, insert, update, delete on table public.outfit_items to anon, authenticated;
+grant execute on function public.ensure_user_wardrobe(uuid) to anon, authenticated;

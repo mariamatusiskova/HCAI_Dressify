@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { createId } from "@/lib/id";
+import { describeUnknownError } from "@/lib/error";
 import { getOrCreateSupabaseUserId } from "@/services/outfitsSupabase";
 import {
   createSupabaseWardrobeItem,
@@ -15,6 +16,12 @@ export interface WardrobeItem {
   imageUrl: string;
   createdAt: string;
   tags: string[];
+}
+
+export interface AddWardrobeResult {
+  item: WardrobeItem;
+  savedToCloud: boolean;
+  cloudError?: string;
 }
 
 const STORAGE_KEY = "dressify-wardrobe-items";
@@ -90,7 +97,7 @@ export function useWardrobe() {
         setSyncError(null);
       } catch (error) {
         if (!mounted) return;
-        const message = error instanceof Error ? error.message : "Unknown Supabase error";
+        const message = describeUnknownError(error, "Unknown Supabase error");
         setIsCloudSyncEnabled(false);
         setUserId(null);
         setSyncError(`Supabase wardrobe sync failed (${message}). Using local mode.`);
@@ -117,7 +124,7 @@ export function useWardrobe() {
   }, []);
 
   const addItem = useCallback(
-    async (category: string, imageUrl: string) => {
+    async (category: string, imageUrl: string): Promise<AddWardrobeResult> => {
       if (isSupabaseConfigured) {
         const resolvedUserId = userId ?? (await getOrCreateSupabaseUserId());
 
@@ -129,11 +136,26 @@ export function useWardrobe() {
             setIsCloudSyncEnabled(true);
             setSyncError(null);
             setItems((prev) => [item, ...prev]);
-            return item;
+            return { item, savedToCloud: true };
           } catch (error) {
-            const message = error instanceof Error ? error.message : "Unknown Supabase error";
+            const message = describeUnknownError(error, "Unknown Supabase error");
             setIsCloudSyncEnabled(false);
             setSyncError(`Supabase wardrobe insert failed (${message}). Saved locally.`);
+            const item: WardrobeItem = {
+              id: createId(),
+              category,
+              imageUrl,
+              createdAt: new Date().toISOString(),
+              tags: [],
+            };
+
+            setItems((prev) => {
+              const updated = [item, ...prev];
+              writeLocalWardrobe(updated);
+              return updated;
+            });
+
+            return { item, savedToCloud: false, cloudError: message };
           }
         } else {
           setIsCloudSyncEnabled(false);
@@ -157,7 +179,7 @@ export function useWardrobe() {
         return updated;
       });
 
-      return item;
+      return { item, savedToCloud: false };
     },
     [userId]
   );

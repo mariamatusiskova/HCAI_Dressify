@@ -40,7 +40,11 @@ async function ensureWardrobe(userId: string): Promise<string> {
 
   const inserted = await client
     .from("wardrobe")
-    .insert({ user_id: userId })
+    .insert({
+      user_id: userId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
     .select("id")
     .single();
 
@@ -84,6 +88,8 @@ export async function createSupabaseWardrobeItem(
       image_path: imagePath,
       thumb_path: imagePath,
       tags: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
     .select("id, user_id, category, image_path, thumb_path, tags, created_at")
     .single();
@@ -108,4 +114,3 @@ export async function deleteSupabaseWardrobeItem(userId: string, itemId: string)
     throw result.error;
   }
 }
-
