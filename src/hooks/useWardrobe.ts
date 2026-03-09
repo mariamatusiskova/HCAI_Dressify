@@ -118,11 +118,29 @@ export function useWardrobe() {
 
   const addItem = useCallback(
     async (category: string, imageUrl: string) => {
-      if (isCloudSyncEnabled && userId) {
-        const created = await createSupabaseWardrobeItem(userId, category, imageUrl);
-        const item = fromSupabaseRecord(created);
-        setItems((prev) => [item, ...prev]);
-        return item;
+      if (isSupabaseConfigured) {
+        const resolvedUserId = userId ?? (await getOrCreateSupabaseUserId());
+
+        if (resolvedUserId) {
+          try {
+            const created = await createSupabaseWardrobeItem(resolvedUserId, category, imageUrl);
+            const item = fromSupabaseRecord(created);
+            setUserId(resolvedUserId);
+            setIsCloudSyncEnabled(true);
+            setSyncError(null);
+            setItems((prev) => [item, ...prev]);
+            return item;
+          } catch (error) {
+            const message = error instanceof Error ? error.message : "Unknown Supabase error";
+            setIsCloudSyncEnabled(false);
+            setSyncError(`Supabase wardrobe insert failed (${message}). Saved locally.`);
+          }
+        } else {
+          setIsCloudSyncEnabled(false);
+          setSyncError(
+            "Supabase is configured but no auth session is available. Wardrobe is being saved locally only.",
+          );
+        }
       }
 
       const item: WardrobeItem = {
@@ -141,7 +159,7 @@ export function useWardrobe() {
 
       return item;
     },
-    [isCloudSyncEnabled, userId]
+    [userId]
   );
 
   const deleteItem = useCallback(
