@@ -70,10 +70,12 @@ const AuthPanel = () => {
 
     setIsSendingMagicLink(true);
     try {
+      // Use deployed app base path (important for GitHub Pages project URLs).
+      const redirectTo = new URL(import.meta.env.BASE_URL, window.location.origin).toString();
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmedEmail,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: redirectTo,
         },
       });
       if (error) {
