@@ -84,7 +84,7 @@ Notes:
 
 - Build automatically sets `VITE_BASE_PATH=/<repo-name>/` for correct asset/routing paths on Pages.
 - Router uses `basename={import.meta.env.BASE_URL}` so refresh/navigation works under the repo subpath.
-- Data is saved to Supabase only when signed in (magic link). If not signed in, app runs in local mode.
+- Data is saved to Supabase only when signed in (email/password auth panel). If not signed in, app runs in local mode.
 
 ## Can I connect a custom domain to my Lovable project?
 

@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { LogOut, Mail } from "lucide-react";
+import { LogIn, LogOut, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { describeUnknownError } from "@/lib/error";
 
 const AuthPanel = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState("");
-  const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
+  const [password, setPassword] = useState("");
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
@@ -56,24 +59,59 @@ const AuthPanel = () => {
     return `${session.user.id.slice(0, 8)}...`;
   }, [session]);
 
-  const handleMagicLink = useCallback(async () => {
+  const handleSignIn = useCallback(async () => {
     if (!supabase) {
       toast.error("Supabase is not configured.");
       return;
     }
 
     const trimmedEmail = email.trim();
-    if (!trimmedEmail) {
-      toast.error("Enter an email address first.");
+    if (!trimmedEmail || !password) {
+      toast.error("Enter email and password.");
       return;
     }
 
-    setIsSendingMagicLink(true);
+    setIsSigningIn(true);
     try {
-      // Use deployed app base path (important for GitHub Pages project URLs).
-      const redirectTo = new URL(import.meta.env.BASE_URL, window.location.origin).toString();
-      const { error } = await supabase.auth.signInWithOtp({
+      const { error } = await supabase.auth.signInWithPassword({
         email: trimmedEmail,
+        password,
+      });
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Signed in.");
+    } catch (error) {
+      const message = describeUnknownError(error, "Unknown auth error");
+      toast.error(`Sign-in failed: ${message}`);
+    } finally {
+      setIsSigningIn(false);
+    }
+  }, [email, password]);
+
+  const handleSignUp = useCallback(async () => {
+    if (!supabase) {
+      toast.error("Supabase is not configured.");
+      return;
+    }
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      toast.error("Enter email and password.");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+
+    setIsSigningUp(true);
+    try {
+      const redirectTo = new URL(import.meta.env.BASE_URL, window.location.origin).toString();
+      const { data, error } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password,
         options: {
           emailRedirectTo: redirectTo,
         },
@@ -82,14 +120,18 @@ const AuthPanel = () => {
         throw error;
       }
 
-      toast.success("Magic link sent. Check your inbox.");
+      if (data.session) {
+        toast.success("Account created and signed in.");
+      } else {
+        toast.success("Account created. Confirm your email, then sign in.");
+      }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      toast.error(`Magic link sign-in failed: ${message}`);
+      const message = describeUnknownError(error, "Unknown auth error");
+      toast.error(`Sign-up failed: ${message}`);
     } finally {
-      setIsSendingMagicLink(false);
+      setIsSigningUp(false);
     }
-  }, [email]);
+  }, [email, password]);
 
   const handleSignOut = useCallback(async () => {
     if (!supabase) {
@@ -104,7 +146,7 @@ const AuthPanel = () => {
       }
       toast.success("Signed out.");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
+      const message = describeUnknownError(error, "Unknown auth error");
       toast.error(`Sign out failed: ${message}`);
     } finally {
       setIsSigningOut(false);
@@ -144,23 +186,41 @@ const AuthPanel = () => {
         </Button>
       ) : (
         <div className="space-y-2">
-          <div className="flex gap-2">
-            <Input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="h-8 text-xs"
-            />
+          <Input
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="h-8 text-xs"
+          />
+          <Input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="h-8 text-xs"
+          />
+          <div className="grid grid-cols-2 gap-2">
             <Button
               type="button"
               size="sm"
               className="h-8 text-xs"
-              onClick={() => void handleMagicLink()}
-              disabled={isSendingMagicLink}
+              onClick={() => void handleSignIn()}
+              disabled={isSigningIn || isSigningUp}
             >
-              <Mail className="h-3 w-3 mr-1" />
-              Link
+              <LogIn className="h-3 w-3 mr-1" />
+              Sign In
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="h-8 text-xs"
+              onClick={() => void handleSignUp()}
+              disabled={isSigningIn || isSigningUp}
+            >
+              <UserPlus className="h-3 w-3 mr-1" />
+              Create
             </Button>
           </div>
         </div>

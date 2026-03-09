@@ -41,13 +41,14 @@ npm run dev
 
 This app now includes an in-app auth panel (left sidebar) with:
 
-- Magic link email sign-in
+- Email/password sign-in
+- Email/password account creation
 - Sign out
 
 Enable email auth in Supabase:
 
 - `Auth -> Providers -> Email -> Enable`
-- Set your Site URL / Redirect URL so magic links return to your app URL.
+- If email confirmation is enabled, set your Site URL / Redirect URL so confirmation links return to your app URL.
 - For GitHub Pages deployments, add:
   - `https://<your-username>.github.io/<repo-name>/`
 
