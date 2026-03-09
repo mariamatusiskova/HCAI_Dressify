@@ -15,6 +15,7 @@ interface WardrobeLibraryProps {
 const WardrobeLibrary = ({ items, onAddToCanvas, onDelete, onAddPhoto, isLoading = false }: WardrobeLibraryProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadCategory, setUploadCategory] = useState<"top" | "trousers" | "shoes">("top");
 
   const handleUpload = async (file: File) => {
     const imageUrl = await new Promise<string>((resolve, reject) => {
@@ -28,7 +29,7 @@ const WardrobeLibrary = ({ items, onAddToCanvas, onDelete, onAddPhoto, isLoading
       throw new Error("Could not read selected image");
     }
 
-    await onAddPhoto(imageUrl, "custom");
+    await onAddPhoto(imageUrl, uploadCategory);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,7 +53,18 @@ const WardrobeLibrary = ({ items, onAddToCanvas, onDelete, onAddPhoto, isLoading
 
   return (
     <div className="space-y-2">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-2">
+        <select
+          value={uploadCategory}
+          onChange={(e) => setUploadCategory(e.target.value as "top" | "trousers" | "shoes")}
+          className="h-7 rounded-md border border-border bg-background px-2 text-xs text-foreground"
+          disabled={isUploading}
+          aria-label="Wardrobe photo category"
+        >
+          <option value="top">Top</option>
+          <option value="trousers">Trousers</option>
+          <option value="shoes">Shoes</option>
+        </select>
         <Button
           variant="secondary"
           size="sm"
