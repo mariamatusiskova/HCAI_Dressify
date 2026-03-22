@@ -1,30 +1,25 @@
-import { useState, useCallback, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Save, Sparkles } from "lucide-react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { Outlet } from "react-router-dom";
+import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { createId } from "@/lib/id";
+import AuthTopbar from "@/components/AuthTopbar";
 import ConsentModal from "@/components/ConsentModal";
-import UploadSection from "@/components/UploadSection";
-import GeneratePanel from "@/components/GeneratePanel";
-import GeneratedItemsList from "@/components/GeneratedItemsList";
-import CanvasEditor from "@/components/CanvasEditor";
-import OutfitLibrary from "@/components/OutfitLibrary";
-import WardrobeLibrary from "@/components/WardrobeLibrary";
-import AuthPanel from "@/components/AuthPanel";
-import { useOutfits, type GeneratedItem, type CanvasItem } from "@/hooks/useOutfits";
+import { createId } from "@/lib/id";
+import { useOutfits, type CanvasItem, type GeneratedItem } from "@/hooks/useOutfits";
 import { useWardrobe } from "@/hooks/useWardrobe";
+import MenuNav from "./MenuNav";
 
-
-// consent → upload photo → generate items → place them on the canvas → save/load outfits
-const Index = () => {
+function useStudioInternal() {
   const [consented, setConsented] = useState(false);
   const [showConsent, setShowConsent] = useState(true);
+
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
   const [canvasItems, setCanvasItems] = useState<CanvasItem[]>([]);
   const [outfitName, setOutfitName] = useState("");
+
   const { outfits, saveOutfit, deleteOutfit, loadOutfit, isLoading, isCloudSyncEnabled, syncError } = useOutfits();
+
   const {
     items: wardrobeItems,
     addItem: addWardrobeItem,
@@ -46,10 +41,10 @@ const Index = () => {
     }
   }, [wardrobeSyncError]);
 
-  const handleAgree = () => {
+  const handleAgree = useCallback(() => {
     setConsented(true);
     setShowConsent(false);
-  };
+  }, []);
 
   const handleItemGenerated = useCallback((item: GeneratedItem) => {
     setGeneratedItems((prev) => [item, ...prev]);
@@ -59,27 +54,24 @@ const Index = () => {
   const handleItemUpdate = useCallback((itemId: string, updatedItem: GeneratedItem) => {
     setGeneratedItems((prev) => {
       const updated = prev.map((item) => (item.id === itemId ? updatedItem : item));
-      // Also update canvas items if they use this image
-      const oldItem = prev.find((gi) => gi.id === itemId);
+      const oldItem = prev.find((item) => item.id === itemId);
+
       if (oldItem) {
         setCanvasItems((currentCanvasItems) =>
-          currentCanvasItems.map((canvasItem) => {
-            if (canvasItem.imageUrl === oldItem.imageUrl) {
-              return { ...canvasItem, imageUrl: updatedItem.imageUrl };
-            }
-            return canvasItem;
-          })
+          currentCanvasItems.map((canvasItem) =>
+            canvasItem.imageUrl === oldItem.imageUrl ? { ...canvasItem, imageUrl: updatedItem.imageUrl } : canvasItem,
+          ),
         );
       }
+
       return updated;
     });
   }, []);
 
   const handleAddToCanvas = useCallback((item: GeneratedItem) => {
     setCanvasItems((prev) => {
-      // Get the highest zIndex and add 1 for new item (brings it to front)
       const maxZIndex = prev.length > 0 ? Math.max(...prev.map((i) => i.zIndex ?? 0)) : -1;
-      const ci: CanvasItem = {
+      const canvasItem: CanvasItem = {
         id: createId(),
         imageUrl: item.imageUrl,
         category: item.category,
@@ -90,14 +82,14 @@ const Index = () => {
         rotation: 0,
         zIndex: maxZIndex + 1,
       };
-      return [...prev, ci];
+      return [...prev, canvasItem];
     });
   }, []);
 
   const handleAddWardrobeToCanvas = useCallback((item: { imageUrl: string; category: string }) => {
     setCanvasItems((prev) => {
       const maxZIndex = prev.length > 0 ? Math.max(...prev.map((i) => i.zIndex ?? 0)) : -1;
-      const ci: CanvasItem = {
+      const canvasItem: CanvasItem = {
         id: createId(),
         imageUrl: item.imageUrl,
         category: item.category,
@@ -108,7 +100,7 @@ const Index = () => {
         rotation: 0,
         zIndex: maxZIndex + 1,
       };
-      return [...prev, ci];
+      return [...prev, canvasItem];
     });
   }, []);
 
@@ -116,44 +108,50 @@ const Index = () => {
     setCanvasItems((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!outfitName.trim()) {
       toast.error("Enter an outfit name");
       return;
     }
+
     await saveOutfit(outfitName.trim(), userPhoto, canvasItems);
     setOutfitName("");
     toast.success("Outfit saved");
-  };
+  }, [canvasItems, outfitName, saveOutfit, userPhoto]);
 
-  const handleLoad = (id: string) => {
-    const outfit = loadOutfit(id);
-    if (outfit) {
+  const handleLoad = useCallback(
+    (id: string) => {
+      const outfit = loadOutfit(id);
+      if (!outfit) return;
+
       setUserPhoto(outfit.userPhoto);
-      // Ensure backward compatibility: add default width, height, rotation, zIndex if missing
+
       const normalizedItems = outfit.canvasItems.map((item, index) => ({
         ...item,
         width: item.width ?? 80,
         height: item.height ?? 80,
         rotation: item.rotation ?? 0,
-        zIndex: item.zIndex ?? index, // Assign zIndex based on order if missing
+        zIndex: item.zIndex ?? index,
       }));
+
       setCanvasItems(normalizedItems);
       toast.info(`Loaded "${outfit.name}"`);
-    }
-  };
+    },
+    [loadOutfit],
+  );
 
   const handleDeleteOutfit = useCallback(
     async (id: string) => {
       await deleteOutfit(id);
       toast.success("Outfit deleted");
     },
-    [deleteOutfit]
+    [deleteOutfit],
   );
 
   const handleAddGeneratedToWardrobe = useCallback(
     async (item: GeneratedItem) => {
       const result = await addWardrobeItem(item.category, item.imageUrl);
+
       if (result.savedToCloud) {
         toast.success("Added to wardrobe");
       } else {
@@ -164,7 +162,7 @@ const Index = () => {
         );
       }
     },
-    [addWardrobeItem]
+    [addWardrobeItem],
   );
 
   const handleDeleteWardrobeItem = useCallback(
@@ -172,13 +170,14 @@ const Index = () => {
       await deleteWardrobeItem(id);
       toast.success("Wardrobe item deleted");
     },
-    [deleteWardrobeItem]
+    [deleteWardrobeItem],
   );
 
   const handleAddPhotoToWardrobe = useCallback(
     async (imageUrl: string, category: string) => {
       try {
         const result = await addWardrobeItem(category, imageUrl);
+
         if (result.savedToCloud) {
           toast.success("Photo added to wardrobe");
         } else {
@@ -193,91 +192,87 @@ const Index = () => {
         toast.error(message);
       }
     },
-    [addWardrobeItem]
+    [addWardrobeItem],
   );
 
-  if (!consented) {
-    return <ConsentModal open={showConsent} onAgree={handleAgree} onCancel={() => {}} />;
+  return {
+    consented,
+    showConsent,
+    handleAgree,
+    userPhoto,
+    setUserPhoto,
+    generatedItems,
+    setGeneratedItems,
+    canvasItems,
+    setCanvasItems,
+    outfitName,
+    setOutfitName,
+    outfits,
+    wardrobeItems,
+    isLoading,
+    wardrobeLoading,
+    isCloudSyncEnabled,
+    isWardrobeCloudSyncEnabled,
+    handleItemGenerated,
+    handleItemUpdate,
+    handleAddToCanvas,
+    handleAddWardrobeToCanvas,
+    handleDeleteItem,
+    handleSave,
+    handleLoad,
+    handleDeleteOutfit,
+    handleAddGeneratedToWardrobe,
+    handleDeleteWardrobeItem,
+    handleAddPhotoToWardrobe,
+  };
+}
+
+type StudioContextType = ReturnType<typeof useStudioInternal>;
+
+const StudioContext = createContext<StudioContextType | null>(null);
+
+export const useStudio = () => {
+  const context = useContext(StudioContext);
+  if (!context) {
+    throw new Error("useStudio must be used inside Index shell");
+  }
+  return context;
+};
+
+const Index = () => {
+  const studio = useStudioInternal();
+
+  if (!studio.consented) {
+    return <ConsentModal open={studio.showConsent} onAgree={studio.handleAgree} onCancel={() => {}} />;
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="border-b border-border px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-display font-semibold tracking-tight">Dressify</h1>
-        </div>
-        <div className="flex flex-col items-end">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest">AI Outfit Generator</span>
-          <span className="text-[10px] text-muted-foreground">
-            Outfits: {isCloudSyncEnabled ? "Supabase" : "Local"} | Wardrobe:{" "}
-            {isWardrobeCloudSyncEnabled ? "Supabase" : "Local"}
-          </span>
-        </div>
-      </header>
-
-      {/* Main */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-0">
-        {/* Sidebar */}
-        <aside className="w-full lg:w-72 border-b lg:border-b-0 lg:border-r border-border p-4 space-y-6 overflow-y-auto">
-          <AuthPanel />
-          <UploadSection photo={userPhoto} onPhotoChange={setUserPhoto} />
-          <GeneratePanel onItemGenerated={handleItemGenerated} />
-          <GeneratedItemsList
-            items={generatedItems}
-            onAddToCanvas={handleAddToCanvas}
-            onItemUpdate={handleItemUpdate}
-            onAddToWardrobe={(item) => void handleAddGeneratedToWardrobe(item)}
-          />
-          <div className="space-y-2">
-            <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
-              Wardrobe
-            </h3>
-            <WardrobeLibrary
-              items={wardrobeItems}
-              onAddToCanvas={handleAddWardrobeToCanvas}
-              onDelete={(id) => void handleDeleteWardrobeItem(id)}
-              onAddPhoto={(imageUrl, category) => void handleAddPhotoToWardrobe(imageUrl, category)}
-              isLoading={wardrobeLoading}
-            />
+    <StudioContext.Provider value={studio}>
+      <div className="min-h-screen bg-background flex flex-col">
+        <header className="border-b border-border px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h1 className="text-lg font-display font-semibold tracking-tight">Dressify</h1>
           </div>
-        </aside>
-
-        {/* Canvas */}
-        <main className="flex-1 p-4 flex flex-col gap-4 min-h-0">
-          <CanvasEditor
-            userPhoto={userPhoto}
-            items={canvasItems}
-            onItemsChange={setCanvasItems}
-            onDeleteItem={handleDeleteItem}
-          />
-
-          {/* Save bar */}
-          <div className="flex gap-2">
-            <Input
-              placeholder="Outfit name…"
-              value={outfitName}
-              onChange={(e) => setOutfitName(e.target.value)}
-              className="flex-1"
-              onKeyDown={(e) => e.key === "Enter" && void handleSave()}
-            />
-            <Button onClick={() => void handleSave()} className="gap-1.5" disabled={isLoading}>
-              <Save className="h-4 w-4" />
-              Save
-            </Button>
+          <div className="flex items-center gap-4">
+            <div className="hidden lg:flex flex-col items-end">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest">AI Outfit Generator</span>
+              <span className="text-[10px] text-muted-foreground">
+                Outfits: {studio.isCloudSyncEnabled ? "Supabase" : "Local"} | Wardrobe: {" "}
+                {studio.isWardrobeCloudSyncEnabled ? "Supabase" : "Local"}
+              </span>
+            </div>
+            <AuthTopbar className="hidden md:flex" />
           </div>
+        </header>
 
-          {/* Library */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
-              Saved Outfits
-            </h3>
-            <OutfitLibrary outfits={outfits} onLoad={handleLoad} onDelete={handleDeleteOutfit} />
-          </div>
+        <MenuNav />
+
+        <main className="flex-1 min-h-0 overflow-y-auto pb-16 md:pb-0">
+          <Outlet />
         </main>
       </div>
-    </div>
+    </StudioContext.Provider>
   );
 };
 

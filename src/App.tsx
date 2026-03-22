@@ -33,13 +33,11 @@ const App = () => (
           <Route element={<Index />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/wardrobe" element={<WardrobePage />} />
-
             <Route path="/saved" element={<SavedPage />}>
               <Route index element={<Navigate to="items" replace />} />
               <Route path="items" element={<ItemPage />} />
               <Route path="outfits" element={<OutfitsPage />} />
             </Route>
-
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
 
