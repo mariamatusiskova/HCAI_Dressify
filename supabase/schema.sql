@@ -211,3 +211,37 @@ grant select, insert, update, delete on table public.wardrobe_items to anon, aut
 grant select, insert, update, delete on table public.outfits to anon, authenticated;
 grant select, insert, update, delete on table public.outfit_items to anon, authenticated;
 grant execute on function public.ensure_user_wardrobe(uuid) to anon, authenticated;
+
+-- User-editable system prompts
+create table if not exists public.system_prompts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  content text not null,
+  is_default boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists system_prompts_user_id_idx on public.system_prompts(user_id);
+create unique index if not exists system_prompts_user_name_unique on public.system_prompts(user_id, name);
+
+alter table public.system_prompts enable row level security;
+
+drop policy if exists "system_prompts_select_own" on public.system_prompts;
+create policy "system_prompts_select_own" on public.system_prompts
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "system_prompts_insert_own" on public.system_prompts;
+create policy "system_prompts_insert_own" on public.system_prompts
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "system_prompts_update_own" on public.system_prompts;
+create policy "system_prompts_update_own" on public.system_prompts
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "system_prompts_delete_own" on public.system_prompts;
+create policy "system_prompts_delete_own" on public.system_prompts
+  for delete using (auth.uid() = user_id);
+
+grant select, insert, update, delete on table public.system_prompts to anon, authenticated;
