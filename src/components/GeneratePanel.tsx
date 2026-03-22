@@ -6,9 +6,10 @@ import { toast } from "sonner";
 import { createId } from "@/lib/id";
 import type { GeneratedItem } from "@/hooks/useOutfits";
 import { generateClothingItem } from "@/services/sanaSprintApi";
+import { useSystemPrompt } from "@/hooks/useSystemPrompt";
 import StyleTemplateSelector from "@/components/StyleTemplateSelector";
 import type { StyleTemplate } from "@/types/styleTemplates";
-import { DEFAULT_STYLE_TEMPLATES, GLOBAL_SYSTEM_PROMPT } from "@/types/styleTemplates";
+import { DEFAULT_STYLE_TEMPLATES } from "@/types/styleTemplates";
 
 // When a new item is generated, this component calls onItemGenerated(item) so the parent 
 // can store it (and later display it / add to canvas).
@@ -20,6 +21,14 @@ const GeneratePanel = ({ onItemGenerated }: GeneratePanelProps) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [prompt, setPrompt] = useState<string>("");
   const [selectedTemplate, setSelectedTemplate] = useState<StyleTemplate | null>(DEFAULT_STYLE_TEMPLATES[0]);
+  const {
+    prompt: systemPrompt,
+    setPrompt: setSystemPrompt,
+    savePrompt: saveSystemPrompt,
+    isSaving: isSavingSystemPrompt,
+    isCloudSyncEnabled: isSystemPromptCloudEnabled,
+    syncError: systemPromptSyncError,
+  } = useSystemPrompt();
 
   const handleGenerate = async () => {
     const userPrompt = prompt.trim();
@@ -37,7 +46,7 @@ const GeneratePanel = ({ onItemGenerated }: GeneratePanelProps) => {
     // Call the generation API
     try {
       // Combine: user input + global system prompt + style descriptor
-      const fullPrompt = `${userPrompt}. ${GLOBAL_SYSTEM_PROMPT}. ${selectedTemplate.styleDescriptor}`;
+      const fullPrompt = `${userPrompt}. ${systemPrompt}. ${selectedTemplate.styleDescriptor}`;
       // Pass a default category ('top') to keep compatibility with the current API shape
       const imageUrl = await generateClothingItem(fullPrompt, "top", selectedTemplate);
       const item: GeneratedItem = {
@@ -76,6 +85,12 @@ const GeneratePanel = ({ onItemGenerated }: GeneratePanelProps) => {
             category={"top"}
             selectedTemplate={selectedTemplate}
             onTemplateChange={(template) => setSelectedTemplate(template)}
+            systemPrompt={systemPrompt}
+            onSystemPromptChange={setSystemPrompt}
+            onSaveSystemPrompt={saveSystemPrompt}
+            isSavingSystemPrompt={isSavingSystemPrompt}
+            isSystemPromptCloudEnabled={isSystemPromptCloudEnabled}
+            systemPromptSyncError={systemPromptSyncError}
           />
 
           {/* User Input */}
@@ -116,7 +131,7 @@ const GeneratePanel = ({ onItemGenerated }: GeneratePanelProps) => {
             </div>
             {selectedTemplate && (
               <p className="text-xs text-muted-foreground">
-                Your input + global product prompt + "{selectedTemplate.name}" style
+                Your input + saved system prompt + "{selectedTemplate.name}" style
               </p>
             )}
           </div>

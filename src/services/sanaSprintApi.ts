@@ -25,6 +25,24 @@ interface GenerateImageOptions {
 
 import type { StyleTemplate } from "@/types/styleTemplates";
 
+function isRetryableBusyError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const err = error as Record<string, unknown>;
+  const message = String(err.message ?? "").toLowerCase();
+  const original = String((err as { original_msg?: unknown }).original_msg ?? "").toLowerCase();
+  const type = String(err.type ?? "").toLowerCase();
+
+  return (
+    type === "status" ||
+    message.includes("an error occurred") ||
+    message.includes("busy") ||
+    message.includes("queue") ||
+    message.includes("timeout") ||
+    original.includes("busy") ||
+    original.includes("queue")
+  );
+}
+
 /**
  * Generate a clothing item image using Sana Sprint API
  */
@@ -83,7 +101,7 @@ export async function generateClothingItem(
         lastError = predictError;
         
         // If it's a status error and we have retries left, try again
-        if (predictError?.type === "status" && attempt < maxRetries) {
+        if (isRetryableBusyError(predictError) && attempt < maxRetries) {
           console.log(`API busy, retrying... (attempt ${attempt + 1}/${maxRetries + 1})`);
           continue;
         }
@@ -93,12 +111,12 @@ export async function generateClothingItem(
         
         if (predictError?.original_msg) {
           errorMessage = predictError.original_msg;
+        } else if (isRetryableBusyError(predictError)) {
+          errorMessage = "The Sana Sprint API is currently busy or unavailable. Please try again in a moment.";
         } else if (predictError?.message) {
           errorMessage = predictError.message;
         } else if (typeof predictError === "string") {
           errorMessage = predictError;
-        } else if (predictError?.type === "status") {
-          errorMessage = `The Sana Sprint API is currently busy or unavailable. Please try again in a moment.`;
         } else {
           const errorInfo = JSON.stringify(predictError, Object.getOwnPropertyNames(predictError));
           errorMessage = `API error: ${errorInfo.substring(0, 200)}`;
