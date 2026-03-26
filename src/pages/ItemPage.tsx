@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+// small label on each item card
 import { Badge } from "@/components/ui/badge";
 import { useStudio } from "./Index";
 
@@ -19,6 +20,7 @@ type MergedItem =
       createdAt: string;
     };
 
+// component
 const ItemPage = () => {
   const studio = useStudio();
 
@@ -39,14 +41,17 @@ const ItemPage = () => {
     createdAt: item.createdAt,
   }));
 
+  // merge and sort items
   const mergedItems = [...generatedItems, ...wardrobeItems].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 
+  // empty state
   if (mergedItems.length === 0) {
     return <div className="text-xs text-muted-foreground text-center py-4">No saved items yet</div>;
   }
 
+  // grid layout
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
       {mergedItems.map((item) => (

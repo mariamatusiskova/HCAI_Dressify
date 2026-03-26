@@ -13,9 +13,12 @@ type AuthTopbarProps = {
 };
 
 const AuthTopbar = ({ className }: AuthTopbarProps) => {
+  // the current logged-in user session, or null if nobody is logged in
   const [session, setSession] = useState<Session | null>(null);
+  // whether logout is currently happening
   const [isSigningOut, setIsSigningOut] = useState(false);
 
+  // check if supabase is available
   useEffect(() => {
     if (!supabase || !isSupabaseConfigured) {
       return;
@@ -24,6 +27,7 @@ const AuthTopbar = ({ className }: AuthTopbarProps) => {
     let mounted = true;
 
     const loadSession = async () => {
+      // listens for auth changes
       const { data, error } = await supabase.auth.getSession();
       if (!mounted) return;
 
@@ -49,10 +53,12 @@ const AuthTopbar = ({ className }: AuthTopbarProps) => {
   }, []);
 
   const userLabel = useMemo(() => {
+    // if no user return empty text
     if (!session?.user) {
       return "";
     }
 
+    // if log in show an e-mail
     if (session.user.email) {
       return session.user.email;
     }
@@ -60,6 +66,7 @@ const AuthTopbar = ({ className }: AuthTopbarProps) => {
     return `${session.user.id.slice(0, 8)}...`;
   }, [session]);
 
+  // sign out function
   const handleSignOut = useCallback(async () => {
     if (!supabase) {
       return;
@@ -80,6 +87,7 @@ const AuthTopbar = ({ className }: AuthTopbarProps) => {
     }
   }, []);
 
+  // Supabase not configured
   if (!isSupabaseConfigured) {
     return (
       <div className={cn("text-xs text-muted-foreground", className)}>
@@ -88,6 +96,7 @@ const AuthTopbar = ({ className }: AuthTopbarProps) => {
     );
   }
 
+  // No session -> show sign in/create account
   if (!session) {
     return (
       <div className={cn("flex items-center gap-2", className)}>

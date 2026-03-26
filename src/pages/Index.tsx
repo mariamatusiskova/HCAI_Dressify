@@ -1,25 +1,51 @@
+// useState stores values
+// useEffect runs side effects
+// useCallback remembers functions
+// createContext and useContext share data across components
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+// nested pages get rendered by Outlet
 import { Outlet } from "react-router-dom";
+// sparkle icon
 import { Sparkles } from "lucide-react";
+// popup messages
 import { toast } from "sonner";
+// auth section in top bar
 import AuthTopbar from "@/components/AuthTopbar";
 import ConsentModal from "@/components/ConsentModal";
+// to make unique IDs
 import { createId } from "@/lib/id";
 import { useOutfits, type CanvasItem, type GeneratedItem } from "@/hooks/useOutfits";
 import { useWardrobe } from "@/hooks/useWardrobe";
 import MenuNav from "./MenuNav";
 
+// components logic (saved outfits, wardrobe, etc.)
 function useStudioInternal() {
+  // if the user agreed or not (data policy)
   const [consented, setConsented] = useState(false);
+  // if the modal is visble or not
   const [showConsent, setShowConsent] = useState(true);
 
+  // stores the uploaded photo
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
+  // AI-generated clothing items
   const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
+  // items placed on canvas editor
   const [canvasItems, setCanvasItems] = useState<CanvasItem[]>([]);
+  // stores the name type for the outfit
   const [outfitName, setOutfitName] = useState("");
 
-  const { outfits, saveOutfit, deleteOutfit, loadOutfit, isLoading, isCloudSyncEnabled, syncError } = useOutfits();
+  // outfit actions
+  const { 
+    outfits, 
+    saveOutfit, 
+    deleteOutfit, 
+    loadOutfit, 
+    isLoading, 
+    isCloudSyncEnabled, 
+    syncError 
+  } = useOutfits();
 
+  // wardrobe actions
   const {
     items: wardrobeItems,
     addItem: addWardrobeItem,
@@ -29,12 +55,14 @@ function useStudioInternal() {
     syncError: wardrobeSyncError,
   } = useWardrobe();
 
+  // outfit sync problem popup
   useEffect(() => {
     if (syncError) {
       toast.warning(syncError);
     }
   }, [syncError]);
 
+  // wardrobe sync problem popup
   useEffect(() => {
     if (wardrobeSyncError) {
       toast.warning(wardrobeSyncError);
@@ -46,16 +74,20 @@ function useStudioInternal() {
     setShowConsent(false);
   }, []);
 
+  // adds the new generated item to the beginning of the list and shows a success message
   const handleItemGenerated = useCallback((item: GeneratedItem) => {
     setGeneratedItems((prev) => [item, ...prev]);
     toast.success(`${item.category} generated`);
   }, []);
 
+  // updates an existing generated item
   const handleItemUpdate = useCallback((itemId: string, updatedItem: GeneratedItem) => {
     setGeneratedItems((prev) => {
       const updated = prev.map((item) => (item.id === itemId ? updatedItem : item));
       const oldItem = prev.find((item) => item.id === itemId);
 
+      // replace the old item in generatedItems
+      // if that old item is already on the canvas, also update the canvas image
       if (oldItem) {
         setCanvasItems((currentCanvasItems) =>
           currentCanvasItems.map((canvasItem) =>
@@ -68,6 +100,7 @@ function useStudioInternal() {
     });
   }, []);
 
+  // add generated items to canvas
   const handleAddToCanvas = useCallback((item: GeneratedItem) => {
     setCanvasItems((prev) => {
       const maxZIndex = prev.length > 0 ? Math.max(...prev.map((i) => i.zIndex ?? 0)) : -1;
@@ -86,6 +119,7 @@ function useStudioInternal() {
     });
   }, []);
 
+  // add wardrobe items to canvas
   const handleAddWardrobeToCanvas = useCallback((item: { imageUrl: string; category: string }) => {
     setCanvasItems((prev) => {
       const maxZIndex = prev.length > 0 ? Math.max(...prev.map((i) => i.zIndex ?? 0)) : -1;
@@ -104,10 +138,12 @@ function useStudioInternal() {
     });
   }, []);
 
+  // delete items from canvas
   const handleDeleteItem = useCallback((id: string) => {
     setCanvasItems((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
+  // save outfit
   const handleSave = useCallback(async () => {
     if (!outfitName.trim()) {
       toast.error("Enter an outfit name");
@@ -119,6 +155,8 @@ function useStudioInternal() {
     toast.success("Outfit saved");
   }, [canvasItems, outfitName, saveOutfit, userPhoto]);
 
+
+  // load outfit
   const handleLoad = useCallback(
     (id: string) => {
       const outfit = loadOutfit(id);
@@ -140,6 +178,7 @@ function useStudioInternal() {
     [loadOutfit],
   );
 
+  // delete outfit
   const handleDeleteOutfit = useCallback(
     async (id: string) => {
       await deleteOutfit(id);
@@ -148,6 +187,7 @@ function useStudioInternal() {
     [deleteOutfit],
   );
 
+  // add generated item to wardrobe
   const handleAddGeneratedToWardrobe = useCallback(
     async (item: GeneratedItem) => {
       const result = await addWardrobeItem(item.category, item.imageUrl);
@@ -165,6 +205,7 @@ function useStudioInternal() {
     [addWardrobeItem],
   );
 
+  // delete wardrobe item
   const handleDeleteWardrobeItem = useCallback(
     async (id: string) => {
       await deleteWardrobeItem(id);
@@ -173,6 +214,7 @@ function useStudioInternal() {
     [deleteWardrobeItem],
   );
 
+  // add photo directly to wardrobe
   const handleAddPhotoToWardrobe = useCallback(
     async (imageUrl: string, category: string) => {
       try {
@@ -195,6 +237,7 @@ function useStudioInternal() {
     [addWardrobeItem],
   );
 
+  // return the shared studio object
   return {
     consented,
     showConsent,
@@ -227,8 +270,10 @@ function useStudioInternal() {
   };
 }
 
+// context -> the context type should match whatever useStudioInternal() return
 type StudioContextType = ReturnType<typeof useStudioInternal>;
 
+// shared data container
 const StudioContext = createContext<StudioContextType | null>(null);
 
 export const useStudio = () => {
@@ -239,6 +284,7 @@ export const useStudio = () => {
   return context;
 };
 
+// app logic
 const Index = () => {
   const studio = useStudioInternal();
 

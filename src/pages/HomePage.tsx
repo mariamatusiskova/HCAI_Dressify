@@ -1,10 +1,16 @@
+// save icon
 import { Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+// upload user photo
 import UploadSection from "@/components/UploadSection";
+// generate outfit/item ideas
 import GeneratePanel from "@/components/GeneratePanel";
+// show generated items
 import GeneratedItemsList from "@/components/GeneratedItemsList";
+// place items on the canvas
 import CanvasEditor from "@/components/CanvasEditor";
+// show saved outfits
 import OutfitLibrary from "@/components/OutfitLibrary";
 import { useStudio } from "./Index";
 
