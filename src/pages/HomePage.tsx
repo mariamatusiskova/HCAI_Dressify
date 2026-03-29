@@ -28,6 +28,7 @@ const HomePage = () => {
           items={studio.generatedItems}
           onAddToCanvas={studio.handleAddToCanvas}
           onItemUpdate={studio.handleItemUpdate}
+          onItemAdd={studio.handleItemGenerated}
           onAddToWardrobe={(item) => void studio.handleAddGeneratedToWardrobe(item)}
         />
       </aside>
