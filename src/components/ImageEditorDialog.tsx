@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { createId } from "@/lib/id";
 import type { GeneratedItem } from "@/hooks/useOutfits";
-import { generateClothingItem } from "@/services/sanaSprintApi";
+import { editImageWithReplicate } from "@/services/replicateImageEdit";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import StyleTemplateSelector from "@/components/StyleTemplateSelector";
 import type { StyleTemplate } from "@/types/styleTemplates";
 import { DEFAULT_STYLE_TEMPLATES } from "@/types/styleTemplates";
@@ -54,7 +55,18 @@ const ImageEditorDialog = ({ open, item, onClose, onApply }: ImageEditorDialogPr
     setIsWorking(true);
     try {
       const fullPrompt = `${userPrompt}. ${systemPrompt}. ${selectedTemplate.styleDescriptor}`;
-      const imageUrl = await generateClothingItem(fullPrompt, "top", selectedTemplate);
+      if (!isSupabaseConfigured) {
+        throw new Error(
+          "Replicate modification is unavailable because Supabase is not configured. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
+        );
+      }
+
+      const imageUrl = await editImageWithReplicate({
+        imageUrl: item.imageUrl,
+        prompt: fullPrompt,
+        aspectRatio: "1:1",
+      });
+      console.log("[Modify] Provider used: Replicate (p-image-edit)");
       const newItem: GeneratedItem = {
         id: createId(),
         category: item.category,
@@ -66,6 +78,7 @@ const ImageEditorDialog = ({ open, item, onClose, onApply }: ImageEditorDialogPr
       toast.success("Preview ready");
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Failed to modify item";
+      console.error("[Modify] Replicate modification failed:", error);
       toast.error(msg);
       // keep dialog open for retry
     } finally {
@@ -94,9 +107,12 @@ const ImageEditorDialog = ({ open, item, onClose, onApply }: ImageEditorDialogPr
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl" aria-describedby="image-editor-description">
         <DialogHeader>
           <DialogTitle>Modify Generated Item</DialogTitle>
+          <DialogDescription id="image-editor-description">
+            Preview edits before applying. You can discard, replace the original, or save a copy.
+          </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-3">
