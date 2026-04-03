@@ -32,6 +32,4 @@ async def remove_bg(file: UploadFile = File(...)):
     output_image.save(buffer, format="PNG")
     buffer.seek(0)
 
-    print("we are here")
-
     return StreamingResponse(buffer, media_type="image/png")

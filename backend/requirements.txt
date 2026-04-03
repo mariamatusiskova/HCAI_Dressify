@@ -5,3 +5,4 @@ Pillow
 transformers==4.38.2
 torch
 torchvision
+scikit-image
