@@ -7,22 +7,34 @@ import { Label } from "@/components/ui/label";
 import { Settings, Edit2, Save } from "lucide-react";
 import { toast } from "sonner";
 import type { StyleTemplate } from "@/types/styleTemplates";
-import { DEFAULT_STYLE_TEMPLATES, GLOBAL_SYSTEM_PROMPT } from "@/types/styleTemplates";
+import { DEFAULT_STYLE_TEMPLATES } from "@/types/styleTemplates";
 
 interface StyleTemplateSelectorProps {
   category: "top" | "trousers" | "shoes";
   selectedTemplate: StyleTemplate | null;
   onTemplateChange: (template: StyleTemplate) => void;
+  systemPrompt: string;
+  onSystemPromptChange: (value: string) => void;
+  onSaveSystemPrompt: (value: string) => Promise<unknown>;
+  isSavingSystemPrompt: boolean;
+  isSystemPromptCloudEnabled: boolean;
+  systemPromptSyncError: string | null;
 }
 
 const StyleTemplateSelector = ({
   category,
   selectedTemplate,
   onTemplateChange,
+  systemPrompt,
+  onSystemPromptChange,
+  onSaveSystemPrompt,
+  isSavingSystemPrompt,
+  isSystemPromptCloudEnabled,
+  systemPromptSyncError,
 }: StyleTemplateSelectorProps) => {
   const [isEditingGlobal, setIsEditingGlobal] = useState(false);
   const [isEditingStyle, setIsEditingStyle] = useState(false);
-  const [editedGlobalPrompt, setEditedGlobalPrompt] = useState(GLOBAL_SYSTEM_PROMPT);
+  const [editedGlobalPrompt, setEditedGlobalPrompt] = useState(systemPrompt);
   const [editedStyleDescriptor, setEditedStyleDescriptor] = useState(selectedTemplate?.styleDescriptor || "");
 
   // Update edited style descriptor when selected template changes
@@ -31,6 +43,12 @@ const StyleTemplateSelector = ({
       setEditedStyleDescriptor(selectedTemplate.styleDescriptor);
     }
   }, [selectedTemplate]);
+
+  useEffect(() => {
+    if (!isEditingGlobal) {
+      setEditedGlobalPrompt(systemPrompt);
+    }
+  }, [systemPrompt, isEditingGlobal]);
 
   // Filter templates that apply to this category or all categories
   const availableTemplates = DEFAULT_STYLE_TEMPLATES.filter(
@@ -53,10 +71,21 @@ const StyleTemplateSelector = ({
   };
 
   const handleSaveGlobalPrompt = () => {
-    // Note: This would need to be stored in state/context if you want it to persist
-    // For now, we'll just show it can be edited
+    const nextPrompt = editedGlobalPrompt.trim();
+    if (!nextPrompt) {
+      toast.error("System prompt cannot be empty");
+      return;
+    }
+
+    onSystemPromptChange(nextPrompt);
+    void onSaveSystemPrompt(nextPrompt)
+      .then(() => {
     setIsEditingGlobal(false);
-    toast.success("Global prompt updated (applies to all generations)");
+        toast.success("System prompt saved");
+      })
+      .catch((error) => {
+        toast.error(error instanceof Error ? error.message : "Failed to save system prompt");
+      });
   };
 
   const handleEditStyleDescriptor = () => {
@@ -76,7 +105,7 @@ const StyleTemplateSelector = ({
   };
 
   const handleCancelEdit = () => {
-    setEditedGlobalPrompt(GLOBAL_SYSTEM_PROMPT);
+    setEditedGlobalPrompt(systemPrompt);
     setEditedStyleDescriptor(selectedTemplate?.styleDescriptor || "");
     setIsEditingGlobal(false);
     setIsEditingStyle(false);
@@ -84,8 +113,10 @@ const StyleTemplateSelector = ({
 
   // Build full prompt preview
   const fullPromptPreview = selectedTemplate
-    ? `${GLOBAL_SYSTEM_PROMPT}. ${selectedTemplate.styleDescriptor}`
-    : GLOBAL_SYSTEM_PROMPT;
+    ? `${isEditingGlobal ? editedGlobalPrompt : systemPrompt}. ${selectedTemplate.styleDescriptor}`
+    : isEditingGlobal
+      ? editedGlobalPrompt
+      : systemPrompt;
 
   return (
     <div className="space-y-2">
@@ -132,12 +163,17 @@ const StyleTemplateSelector = ({
                     onChange={(e) => setEditedGlobalPrompt(e.target.value)}
                     className="min-h-[100px] font-mono text-xs"
                     placeholder="Enter global system prompt..."
+                    disabled={isSavingSystemPrompt}
                   />
                 ) : (
                   <div className="p-3 bg-muted rounded-md font-mono text-xs whitespace-pre-wrap break-words">
-                    {GLOBAL_SYSTEM_PROMPT}
+                    {systemPrompt}
                   </div>
                 )}
+                <p className="text-[11px] text-muted-foreground">
+                  Saved to {isSystemPromptCloudEnabled ? "Supabase" : "local storage"}
+                </p>
+                {systemPromptSyncError && <p className="text-[11px] text-amber-600">{systemPromptSyncError}</p>}
                 <p className="text-xs text-muted-foreground">
                   This prompt ensures all generated items are product-style images suitable for outfit mixing (frontal shot, white background, professional lighting).
                 </p>

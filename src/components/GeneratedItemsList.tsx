@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2, LibraryBig } from "lucide-react";
+import { Sparkles, Loader2, LibraryBig, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import type { GeneratedItem } from "@/hooks/useOutfits";
 import { removeBackgroundAdvanced } from "@/services/backgroundRemoval";
+import ImageEditorDialog from "@/components/ImageEditorDialog";
 
 interface GeneratedItemsListProps {
   // the generated items to display
@@ -12,11 +13,13 @@ interface GeneratedItemsListProps {
   // function to run when the user clicks an item
   onAddToCanvas: (item: GeneratedItem) => void;
   onItemUpdate?: (itemId: string, updatedItem: GeneratedItem) => void;
+  onItemAdd?: (item: GeneratedItem) => void;
   onAddToWardrobe?: (item: GeneratedItem) => void;
 }
 
-const GeneratedItemsList = ({ items, onAddToCanvas, onItemUpdate, onAddToWardrobe }: GeneratedItemsListProps) => {
+const GeneratedItemsList = ({ items, onAddToCanvas, onItemUpdate, onItemAdd, onAddToWardrobe }: GeneratedItemsListProps) => {
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+  const [editingItem, setEditingItem] = useState<GeneratedItem | null>(null);
 
   const handleRemoveBackground = async (e: React.MouseEvent, item: GeneratedItem) => {
     e.stopPropagation();
@@ -73,6 +76,18 @@ const GeneratedItemsList = ({ items, onAddToCanvas, onItemUpdate, onAddToWardrob
               <Button
                 variant="secondary"
                 size="icon"
+                className="absolute bottom-1 right-8 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingItem(item);
+                }}
+                title="Modify"
+              >
+                <Wand2 className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="icon"
                 className="absolute bottom-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                 onClick={(e) => handleRemoveBackground(e, item)}
                 disabled={isProcessing}
@@ -102,6 +117,31 @@ const GeneratedItemsList = ({ items, onAddToCanvas, onItemUpdate, onAddToWardrob
           );
         })}
       </div>
+      <ImageEditorDialog
+        open={editingItem !== null}
+        item={editingItem}
+        onClose={() => setEditingItem(null)}
+        onApply={(newItem, mode) => {
+          if (!editingItem) return;
+
+          if (mode === "replace") {
+            if (onItemUpdate) {
+              onItemUpdate(editingItem.id, newItem);
+              toast.success("Changes accepted");
+            } else {
+              toast.error("Cannot replace item: update handler is missing");
+            }
+            return;
+          }
+
+          if (onItemAdd) {
+            onItemAdd(newItem);
+            toast.success("Copy saved");
+          } else {
+            toast.error("Cannot save copy: add handler is missing");
+          }
+        }}
+      />
     </div>
   );
 };
