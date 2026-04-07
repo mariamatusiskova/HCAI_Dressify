@@ -10,14 +10,10 @@ from utils import remove_background
 
 app = FastAPI()
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
-
 # Allow React to call this API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change in production
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -39,3 +35,7 @@ async def remove_bg(file: UploadFile = File(...)):
     buffer.seek(0)
 
     return StreamingResponse(buffer, media_type="image/png")
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
