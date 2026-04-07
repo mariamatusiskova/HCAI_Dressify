@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { createId } from "@/lib/id";
 import type { GeneratedItem } from "@/hooks/useOutfits";
 import { generateClothingItem } from "@/services/sanaSprintApi";
@@ -15,9 +16,17 @@ import { DEFAULT_STYLE_TEMPLATES } from "@/types/styleTemplates";
 // can store it (and later display it / add to canvas).
 interface GeneratePanelProps {
   onItemGenerated: (item: GeneratedItem) => void;
+  hideTitle?: boolean;
+  className?: string;
+  buttonLabel?: string;
 }
 
-const GeneratePanel = ({ onItemGenerated }: GeneratePanelProps) => {
+const GeneratePanel = ({
+  onItemGenerated,
+  hideTitle = false,
+  className,
+  buttonLabel = "Generate outfit",
+}: GeneratePanelProps) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [prompt, setPrompt] = useState<string>("");
   const [selectedTemplate, setSelectedTemplate] = useState<StyleTemplate | null>(DEFAULT_STYLE_TEMPLATES[0]);
@@ -73,76 +82,65 @@ const GeneratePanel = ({ onItemGenerated }: GeneratePanelProps) => {
   };
 
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
-        Generate Item
-      </h3>
-
-      <div className="space-y-4">
-        <div className="space-y-3 p-3 border rounded-lg">
-          {/* Style Template Selector */}
-          <StyleTemplateSelector
-            category={"top"}
-            selectedTemplate={selectedTemplate}
-            onTemplateChange={(template) => setSelectedTemplate(template)}
-            systemPrompt={systemPrompt}
-            onSystemPromptChange={setSystemPrompt}
-            onSaveSystemPrompt={saveSystemPrompt}
-            isSavingSystemPrompt={isSavingSystemPrompt}
-            isSystemPromptCloudEnabled={isSystemPromptCloudEnabled}
-            systemPromptSyncError={systemPromptSyncError}
-          />
-
-          {/* User Input */}
-          <div className="space-y-2">
-            <label htmlFor="prompt-single" className="text-xs font-medium text-muted-foreground">
-              Item Description
-            </label>
-            <div className="flex gap-2">
-              <Textarea
-                id="prompt-single"
-                placeholder={`e.g., green jacket, blue jeans, white sneakers...`}
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="min-h-[60px] resize-none flex-1"
-                disabled={loading || !selectedTemplate}
-                onKeyDown={(e) => {
-                  // Allow Ctrl/Cmd + Enter to generate
-                  if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && prompt.trim()) {
-                    e.preventDefault();
-                    handleGenerate();
-                  }
-                }}
-              />
-              <Button
-                variant="secondary"
-                size="icon"
-                className="shrink-0"
-                disabled={loading || !prompt.trim() || !selectedTemplate}
-                onClick={() => handleGenerate()}
-                title={`Generate item`}
-              >
-                {loading ? (
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-            {selectedTemplate && (
-              <p className="text-xs text-muted-foreground">
-                Your input + saved system prompt + "{selectedTemplate.name}" style
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {loading && (
-        <p className="text-xs text-muted-foreground">
-          Generating item...
-        </p>
+    <div className={cn("space-y-3", className)}>
+      {!hideTitle && (
+        <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
+          Generate Item
+        </h3>
       )}
+
+      <div className="glass-panel-soft space-y-3 rounded-[24px] border p-3.5">
+        <StyleTemplateSelector
+          category={"top"}
+          selectedTemplate={selectedTemplate}
+          onTemplateChange={(template) => setSelectedTemplate(template)}
+          systemPrompt={systemPrompt}
+          onSystemPromptChange={setSystemPrompt}
+          onSaveSystemPrompt={saveSystemPrompt}
+          isSavingSystemPrompt={isSavingSystemPrompt}
+          isSystemPromptCloudEnabled={isSystemPromptCloudEnabled}
+          systemPromptSyncError={systemPromptSyncError}
+        />
+
+        <div className="space-y-2">
+          <label htmlFor="prompt-single" className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            Item Description
+          </label>
+          <Textarea
+            id="prompt-single"
+            placeholder="e.g., green jacket, blue jeans, white sneakers..."
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            className="min-h-[78px] resize-none"
+            disabled={loading || !selectedTemplate}
+            onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && prompt.trim()) {
+                e.preventDefault();
+                handleGenerate();
+              }
+            }}
+          />
+          {selectedTemplate && (
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Your input + saved system prompt + "{selectedTemplate.name}" style
+            </p>
+          )}
+        </div>
+
+        <Button
+          className="h-10 w-full justify-center gap-2 rounded-xl"
+          disabled={loading || !prompt.trim() || !selectedTemplate}
+          onClick={() => handleGenerate()}
+          title="Generate item"
+        >
+          {loading ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/70 border-t-transparent" />
+          ) : (
+            <Sparkles className="h-4 w-4" />
+          )}
+          {loading ? "Generating..." : buttonLabel}
+        </Button>
+      </div>
     </div>
   );
 };

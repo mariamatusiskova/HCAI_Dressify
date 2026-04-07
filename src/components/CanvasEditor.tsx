@@ -1,7 +1,8 @@
 import { useRef, useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { X, RotateCw, Sparkles, Loader2, ArrowUp, ArrowDown, Layers } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { X, RotateCw, Sparkles, Loader2, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import type { CanvasItem } from "@/hooks/useOutfits";
 import { removeBackgroundAdvanced } from "@/services/backgroundRemoval";
@@ -16,6 +17,10 @@ interface CanvasEditorProps {
   onItemsChange: (items: CanvasItem[]) => void;
   // callback when user clicks delete on an item
   onDeleteItem: (id: string) => void;
+  hideTitle?: boolean;
+  className?: string;
+  viewportClassName?: string;
+  emptyStateMessage?: string;
 }
 
 // Key internal state
@@ -23,7 +28,16 @@ type InteractionMode = "none" | "drag" | "resize" | "rotate";
 type ResizeHandle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
 
 // How interactions work
-const CanvasEditor = ({ userPhoto, items, onItemsChange, onDeleteItem }: CanvasEditorProps) => {
+const CanvasEditor = ({
+  userPhoto,
+  items,
+  onItemsChange,
+  onDeleteItem,
+  hideTitle = false,
+  className,
+  viewportClassName,
+  emptyStateMessage,
+}: CanvasEditorProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [interactionMode, setInteractionMode] = useState<InteractionMode>("none");
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
@@ -273,13 +287,18 @@ const CanvasEditor = ({ userPhoto, items, onItemsChange, onDeleteItem }: CanvasE
   const sortedItems = [...items].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
 
   return (
-    <div className="space-y-3 flex-1 flex flex-col min-h-0">
-      <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
-        Canvas
-      </h3>
+    <div className={cn("space-y-3 flex flex-1 min-h-0 flex-col", className)}>
+      {!hideTitle && (
+        <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
+          Canvas
+        </h3>
+      )}
       <div
         ref={containerRef}
-        className="relative flex-1 rounded-lg border border-border bg-muted/20 min-h-[300px] overflow-hidden select-none"
+        className={cn(
+          "glass-viewport relative flex-1 min-h-[300px] overflow-hidden rounded-[28px] border select-none",
+          viewportClassName,
+        )}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
@@ -291,9 +310,21 @@ const CanvasEditor = ({ userPhoto, items, onItemsChange, onDeleteItem }: CanvasE
             className="absolute inset-0 w-full h-full object-contain pointer-events-none"
           />
         )}
-        {!userPhoto && items.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-sm text-muted-foreground">Upload a photo & generate items</span>
+        {items.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center p-5">
+            <div className="max-w-2xl space-y-3 text-center">
+              <p className="text-xl font-display tracking-tight text-foreground md:text-3xl">
+                Your generated outfit will appear here
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <span className="glass-panel-soft rounded-full border px-3 py-1">Upload your photo</span>
+                <span className="glass-panel-soft rounded-full border px-3 py-1">Choose a style</span>
+                <span className="glass-panel-soft rounded-full border px-3 py-1">Generate items</span>
+              </div>
+              <p className="mx-auto max-w-xl text-xs leading-relaxed text-muted-foreground md:text-sm">
+                {emptyStateMessage ?? "Upload your photo and click generate to start building the outfit in your canvas."}
+              </p>
+            </div>
           </div>
         )}
         {sortedItems.map((item) => {

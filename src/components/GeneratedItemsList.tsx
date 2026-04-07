@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Sparkles, Loader2, LibraryBig } from "lucide-react";
 import { toast } from "sonner";
 import type { GeneratedItem } from "@/hooks/useOutfits";
@@ -13,9 +14,20 @@ interface GeneratedItemsListProps {
   onAddToCanvas: (item: GeneratedItem) => void;
   onItemUpdate?: (itemId: string, updatedItem: GeneratedItem) => void;
   onAddToWardrobe?: (item: GeneratedItem) => void;
+  hideTitle?: boolean;
+  className?: string;
+  gridClassName?: string;
 }
 
-const GeneratedItemsList = ({ items, onAddToCanvas, onItemUpdate, onAddToWardrobe }: GeneratedItemsListProps) => {
+const GeneratedItemsList = ({
+  items,
+  onAddToCanvas,
+  onItemUpdate,
+  onAddToWardrobe,
+  hideTitle = false,
+  className,
+  gridClassName,
+}: GeneratedItemsListProps) => {
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
   const handleRemoveBackground = async (e: React.MouseEvent, item: GeneratedItem) => {
@@ -49,11 +61,13 @@ const GeneratedItemsList = ({ items, onAddToCanvas, onItemUpdate, onAddToWardrob
   if (items.length === 0) return null;
 
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
-        Generated Items
-      </h3>
-      <div className="grid grid-cols-3 gap-2">
+    <div className={cn("space-y-3", className)}>
+      {!hideTitle && (
+        <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
+          Generated Items
+        </h3>
+      )}
+      <div className={cn("grid grid-cols-2 gap-3 md:grid-cols-3", gridClassName)}>
         {items.map((item) => {
           const isProcessing = processingIds.has(item.id);
           return (

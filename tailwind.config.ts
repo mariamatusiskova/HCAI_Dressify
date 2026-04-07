@@ -14,10 +14,13 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Space Grotesk", "sans-serif"],
-        body: ["Inter", "sans-serif"],
+        // Display is for headings/brand moments, body is for UI readability.
+        display: ["Syne", "sans-serif"],
+        body: ["Manrope", "sans-serif"],
       },
       colors: {
+        // These map Tailwind utility names to the CSS variables in src/index.css.
+        // Example: bg-background -> hsl(var(--background))
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

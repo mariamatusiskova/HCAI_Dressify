@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Upload, X } from "lucide-react";
 
 interface UploadSectionProps {
@@ -7,9 +8,12 @@ interface UploadSectionProps {
   photo: string | null;
   // a callback to update the photo in the parent component
   onPhotoChange: (photo: string | null) => void;
+  hideTitle?: boolean;
+  className?: string;
+  boxClassName?: string;
 }
 
-const UploadSection = ({ photo, onPhotoChange }: UploadSectionProps) => {
+const UploadSection = ({ photo, onPhotoChange, hideTitle = false, className, boxClassName }: UploadSectionProps) => {
   // Keeps a hidden file input
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -34,12 +38,19 @@ const UploadSection = ({ photo, onPhotoChange }: UploadSectionProps) => {
 
   // Supports drag-and-drop upload onDrop or onDragOver
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
-        Your Photo
-      </h3>
+    <div className={cn("space-y-3", className)}>
+      {!hideTitle && (
+        <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
+          Your Photo
+        </h3>
+      )}
       {photo ? (
-        <div className="relative rounded-lg overflow-hidden border border-border bg-muted aspect-[3/4] max-h-48">
+        <div
+          className={cn(
+            "glass-panel-soft relative aspect-[3/4] max-h-48 overflow-hidden rounded-[22px] border",
+            boxClassName,
+          )}
+        >
           <img src={photo} alt="User" className="w-full h-full object-cover" />
           <Button
             variant="ghost"
@@ -55,10 +66,13 @@ const UploadSection = ({ photo, onPhotoChange }: UploadSectionProps) => {
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
           onClick={() => inputRef.current?.click()}
-          className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 p-6 cursor-pointer hover:border-primary/40 transition-colors aspect-[3/4] max-h-48"
+          className={cn(
+            "glass-panel-soft flex aspect-[3/4] max-h-48 cursor-pointer flex-col items-center justify-center gap-3 rounded-[22px] border border-dashed p-6 transition-colors hover:border-primary/40",
+            boxClassName,
+          )}
         >
-          <Upload className="h-6 w-6 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">Drop or click to upload</span>
+          <Upload className="h-7 w-7 text-muted-foreground" />
+          <span className="text-center text-sm text-muted-foreground">Drop or click to upload</span>
         </div>
       )}
       <input

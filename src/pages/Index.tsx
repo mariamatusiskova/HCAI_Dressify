@@ -5,13 +5,12 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 // nested pages get rendered by Outlet
 import { Outlet } from "react-router-dom";
-// sparkle icon
-import { Sparkles } from "lucide-react";
 // popup messages
 import { toast } from "sonner";
 // auth section in top bar
 import AuthTopbar from "@/components/AuthTopbar";
 import ConsentModal from "@/components/ConsentModal";
+import ThemeToggle from "@/components/ThemeToggle";
 // to make unique IDs
 import { createId } from "@/lib/id";
 import { useOutfits, type CanvasItem, type GeneratedItem } from "@/hooks/useOutfits";
@@ -287,6 +286,7 @@ export const useStudio = () => {
 // app logic
 const Index = () => {
   const studio = useStudioInternal();
+  const logoSrc = `${import.meta.env.BASE_URL}outfit_white.png`;
 
   if (!studio.consented) {
     return <ConsentModal open={studio.showConsent} onAgree={studio.handleAgree} onCancel={() => {}} />;
@@ -294,25 +294,32 @@ const Index = () => {
 
   return (
     <StudioContext.Provider value={studio}>
-      <div className="min-h-screen bg-background flex flex-col">
-        <header className="border-b border-border px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-display font-semibold tracking-tight">Dressify</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="hidden lg:flex flex-col items-end">
-              <span className="text-[10px] text-muted-foreground uppercase tracking-widest">AI Outfit Generator</span>
-              <span className="text-[10px] text-muted-foreground">
-                Outfits: {studio.isCloudSyncEnabled ? "Supabase" : "Local"} | Wardrobe: {" "}
-                {studio.isWardrobeCloudSyncEnabled ? "Supabase" : "Local"}
-              </span>
+      <div className="min-h-screen flex flex-col">
+        {/* The header is part of the shell, so theme toggle/auth/menu stay visible while routes change in <Outlet /> below. */}
+        <header className="sticky top-0 z-30 border-b border-black/[0.05] bg-background/78 backdrop-blur-2xl dark:border-white/[0.06] dark:bg-black/10">
+          <div className="relative flex w-full items-center justify-between gap-4 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.38)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] md:px-6 lg:px-10">
+            <div className="flex min-w-0 items-center gap-6">
+              <div className="flex shrink-0 items-center gap-2">
+                <img src={logoSrc} alt="Dressify logo" className="h-8 w-8 object-contain" />
+                <h1 className="text-lg font-display font-semibold tracking-tight">Dressify</h1>
+              </div>
+              <MenuNav />
             </div>
-            <AuthTopbar className="hidden md:flex" />
+
+            <div className="flex shrink-0 items-center gap-3">
+              {/* Keep sync diagnostics out of smaller headers; they are useful, but not worth crowding the nav. */}
+              <div className="hidden 2xl:flex flex-col items-end">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-widest">AI Outfit Generator</span>
+                <span className="text-[10px] text-muted-foreground">
+                  Outfits: {studio.isCloudSyncEnabled ? "Supabase" : "Local"} | Wardrobe: {" "}
+                  {studio.isWardrobeCloudSyncEnabled ? "Supabase" : "Local"}
+                </span>
+              </div>
+              <ThemeToggle className="hidden sm:inline-flex" />
+              <AuthTopbar className="hidden md:flex" />
+            </div>
           </div>
         </header>
-
-        <MenuNav />
 
         <main className="flex-1 min-h-0 overflow-y-auto pb-16 md:pb-0">
           <Outlet />

@@ -99,11 +99,16 @@ const AuthTopbar = ({ className }: AuthTopbarProps) => {
   // No session -> show sign in/create account
   if (!session) {
     return (
-      <div className={cn("flex items-center gap-2", className)}>
-        <Button asChild variant="ghost" size="sm">
+      <div className={cn("flex items-center gap-3", className)}>
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="h-10 rounded-full px-3 text-sm text-muted-foreground hover:bg-primary/16 hover:text-foreground hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_0_0_1px_rgba(239,49,65,0.12),0_10px_24px_rgba(239,49,65,0.08)] dark:hover:bg-primary/20 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_0_1px_rgba(255,255,255,0.05),0_10px_24px_rgba(239,49,65,0.1)]"
+        >
           <Link to="/login">Sign in</Link>
         </Button>
-        <Button asChild size="sm">
+        <Button asChild size="sm" className="h-10 rounded-full px-5">
           <Link to="/register">Create account</Link>
         </Button>
       </div>
@@ -111,7 +116,7 @@ const AuthTopbar = ({ className }: AuthTopbarProps) => {
   }
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex items-center gap-3", className)}>
       <span className="hidden lg:block max-w-44 truncate text-xs text-muted-foreground">
         {userLabel}
       </span>
@@ -119,6 +124,7 @@ const AuthTopbar = ({ className }: AuthTopbarProps) => {
         type="button"
         size="sm"
         variant="secondary"
+        className="h-10 rounded-full px-4"
         onClick={() => void handleSignOut()}
         disabled={isSigningOut}
       >
