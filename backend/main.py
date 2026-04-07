@@ -3,10 +3,16 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 import io
+import uvicorn
+import os
 
 from utils import remove_background
 
 app = FastAPI()
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
 # Allow React to call this API
 app.add_middleware(
