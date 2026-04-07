@@ -100,6 +100,12 @@ function useStudioInternal() {
     });
   }, []);
 
+  // remove an item from the generated list only
+  const handleDeleteGeneratedItem = useCallback((itemId: string) => {
+    setGeneratedItems((prev) => prev.filter((item) => item.id !== itemId));
+    toast.success("Generated item removed");
+  }, []);
+
   // add generated items to canvas
   const handleAddToCanvas = useCallback((item: GeneratedItem) => {
     setCanvasItems((prev) => {
@@ -258,6 +264,7 @@ function useStudioInternal() {
     isWardrobeCloudSyncEnabled,
     handleItemGenerated,
     handleItemUpdate,
+    handleDeleteGeneratedItem,
     handleAddToCanvas,
     handleAddWardrobeToCanvas,
     handleDeleteItem,

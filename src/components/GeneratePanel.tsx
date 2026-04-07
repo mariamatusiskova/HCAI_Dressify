@@ -120,11 +120,6 @@ const GeneratePanel = ({
               }
             }}
           />
-          {selectedTemplate && (
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              Your input + saved system prompt + "{selectedTemplate.name}" style
-            </p>
-          )}
         </div>
 
         <Button

@@ -13,9 +13,17 @@ interface UploadSectionProps {
   hideTitle?: boolean;
   className?: string;
   boxClassName?: string;
+  emphasized?: boolean;
 }
 
-const UploadSection = ({ photo, onPhotoChange, hideTitle = false, className, boxClassName }: UploadSectionProps) => {
+const UploadSection = ({
+  photo,
+  onPhotoChange,
+  hideTitle = false,
+  className,
+  boxClassName,
+  emphasized = false,
+}: UploadSectionProps) => {
   // Keeps a hidden file input
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -70,6 +78,7 @@ const UploadSection = ({ photo, onPhotoChange, hideTitle = false, className, box
           onClick={() => inputRef.current?.click()}
           className={cn(
             "glass-panel-soft relative flex aspect-[3/4] max-h-48 cursor-pointer flex-col items-center justify-center gap-3 overflow-hidden rounded-[22px] border border-dashed p-6 transition-colors hover:border-primary/40",
+            emphasized && "border-primary/30 bg-background/58 shadow-[0_0_0_1px_hsl(var(--primary)/0.08),0_16px_40px_hsl(var(--primary)/0.08)]",
             boxClassName,
           )}
         >
@@ -83,8 +92,10 @@ const UploadSection = ({ photo, onPhotoChange, hideTitle = false, className, box
             <div className="absolute inset-0 bg-gradient-to-b from-background/8 via-transparent to-background/12" />
           </div>
           <div className="relative z-10 flex flex-col items-center gap-3">
-            <Upload className="h-7 w-7 text-muted-foreground" />
-            <span className="text-center text-sm text-muted-foreground">Drop or click to upload</span>
+            <Upload className={cn("h-7 w-7 text-muted-foreground", emphasized && "text-primary/85")} />
+            <span className={cn("text-center text-sm text-muted-foreground", emphasized && "text-foreground")}>
+              Drop or click to upload
+            </span>
           </div>
         </div>
       )}
