@@ -21,6 +21,13 @@ interface CanvasEditorProps {
   className?: string;
   viewportClassName?: string;
   emptyStateMessage?: string;
+  exampleCards?: ExampleCanvasCard[];
+}
+
+interface ExampleCanvasCard {
+  id: string;
+  imageUrl: string;
+  alt?: string;
 }
 
 // Key internal state
@@ -37,6 +44,7 @@ const CanvasEditor = ({
   className,
   viewportClassName,
   emptyStateMessage,
+  exampleCards = [],
 }: CanvasEditorProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [interactionMode, setInteractionMode] = useState<InteractionMode>("none");
@@ -285,6 +293,7 @@ const CanvasEditor = ({
 
   // Sort items by zIndex for rendering (lower zIndex renders first, higher renders on top)
   const sortedItems = [...items].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+  const showExampleCards = !userPhoto && items.length === 0 && exampleCards.length > 0;
 
   return (
     <div className={cn("space-y-3 flex flex-1 min-h-0 flex-col", className)}>
@@ -312,18 +321,43 @@ const CanvasEditor = ({
         )}
         {items.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center p-5">
-            <div className="max-w-2xl space-y-3 text-center">
-              <p className="text-xl font-display tracking-tight text-foreground md:text-3xl">
-                Your generated outfit will appear here
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                <span className="glass-panel-soft rounded-full border px-3 py-1">Upload your photo</span>
-                <span className="glass-panel-soft rounded-full border px-3 py-1">Choose a style</span>
-                <span className="glass-panel-soft rounded-full border px-3 py-1">Generate items</span>
+            <div className="w-full">
+              <div
+                className={cn(
+                  "mx-auto space-y-4 text-center",
+                  showExampleCards
+                    ? "max-w-4xl"
+                    : "max-w-2xl",
+                )}
+              >
+                <p className="text-xl font-display tracking-tight text-foreground md:text-3xl">
+                  Your generated outfit will appear here
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  <span className="glass-panel-soft rounded-full border px-3 py-1">Upload your photo</span>
+                  <span className="glass-panel-soft rounded-full border px-3 py-1">Choose a style</span>
+                  <span className="glass-panel-soft rounded-full border px-3 py-1">Generate items</span>
+                </div>
+                <p className="mx-auto max-w-xl text-xs leading-relaxed text-muted-foreground md:text-sm">
+                  {emptyStateMessage ?? "Upload your photo and click generate to start building the outfit in your canvas."}
+                </p>
+                {showExampleCards && (
+                  <div className="mx-auto flex max-w-[560px] items-center justify-center gap-3 pt-2 md:max-w-[640px] md:gap-5">
+                    {exampleCards.map((card) => (
+                      <div
+                        key={card.id}
+                        className="w-[110px] overflow-hidden rounded-[16px] bg-black/18 sm:w-[126px] md:w-[144px]"
+                      >
+                        <img
+                          src={card.imageUrl}
+                          alt={card.alt ?? "Example outfit"}
+                          className="aspect-[3/4] h-full w-full scale-[1.03] object-cover opacity-55 blur-[2.2px] saturate-75"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <p className="mx-auto max-w-xl text-xs leading-relaxed text-muted-foreground md:text-sm">
-                {emptyStateMessage ?? "Upload your photo and click generate to start building the outfit in your canvas."}
-              </p>
             </div>
           </div>
         )}

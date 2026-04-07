@@ -18,45 +18,25 @@ const ThemeToggle = ({ className }: ThemeToggleProps) => {
 
   if (!mounted) {
     // Keep layout stable while the actual theme is still being resolved on the client.
-    return <div className={cn("h-10 w-[90px] rounded-full border border-border bg-card/70", className)} />;
+    return <div className={cn("h-10 w-10 rounded-full border border-border bg-card/70", className)} />;
   }
 
   const isDark = resolvedTheme === "dark";
+  const nextTheme = isDark ? "light" : "dark";
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={() => setTheme(nextTheme)}
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border border-border/70 bg-card/75 p-1 shadow-sm backdrop-blur-xl",
+        "inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-card/75 text-muted-foreground shadow-sm backdrop-blur-xl transition-all hover:bg-primary/14 hover:text-foreground dark:hover:bg-primary/18",
         className,
       )}
-      aria-label="Theme switcher"
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
-      <button
-        type="button"
-        onClick={() => setTheme("light")}
-        className={cn(
-          // The active pill borrows the global primary token, so changing --primary updates the selected state here too.
-          "flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-all",
-          !isDark && "bg-primary text-primary-foreground shadow-sm",
-        )}
-        aria-label="Switch to light mode"
-        aria-pressed={!isDark}
-      >
-        <Sun className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => setTheme("dark")}
-        className={cn(
-          "flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-all",
-          isDark && "bg-primary text-primary-foreground shadow-sm",
-        )}
-        aria-label="Switch to dark mode"
-        aria-pressed={isDark}
-      >
-        <Moon className="h-4 w-4" />
-      </button>
-    </div>
+      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+    </button>
   );
 };
 

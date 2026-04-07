@@ -106,10 +106,10 @@ const AuthTopbar = ({ className }: AuthTopbarProps) => {
           size="sm"
           className="h-10 rounded-full px-3 text-sm text-muted-foreground hover:bg-primary/16 hover:text-foreground hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_0_0_1px_rgba(239,49,65,0.12),0_10px_24px_rgba(239,49,65,0.08)] dark:hover:bg-primary/20 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_0_1px_rgba(255,255,255,0.05),0_10px_24px_rgba(239,49,65,0.1)]"
         >
-          <Link to="/login">Sign in</Link>
+          <Link to="/login">Log in</Link>
         </Button>
         <Button asChild size="sm" className="h-10 rounded-full px-5">
-          <Link to="/register">Create account</Link>
+          <Link to="/register">Register</Link>
         </Button>
       </div>
     );

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import AuthTopbar from "@/components/AuthTopbar";
 import ConsentModal from "@/components/ConsentModal";
 import ThemeToggle from "@/components/ThemeToggle";
+import LanguageToggle from "@/components/LanguageToggle";
 // to make unique IDs
 import { createId } from "@/lib/id";
 import { useOutfits, type CanvasItem, type GeneratedItem } from "@/hooks/useOutfits";
@@ -315,8 +316,13 @@ const Index = () => {
                   {studio.isWardrobeCloudSyncEnabled ? "Supabase" : "Local"}
                 </span>
               </div>
-              <ThemeToggle className="hidden sm:inline-flex" />
               <AuthTopbar className="hidden md:flex" />
+              <span
+                aria-hidden="true"
+                className="hidden md:inline-flex h-6 w-px bg-muted-foreground/30"
+              />
+              <LanguageToggle className="hidden sm:inline-flex" />
+              <ThemeToggle className="hidden sm:inline-flex" />
             </div>
           </div>
         </header>

@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Upload, X } from "lucide-react";
 
+const avatarPlaceholderUrl = `${import.meta.env.BASE_URL}examples/avatar_body.png`;
+
 interface UploadSectionProps {
   // string | null → the current photo (stored as a string URL, usually a Base64 data: URL) or null if none
   photo: string | null;
@@ -67,12 +69,23 @@ const UploadSection = ({ photo, onPhotoChange, hideTitle = false, className, box
           onDragOver={(e) => e.preventDefault()}
           onClick={() => inputRef.current?.click()}
           className={cn(
-            "glass-panel-soft flex aspect-[3/4] max-h-48 cursor-pointer flex-col items-center justify-center gap-3 rounded-[22px] border border-dashed p-6 transition-colors hover:border-primary/40",
+            "glass-panel-soft relative flex aspect-[3/4] max-h-48 cursor-pointer flex-col items-center justify-center gap-3 overflow-hidden rounded-[22px] border border-dashed p-6 transition-colors hover:border-primary/40",
             boxClassName,
           )}
         >
-          <Upload className="h-7 w-7 text-muted-foreground" />
-          <span className="text-center text-sm text-muted-foreground">Drop or click to upload</span>
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <img
+              src={avatarPlaceholderUrl}
+              alt=""
+              aria-hidden="true"
+              className="h-[88%] w-auto max-w-none object-contain opacity-20 blur-[1px] saturate-75"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/8 via-transparent to-background/12" />
+          </div>
+          <div className="relative z-10 flex flex-col items-center gap-3">
+            <Upload className="h-7 w-7 text-muted-foreground" />
+            <span className="text-center text-sm text-muted-foreground">Drop or click to upload</span>
+          </div>
         </div>
       )}
       <input

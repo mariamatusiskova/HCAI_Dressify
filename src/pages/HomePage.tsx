@@ -18,6 +18,23 @@ const HomePage = () => {
   const panelShell =
     "glass-panel rounded-[28px] border p-4";
   const sectionEyebrow = "text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground";
+  const exampleCanvasCards = [
+    {
+      id: "example-flat-lay-1",
+      imageUrl: `${import.meta.env.BASE_URL}examples/spring-wardrobe-switch-flat-lay-1.jpg`,
+      alt: "Spring wardrobe flat lay with green trousers and hat",
+    },
+    {
+      id: "example-flat-lay-2",
+      imageUrl: `${import.meta.env.BASE_URL}examples/spring-wardrobe-switch-flat-lay.jpg`,
+      alt: "Spring wardrobe flat lay with cream cardigan and boots",
+    },
+    {
+      id: "example-view",
+      imageUrl: `${import.meta.env.BASE_URL}examples/spring-wardrobe-switch-view.jpg`,
+      alt: "Spring wardrobe view with jeans and grey t-shirt",
+    },
+  ];
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -90,6 +107,7 @@ const HomePage = () => {
                 items={studio.canvasItems}
                 onItemsChange={studio.setCanvasItems}
                 onDeleteItem={studio.handleDeleteItem}
+                exampleCards={exampleCanvasCards}
                 hideTitle
                 className="space-y-0"
                 viewportClassName="min-h-[220px] md:min-h-[300px] xl:min-h-[340px]"
