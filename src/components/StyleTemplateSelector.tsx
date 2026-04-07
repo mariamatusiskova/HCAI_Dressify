@@ -80,7 +80,7 @@ const StyleTemplateSelector = ({
     onSystemPromptChange(nextPrompt);
     void onSaveSystemPrompt(nextPrompt)
       .then(() => {
-        setIsEditingGlobal(false);
+    setIsEditingGlobal(false);
         toast.success("System prompt saved");
       })
       .catch((error) => {

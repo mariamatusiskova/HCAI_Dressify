@@ -142,6 +142,7 @@ const HomePage = () => {
                   items={studio.generatedItems}
                   onAddToCanvas={studio.handleAddToCanvas}
                   onItemUpdate={studio.handleItemUpdate}
+                  onItemAdd={studio.handleItemGenerated}
                   onAddToWardrobe={(item) => void studio.handleAddGeneratedToWardrobe(item)}
                   hideTitle
                   gridClassName="grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
