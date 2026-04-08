@@ -3,7 +3,7 @@
 shadcn/ui + Radix-based UI primitives with project styling.
 
 Status legend:
-- `active`: used by currently mounted app pages (`App.tsx` + `Index.tsx` flow)
+- `active`: imported by the current route shell, pages, or live feature components
 - `indirect`: used only through currently inactive UI subsystems
 - `inactive`: present, but not imported by active app pages/components
 
@@ -15,7 +15,7 @@ Status legend:
 - `avatar.tsx` (`inactive`): User avatar image + fallback.
 - `badge.tsx` (`active`): Small labels; used for AI badges on generated/canvas items.
 - `breadcrumb.tsx` (`inactive`): Hierarchical path navigation.
-- `button.tsx` (`active`): Core button primitive + variants.
+- `button.tsx` (`active`): Core button primitive + variants; used across auth, home, saved items, wardrobe, and lists.
 - `calendar.tsx` (`inactive`): Date picker UI wrapper.
 - `card.tsx` (`inactive`): Card layout primitives.
 - `carousel.tsx` (`inactive`): Embla carousel wrapper.
@@ -30,7 +30,7 @@ Status legend:
 - `form.tsx` (`inactive`): `react-hook-form` field wrappers.
 - `hover-card.tsx` (`inactive`): Hover-triggered info popup.
 - `input-otp.tsx` (`inactive`): OTP segmented input.
-- `input.tsx` (`active`): Text input; used for outfit name field.
+- `input.tsx` (`active`): Text input; used for outfit naming and email/password auth forms.
 - `label.tsx` (`active`): Form label primitive; used by `StyleTemplateSelector`.
 - `menubar.tsx` (`inactive`): Desktop menubar primitives.
 - `navigation-menu.tsx` (`inactive`): Top navigation with dropdown content.
@@ -56,7 +56,7 @@ Status legend:
 - `toggle-group.tsx` (`inactive`): Grouped toggles.
 - `toggle.tsx` (`indirect`): Single toggle primitive; used by `toggle-group.tsx`.
 - `tooltip.tsx` (`active`): Tooltip provider mounted in `App.tsx`.
-- `use-toast.ts` (`inactive`): Re-export wrapper; active path uses `src/hooks/use-toast.ts` directly.
+- `use-toast.ts` (`inactive`): Legacy wrapper; runtime toast state uses `src/hooks/use-toast.ts`.
 
 ## Active runtime UI set
 `badge.tsx`, `button.tsx`, `dialog.tsx`, `input.tsx`, `label.tsx`, `select.tsx`, `sonner.tsx`, `textarea.tsx`, `toast.tsx`, `toaster.tsx`, `tooltip.tsx`.

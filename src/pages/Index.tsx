@@ -5,18 +5,34 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 // nested pages get rendered by Outlet
 import { Outlet } from "react-router-dom";
-// sparkle icon
-import { Sparkles } from "lucide-react";
 // popup messages
 import { toast } from "sonner";
 // auth section in top bar
 import AuthTopbar from "@/components/AuthTopbar";
 import ConsentModal from "@/components/ConsentModal";
+import ThemeToggle from "@/components/ThemeToggle";
+import LanguageToggle from "@/components/LanguageToggle";
 // to make unique IDs
 import { createId } from "@/lib/id";
 import { useOutfits, type CanvasItem, type GeneratedItem } from "@/hooks/useOutfits";
 import { useWardrobe } from "@/hooks/useWardrobe";
 import MenuNav from "./MenuNav";
+
+interface SavedGeneratedItem extends GeneratedItem {
+  savedId: string;
+  savedAt: string;
+}
+
+const SAVED_GENERATED_ITEMS_KEY = "dressify-saved-generated-items";
+
+function readSavedGeneratedItems(): SavedGeneratedItem[] {
+  try {
+    const stored = window.localStorage.getItem(SAVED_GENERATED_ITEMS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
 
 // components logic (saved outfits, wardrobe, etc.)
 function useStudioInternal() {
@@ -29,6 +45,7 @@ function useStudioInternal() {
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   // AI-generated clothing items
   const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
+  const [savedGeneratedItems, setSavedGeneratedItems] = useState<SavedGeneratedItem[]>(() => readSavedGeneratedItems());
   // items placed on canvas editor
   const [canvasItems, setCanvasItems] = useState<CanvasItem[]>([]);
   // stores the name type for the outfit
@@ -69,6 +86,10 @@ function useStudioInternal() {
     }
   }, [wardrobeSyncError]);
 
+  useEffect(() => {
+    window.localStorage.setItem(SAVED_GENERATED_ITEMS_KEY, JSON.stringify(savedGeneratedItems));
+  }, [savedGeneratedItems]);
+
   const handleAgree = useCallback(() => {
     setConsented(true);
     setShowConsent(false);
@@ -98,6 +119,41 @@ function useStudioInternal() {
 
       return updated;
     });
+  }, []);
+
+  // remove an item from the generated list only
+  const handleDeleteGeneratedItem = useCallback((itemId: string) => {
+    setGeneratedItems((prev) => prev.filter((item) => item.id !== itemId));
+    toast.success("Generated item removed");
+  }, []);
+
+  const handleSaveGeneratedItem = useCallback((item: GeneratedItem) => {
+    const alreadySaved = savedGeneratedItems.some(
+      (savedItem) =>
+        savedItem.category === item.category &&
+        savedItem.imageUrl === item.imageUrl &&
+        savedItem.prompt === item.prompt,
+    );
+
+    if (alreadySaved) {
+      toast.info("Item already saved");
+      return;
+    }
+
+    setSavedGeneratedItems((prev) => [
+      {
+        ...item,
+        savedId: createId(),
+        savedAt: new Date().toISOString(),
+      },
+      ...prev,
+    ]);
+    toast.success("Item saved");
+  }, [savedGeneratedItems]);
+
+  const handleDeleteSavedGeneratedItem = useCallback((savedId: string) => {
+    setSavedGeneratedItems((prev) => prev.filter((item) => item.savedId !== savedId));
+    toast.success("Saved item removed");
   }, []);
 
   // add generated items to canvas
@@ -192,6 +248,11 @@ function useStudioInternal() {
     async (item: GeneratedItem) => {
       const result = await addWardrobeItem(item.category, item.imageUrl);
 
+      if (result.alreadyExists) {
+        toast.info("Already in wardrobe");
+        return;
+      }
+
       if (result.savedToCloud) {
         toast.success("Added to wardrobe");
       } else {
@@ -220,6 +281,11 @@ function useStudioInternal() {
       try {
         const result = await addWardrobeItem(category, imageUrl);
 
+        if (result.alreadyExists) {
+          toast.info("Photo is already in wardrobe");
+          return;
+        }
+
         if (result.savedToCloud) {
           toast.success("Photo added to wardrobe");
         } else {
@@ -246,6 +312,7 @@ function useStudioInternal() {
     setUserPhoto,
     generatedItems,
     setGeneratedItems,
+    savedGeneratedItems,
     canvasItems,
     setCanvasItems,
     outfitName,
@@ -258,6 +325,9 @@ function useStudioInternal() {
     isWardrobeCloudSyncEnabled,
     handleItemGenerated,
     handleItemUpdate,
+    handleDeleteGeneratedItem,
+    handleSaveGeneratedItem,
+    handleDeleteSavedGeneratedItem,
     handleAddToCanvas,
     handleAddWardrobeToCanvas,
     handleDeleteItem,
@@ -287,6 +357,7 @@ export const useStudio = () => {
 // app logic
 const Index = () => {
   const studio = useStudioInternal();
+  const logoSrc = `${import.meta.env.BASE_URL}outfit_white.png`;
 
   if (!studio.consented) {
     return <ConsentModal open={studio.showConsent} onAgree={studio.handleAgree} onCancel={() => {}} />;
@@ -294,25 +365,37 @@ const Index = () => {
 
   return (
     <StudioContext.Provider value={studio}>
-      <div className="min-h-screen bg-background flex flex-col">
-        <header className="border-b border-border px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-display font-semibold tracking-tight">Dressify</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="hidden lg:flex flex-col items-end">
-              <span className="text-[10px] text-muted-foreground uppercase tracking-widest">AI Outfit Generator</span>
-              <span className="text-[10px] text-muted-foreground">
-                Outfits: {studio.isCloudSyncEnabled ? "Supabase" : "Local"} | Wardrobe: {" "}
-                {studio.isWardrobeCloudSyncEnabled ? "Supabase" : "Local"}
-              </span>
+      <div className="min-h-screen flex flex-col">
+        {/* The header is part of the shell, so theme toggle/auth/menu stay visible while routes change in <Outlet /> below. */}
+        <header className="sticky top-0 z-30 border-b border-black/[0.05] bg-background/78 backdrop-blur-2xl dark:border-white/[0.06] dark:bg-black/10">
+          <div className="relative flex w-full items-center justify-between gap-4 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.38)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] md:px-6 lg:px-10">
+            <div className="flex min-w-0 items-center gap-6">
+              <div className="flex shrink-0 items-center gap-2">
+                <img src={logoSrc} alt="Dressify logo" className="h-8 w-8 object-contain" />
+                <h1 className="text-lg font-display font-semibold tracking-tight">Dressify</h1>
+              </div>
+              <MenuNav />
             </div>
-            <AuthTopbar className="hidden md:flex" />
+
+            <div className="flex shrink-0 items-center gap-3">
+              {/* Keep sync diagnostics out of smaller headers; they are useful, but not worth crowding the nav. */}
+              <div className="hidden 2xl:flex flex-col items-end">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-widest">AI Outfit Generator</span>
+                <span className="text-[10px] text-muted-foreground">
+                  Outfits: {studio.isCloudSyncEnabled ? "Supabase" : "Local"} | Wardrobe: {" "}
+                  {studio.isWardrobeCloudSyncEnabled ? "Supabase" : "Local"}
+                </span>
+              </div>
+              <AuthTopbar className="hidden md:flex" />
+              <span
+                aria-hidden="true"
+                className="hidden md:inline-flex h-6 w-px bg-muted-foreground/30"
+              />
+              <LanguageToggle className="hidden sm:inline-flex" />
+              <ThemeToggle className="hidden sm:inline-flex" />
+            </div>
           </div>
         </header>
-
-        <MenuNav />
 
         <main className="flex-1 min-h-0 overflow-y-auto pb-16 md:pb-0">
           <Outlet />

@@ -52,8 +52,8 @@ const WardrobeLibrary = ({ items, onAddToCanvas, onDelete, onAddPhoto, isLoading
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-end gap-2">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <select
           value={uploadCategory}
           onChange={(e) => setUploadCategory(e.target.value as "top" | "trousers" | "shoes")}
@@ -87,19 +87,21 @@ const WardrobeLibrary = ({ items, onAddToCanvas, onDelete, onAddPhoto, isLoading
       {items.length === 0 ? (
         <div className="text-xs text-muted-foreground text-center py-4">No wardrobe items yet</div>
       ) : (
-        <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto pr-1">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {items.map((item) => (
             <div key={item.id} className="relative group">
               <button
                 onClick={() => onAddToCanvas(item)}
-                className="relative w-full rounded-lg overflow-hidden border border-border bg-muted aspect-square card-hover"
+                className="relative w-full overflow-hidden rounded-2xl border border-border bg-background/70 p-3 card-hover"
               >
-                <img src={item.imageUrl} alt={item.category} className="w-full h-full object-cover" />
+                <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-muted/20">
+                  <img src={item.imageUrl} alt={item.category} className="h-full w-full object-contain" />
+                </div>
                 <Badge className="absolute top-1 left-1 text-[9px] px-1 py-0 bg-background/80 text-foreground border-0">
                   {item.category}
                 </Badge>
                 <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="text-xs font-medium text-primary">+ Canvas</span>
+                  <span className="text-xs font-medium text-primary">+ Board</span>
                 </div>
               </button>
               <div className="absolute bottom-1 left-1 right-1 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -108,7 +110,7 @@ const WardrobeLibrary = ({ items, onAddToCanvas, onDelete, onAddPhoto, isLoading
                   size="icon"
                   className="h-6 w-6"
                   onClick={() => onAddToCanvas(item)}
-                  title="Add to canvas"
+                  title="Add to board"
                 >
                   <Plus className="h-3 w-3" />
                 </Button>

@@ -22,6 +22,7 @@ export interface AddWardrobeResult {
   item: WardrobeItem;
   savedToCloud: boolean;
   cloudError?: string;
+  alreadyExists?: boolean;
 }
 
 const STORAGE_KEY = "dressify-wardrobe-items";
@@ -37,6 +38,10 @@ function readLocalWardrobe(): WardrobeItem[] {
 
 function writeLocalWardrobe(items: WardrobeItem[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+}
+
+function findExistingWardrobeItem(items: WardrobeItem[], category: string, imageUrl: string) {
+  return items.find((item) => item.category === category && item.imageUrl === imageUrl) ?? null;
 }
 
 function fromSupabaseRecord(record: WardrobeItemRecord): WardrobeItem {
@@ -125,6 +130,15 @@ export function useWardrobe() {
 
   const addItem = useCallback(
     async (category: string, imageUrl: string): Promise<AddWardrobeResult> => {
+      const existingItem = findExistingWardrobeItem(items, category, imageUrl);
+      if (existingItem) {
+        return {
+          item: existingItem,
+          savedToCloud: isCloudSyncEnabled,
+          alreadyExists: true,
+        };
+      }
+
       if (isSupabaseConfigured) {
         const resolvedUserId = userId ?? (await getOrCreateSupabaseUserId());
 
@@ -181,7 +195,7 @@ export function useWardrobe() {
 
       return { item, savedToCloud: false };
     },
-    [userId]
+    [isCloudSyncEnabled, items, userId]
   );
 
   const deleteItem = useCallback(

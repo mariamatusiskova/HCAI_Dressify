@@ -1,272 +1,98 @@
-<<<<<<< HEAD
-# Welcome to your Lovable project
+# Dressify
 
-## Project info
+Dressify is a Vite + React outfit studio for generating clothing items, composing them on a canvas, managing a wardrobe, and saving outfits. The app supports local-only mode by default and can sync wardrobe data, outfits, and system prompts to Supabase when the user signs in.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Current app flow
 
-## How can I edit this code?
+- `Home`: upload a user photo, generate clothing items with Sana Sprint, place them on the canvas, and save outfits.
+- `Wardrobe`: browse wardrobe items, upload your own clothing photos, add items to the canvas, and delete items.
+- `Saved / Items`: merged view of current-session generated items and persisted wardrobe items.
+- `Saved / Outfits`: saved outfit library with load/delete actions.
+- `Profile`: full auth panel for sign in, sign up, and sign out.
+- `Login`, `Register`, `Auth Callback`: dedicated auth routes outside the main shell.
 
-There are several ways of editing your application.
+## Route structure
 
-**Use Lovable**
+- `/`: app shell + `HomePage`
+- `/wardrobe`: wardrobe manager
+- `/saved/items`: saved/generated items view
+- `/saved/outfits`: saved outfits view
+- `/profile`: account/auth management
+- `/login`: email/password sign in
+- `/register`: email/password registration
+- `/auth/callback`: Supabase auth redirect completion
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+The shell is in `src/pages/Index.tsx`. It owns the consent gate, shared studio state, top header, desktop/mobile navigation, and the `<Outlet />` where the active page renders.
 
-Changes made via Lovable will be committed automatically to this repo.
+## Tech stack
 
-**Use your preferred IDE**
+- Vite
+- React 18
+- TypeScript
+- React Router
+- Tailwind CSS
+- shadcn/ui + Radix UI
+- Supabase
+- TanStack Query
+- Vitest
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Local development
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+This project expects Node `20.17.0` via `.nvmrc`.
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+nvm use
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Useful commands:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```sh
+npm run build
+npm test
+npm run lint
+```
 
-**Use GitHub Codespaces**
+## Environment variables
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Create a `.env` file in the project root with:
 
-## What technologies are used for this project?
+```sh
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-This project is built with:
+If these variables are missing, the app still runs, but Supabase-backed auth and cloud sync are disabled.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Auth and persistence behavior
 
-## How can I deploy this project?
+- Outfits are managed by `src/hooks/useOutfits.ts`.
+- Wardrobe items are managed by `src/hooks/useWardrobe.ts`.
+- Default system prompt persistence is managed by `src/hooks/useSystemPrompt.ts`.
+- When a valid Supabase auth session exists, these features use Supabase tables/RPCs through the service layer.
+- When there is no session, outfits and wardrobe fall back to local storage and the UI shows warning toasts about local-only mode.
 
-### Deploy to GitHub Pages
+One important current limitation: generated items are still held in shared React state for the current session. The `Saved / Items` page shows those current-session generated items together with wardrobe items, but generated history is not yet persisted as a separate database-backed history feature.
 
-This repo is now configured with a GitHub Actions workflow at:
+## Deployment
 
-- `.github/workflows/deploy-pages.yml`
+The app is set up to work with GitHub Pages using a router basename. If you deploy through GitHub Actions, make sure the workflow environment includes:
 
-Steps:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
 
-1. Push this project to a GitHub repository (branch `main`).
-2. In GitHub repo settings, add Actions secrets:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-3. In GitHub repo settings, enable Pages:
-   - `Settings -> Pages -> Build and deployment -> Source: GitHub Actions`
-4. Push to `main` (or run the workflow manually from Actions tab).
-5. Open: `https://<your-username>.github.io/<repo-name>/`
+For repository-based Pages deployments, the router already uses `import.meta.env.BASE_URL`, so route URLs work under the repository subpath.
 
-Notes:
+## Folder documentation
 
-- Build automatically sets `VITE_BASE_PATH=/<repo-name>/` for correct asset/routing paths on Pages.
-- Router uses `basename={import.meta.env.BASE_URL}` so refresh/navigation works under the repo subpath.
-- Data is saved to Supabase only when signed in (email/password auth panel). If not signed in, app runs in local mode.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
-
-## Sana Sprint API Integration
-
-This project uses the Sana Sprint API for generating clothing item images via the Gradio client.
-
-- **API Endpoint**: https://sana.hanlab.ai/sprint/
-- **No API key required** - uses the public Gradio API
-- **Package**: `@gradio/client` (already installed)
-
-The integration automatically:
-- Connects to the Sana Sprint Gradio API
-- Generates images based on your text prompts
-- Handles image conversion and display
-
-Each clothing category (Top, Trousers, Shoes) has its own text input box where you can describe the item you want to generate. Click the generate button next to each category to create the item.
-
-
-
-
-Code explanation: 
-
-Dressify Code Explanation
-Part 1: File-by-file and step-by-step overview
-How the app runs (step by step)
-1. index.html creates #root, loads /src/main.tsx, and registers /sw.js.
-2. src/main.tsx mounts <App /> and loads global styles.
-3. src/App.tsx wires providers (React Query, tooltips, toasts) and routes /
-to Index, * to NotFound.
-4. src/pages/Index.tsx is the main app flow: consent gate, photo upload,
-mock item generation, drag/drop canvas, and local save/load of outfits.
-5. src/hooks/useOutfits.ts persists outfit data to localStorage key
-dressify-outfits.
-6. Components in src/components/ render each feature section.
-7. src/components/ui/* are reusable shadcn/Radix primitives.
-Core files
-• src/main.tsx: React entrypoint.
-• src/App.tsx: Providers + routing.
-• src/pages/Index.tsx: Main app state and orchestration.
-• src/pages/NotFound.tsx: 404 page.
-• src/hooks/useOutfits.ts: Outfit CRUD in localStorage.
-• src/components/UploadSection.tsx: Image upload.
-• src/components/GeneratePanel.tsx: Mock AI generation.
-• src/components/GeneratedItemsList.tsx: Generated thumbnails.
-• src/components/CanvasEditor.tsx: Drag/drop item placement.
-• src/components/OutfitLibrary.tsx: Saved outfit list.
-• src/components/ConsentModal.tsx: Consent gate UI.
-Configuration and build files
-• package.json: scripts + deps.
-• vite.config.ts: Vite config + alias @.
-• vitest.config.ts: test config.
-• tailwind.config.ts: theme and utility setup.
-• postcss.config.js: Tailwind + autoprefixer.
-• eslint.config.js: lint rules.
-• tsconfig*.json: TypeScript settings.
-• components.json: shadcn config.
-Public assets
-• public/manifest.json: PWA metadata.
-• public/sw.js: service worker scaffold.
-• public/robots.txt: crawler directives.
-1
-• public/outfit.png: favicon.
-• public/placeholder.svg: placeholder image asset.
-Notes
-• src/App.css is mostly Vite starter CSS and appears largely unused.
-• src/components/ui/* are mostly generated component wrappers (accordion, dialog, toast, sidebar, etc.).
-Part 2: Click-by-click user journey
-1) App opens
-1. Browser loads index.html.
-2. main.tsx mounts <App />.
-3. Router renders Index for /.
-2) Consent
-1. Index starts with consented=false.
-2. ConsentModal is shown.
-3. User clicks I Agree -> handleAgree() sets consent state -> main UI
-appears.
-3) Upload photo
-1. User clicks upload zone or drops file.
-2. UploadSection uses FileReader.readAsDataURL.
-3. onPhotoChange(dataUrl) updates userPhoto in Index.
-4. Photo preview and canvas background update.
-4) Generate item
-1. User clicks Top/Trousers/Shoes.
-2. GeneratePanel.handleGenerate() calls mockGenerate().
-3. Mock image is returned as data URL.
-4. New GeneratedItem is sent to Index.
-5. generatedItems updates and success toast appears.
-5) Add to canvas
-1. User clicks a generated thumbnail.
-2. Index.handleAddToCanvas() creates CanvasItem with random start position.
-3. Item appears in CanvasEditor.
-2
-6) Drag on canvas
-1. Mouse down on item sets drag target.
-2. Mouse move updates item x,y with bounds.
-3. Mouse up clears drag state.
-7) Save outfit
-1. User enters name and clicks Save (or Enter).
-2. handleSave() validates name.
-3. saveOutfit() writes to state and localStorage.
-4. Outfit appears in library.
-8) Load outfit
-1. User clicks load icon.
-2. loadOutfit(id) returns matching outfit.
-3. userPhoto + canvasItems are restored.
-9) Delete outfit
-1. User clicks trash icon.
-2. deleteOutfit(id) filters and rewrites localStorage.
-Part 3: Sequence diagram
-sequenceDiagram
-participant U as User
-participant Upload as UploadSection.tsx
-participant Index as Index.tsx
-participant Gen as GeneratePanel.tsx
-participant List as GeneratedItemsList.tsx
-participant Canvas as CanvasEditor.tsx
-participant Hook as useOutfits.ts
-participant LS as localStorage
-rect rgb(245,245,245)
-note over U,Index: Upload flow
-U->>Upload: Click dropzone / choose file
-Upload->>Upload: handleFile(file) + FileReader.readAsDataURL
-Upload->>Index: onPhotoChange(dataUrl)
-Index->>Index: setUserPhoto(dataUrl)
-Index-->>Upload: Re-render with photo preview
-Index-->>Canvas: Re-render with background userPhoto
-end
-rect rgb(245,245,245)
-3
-note over U,Gen: Generate flow
-U->>Gen: Click category button
-Gen->>Gen: handleGenerate(category)
-Gen->>Gen: setLoading(category)
-Gen->>Gen: mockGenerate(category) -> dataUrl
-Gen->>Index: onItemGenerated(item)
-Index->>Index: setGeneratedItems([item,...prev])
-Index->>Index: toast.success(...)
-Index-->>List: Re-render with new thumbnail
-end
-rect rgb(245,245,245)
-note over U,Canvas: Add + drag flow
-U->>List: Click generated thumbnail
-List->>Index: onAddToCanvas(item)
-Index->>Index: setCanvasItems([...prev,newCanvasItem])
-Index-->>Canvas: Re-render with draggable tile
-U->>Canvas: MouseDown on tile
-Canvas->>Canvas: handleMouseDown -> setDragging(id)
-U->>Canvas: MouseMove
-Canvas->>Index: onItemsChange(updatedItems)
-Index->>Index: setCanvasItems(updatedItems)
-Index-->>Canvas: Re-render tile at new x,y
-U->>Canvas: MouseUp / MouseLeave
-Canvas->>Canvas: setDragging(null)
-end
-rect rgb(245,245,245)
-note over U,LS: Save / load / delete flow
-U->>Index: Enter outfit name + click Save
-Index->>Hook: saveOutfit(name,userPhoto,canvasItems)
-Hook->>Hook: create Outfit object
-Hook->>LS: setItem("dressify-outfits", updatedArray)
-Hook-->>Index: return outfit
-Index->>Index: clear name + toast.success
-Index-->>U: Saved list updates
-U->>Index: Click Load in OutfitLibrary
-Index->>Hook: loadOutfit(id)
-Hook-->>Index: outfit | null
-Index->>Index: setUserPhoto + setCanvasItems
-Index-->>U: Canvas restored
-U->>Index: Click Delete in OutfitLibrary
-Index->>Hook: deleteOutfit(id)
-4
-Hook->>LS: setItem("dressify-outfits", filteredArray)
-Index-->>U: Outfit removed from list
-end
-5
-=======
-abc
->>>>>>> master
+- `src/README.md`: top-level source folder overview
+- `src/pages/README.md`: route and page responsibilities
+- `src/components/README.md`: feature component overview
+- `src/components/ui/README.md`: shadcn/ui inventory and usage status
+- `src/hooks/README.md`: custom hooks and persistence/auth behavior
+- `src/services/README.md`: API and Supabase data layer
+- `src/lib/README.md`: utility helpers
+- `src/test/README.md`: test setup
+- `src/types/README.md`: shared type/constants folder
+- `public/README.md`: static assets and PWA files
