@@ -1,15 +1,29 @@
 import { useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Upload, X } from "lucide-react";
+
+const avatarPlaceholderUrl = `${import.meta.env.BASE_URL}examples/avatar_body.png`;
 
 interface UploadSectionProps {
   // string | null → the current photo (stored as a string URL, usually a Base64 data: URL) or null if none
   photo: string | null;
   // a callback to update the photo in the parent component
   onPhotoChange: (photo: string | null) => void;
+  hideTitle?: boolean;
+  className?: string;
+  boxClassName?: string;
+  emphasized?: boolean;
 }
 
-const UploadSection = ({ photo, onPhotoChange }: UploadSectionProps) => {
+const UploadSection = ({
+  photo,
+  onPhotoChange,
+  hideTitle = false,
+  className,
+  boxClassName,
+  emphasized = false,
+}: UploadSectionProps) => {
   // Keeps a hidden file input
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -34,12 +48,19 @@ const UploadSection = ({ photo, onPhotoChange }: UploadSectionProps) => {
 
   // Supports drag-and-drop upload onDrop or onDragOver
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
-        Your Photo
-      </h3>
+    <div className={cn("space-y-3", className)}>
+      {!hideTitle && (
+        <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
+          Your Photo
+        </h3>
+      )}
       {photo ? (
-        <div className="relative rounded-lg overflow-hidden border border-border bg-muted aspect-[3/4] max-h-48">
+        <div
+          className={cn(
+            "glass-panel-soft relative aspect-[3/4] max-h-48 overflow-hidden rounded-[22px] border",
+            boxClassName,
+          )}
+        >
           <img src={photo} alt="User" className="w-full h-full object-cover" />
           <Button
             variant="ghost"
@@ -55,10 +76,27 @@ const UploadSection = ({ photo, onPhotoChange }: UploadSectionProps) => {
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
           onClick={() => inputRef.current?.click()}
-          className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 p-6 cursor-pointer hover:border-primary/40 transition-colors aspect-[3/4] max-h-48"
+          className={cn(
+            "glass-panel-soft relative flex aspect-[3/4] max-h-48 cursor-pointer flex-col items-center justify-center gap-3 overflow-hidden rounded-[22px] border border-dashed p-6 transition-colors hover:border-primary/40",
+            emphasized && "border-primary/30 bg-background/58 shadow-[0_0_0_1px_hsl(var(--primary)/0.08),0_16px_40px_hsl(var(--primary)/0.08)]",
+            boxClassName,
+          )}
         >
-          <Upload className="h-6 w-6 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">Drop or click to upload</span>
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <img
+              src={avatarPlaceholderUrl}
+              alt=""
+              aria-hidden="true"
+              className="h-[88%] w-auto max-w-none object-contain opacity-20 blur-[1px] saturate-75"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/8 via-transparent to-background/12" />
+          </div>
+          <div className="relative z-10 flex flex-col items-center gap-3">
+            <Upload className={cn("h-7 w-7 text-muted-foreground", emphasized && "text-primary/85")} />
+            <span className={cn("text-center text-sm text-muted-foreground", emphasized && "text-foreground")}>
+              Drop or click to upload
+            </span>
+          </div>
         </div>
       )}
       <input

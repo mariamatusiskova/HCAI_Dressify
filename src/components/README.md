@@ -1,17 +1,27 @@
 # src/components/
 
-Feature-level components used by pages.
+Feature-level UI components used by the pages and shell.
 
-## Files
-- `CanvasEditor.tsx`: Interactive outfit canvas (place/move/resize/rotate/layer/delete items over user photo).
-- `ConsentModal.tsx`: Consent dialog shown before entering the app.
-- `GeneratePanel.tsx`: Prompt + generation UI for clothing categories.
-- `GeneratedItemsList.tsx`: Thumbnail gallery of generated items; click adds item to canvas.
-- `NavLink.tsx`: Compatibility wrapper around `react-router-dom` NavLink (currently not wired in active pages).
-- `OutfitLibrary.tsx`: Saved outfits list with load/delete actions.
-- `StyleTemplateSelector.tsx`: Template picker/editor used by `GeneratePanel` to apply global/style prompt descriptors.
-- `UploadSection.tsx`: Photo upload via click or drag/drop + preview/remove.
-- `WardrobeLibrary.tsx`: Wardrobe gallery UI with add-to-canvas and delete actions.
+## Auth and navigation
+
+- `AuthPanel.tsx`: full account panel with sign in, sign up, sign out, and current-session display; currently used on `ProfilePage`.
+- `AuthTopbar.tsx`: compact auth actions for the shell header on desktop/tablet widths.
+- `NavLink.tsx`: small compatibility wrapper around `react-router-dom` `NavLink`, used by `MenuNav.tsx` and `SavedPage.tsx`.
+
+## Main workspace
+
+- `ConsentModal.tsx`: consent dialog shown before entering the workspace.
+- `UploadSection.tsx`: user photo upload/preview/remove UI.
+- `GeneratePanel.tsx`: prompt entry and generation controls for AI item creation.
+- `StyleTemplateSelector.tsx`: style-template picker and system-prompt editor embedded inside `GeneratePanel`.
+- `GeneratedItemsList.tsx`: generated-item gallery with actions to send items to canvas or wardrobe.
+- `CanvasEditor.tsx`: interactive outfit canvas for placing, transforming, and deleting items over the uploaded photo.
+
+## Saved data views
+
+- `OutfitLibrary.tsx`: saved outfit list with load and delete actions.
+- `WardrobeLibrary.tsx`: wardrobe grid with upload, add-to-canvas, and delete actions.
 
 ## Subfolder
-- `ui/`: shadcn/Radix-based UI primitives.
+
+- `ui/`: shadcn/Radix-based UI primitives and wrappers.

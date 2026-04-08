@@ -1,7 +1,8 @@
 import { useRef, useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { X, RotateCw, Sparkles, Loader2, ArrowUp, ArrowDown, Layers } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { RotateCw, ImageMinus, Loader2, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { CanvasItem } from "@/hooks/useOutfits";
 import { removeBackgroundAdvanced } from "@/services/backgroundRemoval";
@@ -16,6 +17,17 @@ interface CanvasEditorProps {
   onItemsChange: (items: CanvasItem[]) => void;
   // callback when user clicks delete on an item
   onDeleteItem: (id: string) => void;
+  hideTitle?: boolean;
+  className?: string;
+  viewportClassName?: string;
+  emptyStateMessage?: string;
+  exampleCards?: ExampleCanvasCard[];
+}
+
+interface ExampleCanvasCard {
+  id: string;
+  imageUrl: string;
+  alt?: string;
 }
 
 // Key internal state
@@ -23,7 +35,17 @@ type InteractionMode = "none" | "drag" | "resize" | "rotate";
 type ResizeHandle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
 
 // How interactions work
-const CanvasEditor = ({ userPhoto, items, onItemsChange, onDeleteItem }: CanvasEditorProps) => {
+const CanvasEditor = ({
+  userPhoto,
+  items,
+  onItemsChange,
+  onDeleteItem,
+  hideTitle = false,
+  className,
+  viewportClassName,
+  emptyStateMessage,
+  exampleCards = [],
+}: CanvasEditorProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [interactionMode, setInteractionMode] = useState<InteractionMode>("none");
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
@@ -271,15 +293,30 @@ const CanvasEditor = ({ userPhoto, items, onItemsChange, onDeleteItem }: CanvasE
 
   // Sort items by zIndex for rendering (lower zIndex renders first, higher renders on top)
   const sortedItems = [...items].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+  const showExampleCards = !userPhoto && items.length === 0 && exampleCards.length > 0;
+  const preUploadState = !userPhoto && items.length === 0;
+  const emptyStateTitle = preUploadState
+    ? "Your outfit will appear here"
+    : "Generate pieces to start building your outfit";
+  const helperMessage =
+    emptyStateMessage ??
+    (preUploadState
+      ? "Start with a photo. The preview will fill in as you build the look."
+      : "Generate pieces to start arranging the outfit on your board.");
 
   return (
-    <div className="space-y-3 flex-1 flex flex-col min-h-0">
-      <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
-        Canvas
-      </h3>
+    <div className={cn("space-y-3 flex flex-1 min-h-0 flex-col", className)}>
+      {!hideTitle && (
+        <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
+          Board
+        </h3>
+      )}
       <div
         ref={containerRef}
-        className="relative flex-1 rounded-lg border border-border bg-muted/20 min-h-[300px] overflow-hidden select-none"
+        className={cn(
+          "glass-viewport relative flex-1 min-h-[300px] overflow-hidden rounded-[28px] border select-none",
+          viewportClassName,
+        )}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
@@ -291,9 +328,53 @@ const CanvasEditor = ({ userPhoto, items, onItemsChange, onDeleteItem }: CanvasE
             className="absolute inset-0 w-full h-full object-contain pointer-events-none"
           />
         )}
-        {!userPhoto && items.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-sm text-muted-foreground">Upload a photo & generate items</span>
+        {items.length === 0 && !userPhoto && (
+          <div className="absolute inset-0 flex items-center justify-center p-5">
+            <div className="w-full">
+              <div
+                className={cn(
+                  "mx-auto space-y-4 text-center",
+                  showExampleCards
+                    ? "max-w-4xl"
+                    : "max-w-2xl",
+                )}
+              >
+                <p
+                  className={cn(
+                    "font-display tracking-tight text-foreground",
+                    preUploadState ? "text-lg text-foreground/88 md:text-2xl" : "text-xl md:text-3xl",
+                  )}
+                >
+                  {emptyStateTitle}
+                </p>
+                {preUploadState && (
+                  <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground/75">
+                    <span className="glass-panel-soft rounded-full border px-3 py-1">Upload photo</span>
+                    <span className="glass-panel-soft rounded-full border px-3 py-1">Choose a style</span>
+                    <span className="glass-panel-soft rounded-full border px-3 py-1">Generate items</span>
+                  </div>
+                )}
+                <p className={cn("mx-auto text-sm leading-relaxed text-muted-foreground", preUploadState && "max-w-xl text-muted-foreground/80")}>
+                  {helperMessage}
+                </p>
+                {showExampleCards && (
+                  <div className="mx-auto flex max-w-[440px] items-center justify-center gap-3 pt-1 md:max-w-[520px] md:gap-4">
+                    {exampleCards.map((card) => (
+                      <div
+                        key={card.id}
+                        className="w-[92px] overflow-hidden rounded-[16px] bg-black/18 sm:w-[104px] md:w-[112px]"
+                      >
+                        <img
+                          src={card.imageUrl}
+                          alt={card.alt ?? "Example outfit"}
+                          className="aspect-[3/4] h-full w-full scale-[1.02] object-cover opacity-42 blur-[3px] saturate-75"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
         {sortedItems.map((item) => {
@@ -333,7 +414,7 @@ const CanvasEditor = ({ userPhoto, items, onItemsChange, onDeleteItem }: CanvasE
                   alt={item.category}
                   className="w-full h-full object-fill pointer-events-none"
                 />
-                <Badge className="absolute -top-1 -right-1 text-[8px] px-1 py-0 bg-ai-badge/90 text-foreground border-0 pointer-events-none">
+                <Badge className="absolute top-1 left-1 text-[9px] px-1 py-0 border-0 bg-background/80 text-foreground">
                   AI
                 </Badge>
               </div>
@@ -341,17 +422,6 @@ const CanvasEditor = ({ userPhoto, items, onItemsChange, onDeleteItem }: CanvasE
               {/* Controls overlay - only visible when hovered or active */}
               {showControls && (
                 <>
-                  {/* Delete button */}
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow-lg z-50"
-                    onMouseDown={(e) => handleDelete(e, item.id)}
-                    title="Delete"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-
                   {/* Layer controls - vertical slider on right side */}
                   <div
                     className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full ml-1 flex flex-col gap-1 z-50 bg-background/95 backdrop-blur-sm rounded-md p-1 border border-border shadow-lg"
@@ -373,13 +443,24 @@ const CanvasEditor = ({ userPhoto, items, onItemsChange, onDeleteItem }: CanvasE
                       className="h-7 w-7 rounded shadow-sm hover:bg-primary hover:text-primary-foreground"
                       onMouseDown={(e) => handleRemoveBackground(e, item)}
                       disabled={isProcessing}
-                      title="Remove background"
+                      title="Cut out background"
+                      aria-label="Cut out background"
                     >
                       {isProcessing ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <Sparkles className="h-3.5 w-3.5" />
+                        <ImageMinus className="h-3.5 w-3.5" />
                       )}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="h-7 w-7 rounded shadow-sm hover:bg-primary hover:text-primary-foreground"
+                      onMouseDown={(e) => handleDelete(e, item.id)}
+                      title="Remove from board"
+                      aria-label="Remove from board"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                     <div className="h-px bg-border my-0.5" />
                     <Button
@@ -388,8 +469,9 @@ const CanvasEditor = ({ userPhoto, items, onItemsChange, onDeleteItem }: CanvasE
                       className="h-7 w-7 rounded shadow-sm hover:bg-primary hover:text-primary-foreground"
                       onMouseDown={(e) => handleBringToFront(e, item.id)}
                       title="Bring to front"
+                      aria-label="Bring to front"
                     >
-                      <ArrowUp className="h-3.5 w-3.5" />
+                      <ChevronsUp className="h-3.5 w-3.5" />
                     </Button>
                     <Button
                       variant="secondary"
@@ -397,6 +479,7 @@ const CanvasEditor = ({ userPhoto, items, onItemsChange, onDeleteItem }: CanvasE
                       className="h-7 w-7 rounded shadow-sm hover:bg-primary hover:text-primary-foreground"
                       onMouseDown={(e) => handleBringForward(e, item.id)}
                       title="Bring forward"
+                      aria-label="Bring forward"
                     >
                       <ArrowUp className="h-2.5 w-2.5" />
                     </Button>
@@ -407,6 +490,7 @@ const CanvasEditor = ({ userPhoto, items, onItemsChange, onDeleteItem }: CanvasE
                       className="h-7 w-7 rounded shadow-sm hover:bg-primary hover:text-primary-foreground"
                       onMouseDown={(e) => handleSendBackward(e, item.id)}
                       title="Send backward"
+                      aria-label="Send backward"
                     >
                       <ArrowDown className="h-2.5 w-2.5" />
                     </Button>
@@ -416,8 +500,9 @@ const CanvasEditor = ({ userPhoto, items, onItemsChange, onDeleteItem }: CanvasE
                       className="h-7 w-7 rounded shadow-sm hover:bg-primary hover:text-primary-foreground"
                       onMouseDown={(e) => handleSendToBack(e, item.id)}
                       title="Send to back"
+                      aria-label="Send to back"
                     >
-                      <ArrowDown className="h-3.5 w-3.5" />
+                      <ChevronsDown className="h-3.5 w-3.5" />
                     </Button>
                   </div>
 

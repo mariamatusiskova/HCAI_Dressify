@@ -121,10 +121,16 @@ const StyleTemplateSelector = ({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <Label className="text-xs font-medium text-muted-foreground">Style</Label>
+        <label htmlFor="prompt-single" className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            STYLE
+          </label>
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-6 px-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 rounded-full p-0 text-muted-foreground hover:bg-primary/16 hover:text-foreground hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_0_0_1px_rgba(239,49,65,0.12),0_10px_24px_rgba(239,49,65,0.08)] dark:hover:bg-primary/20 dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_0_1px_rgba(255,255,255,0.05),0_10px_24px_rgba(239,49,65,0.1)]"
+            >
               <Settings className="h-3 w-3" />
             </Button>
           </DialogTrigger>
@@ -251,11 +257,6 @@ const StyleTemplateSelector = ({
           ))}
         </SelectContent>
       </Select>
-      {selectedTemplate && (
-        <p className="text-xs text-muted-foreground">
-          Style: <span className="font-medium">{selectedTemplate.name}</span>
-        </p>
-      )}
     </div>
   );
 };
