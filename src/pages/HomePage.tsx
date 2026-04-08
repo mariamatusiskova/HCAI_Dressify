@@ -116,7 +116,7 @@ const HomePage = () => {
               )}
             >
               <div className="mb-3 flex items-center justify-between">
-                <p className={sectionEyebrow}>Preview</p>
+                <p className={sectionEyebrow}>Board</p>
                 {hasPhoto && (
                   <p className="hidden text-xs text-muted-foreground md:block">
                     {hasCanvasContent ? "Drag pieces to refine the look." : "Generated pieces land here first."}
@@ -132,7 +132,7 @@ const HomePage = () => {
                 exampleCards={exampleCanvasCards}
                 emptyStateMessage={
                   hasPhoto
-                    ? "Generate pieces to start arranging the outfit on your canvas."
+                    ? "Generate pieces to start arranging the outfit on your board."
                     : "Start with a photo. The preview will fill in as you build the look."
                 }
                 hideTitle
@@ -163,9 +163,9 @@ const HomePage = () => {
             {studio.generatedItems.length > 0 && (
               <section className={panelShell}>
                 <div className="mb-4 flex items-center justify-between">
-                  <p className={sectionEyebrow}>Generated items</p>
+                  <p className={sectionEyebrow}>AI items</p>
                   <p className="hidden text-xs text-muted-foreground md:block">
-                    Click any item to place it on the canvas.
+                    Click any item to place it on the board.
                   </p>
                 </div>
 
@@ -175,7 +175,15 @@ const HomePage = () => {
                   onItemUpdate={studio.handleItemUpdate}
                   onItemDelete={studio.handleDeleteGeneratedItem}
                   onItemAdd={studio.handleItemGenerated}
-                  onAddToWardrobe={(item) => void studio.handleAddGeneratedToWardrobe(item)}
+                  onSaveItem={studio.handleSaveGeneratedItem}
+                  isSaved={(item) =>
+                    studio.savedGeneratedItems.some(
+                      (savedItem) =>
+                        savedItem.category === item.category &&
+                        savedItem.imageUrl === item.imageUrl &&
+                        savedItem.prompt === item.prompt,
+                    )
+                  }
                   hideTitle
                   gridClassName="grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
                 />

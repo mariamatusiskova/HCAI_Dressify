@@ -5,7 +5,7 @@ const WardrobePage = () => {
   const studio = useStudio();
 
   return (
-    <div className="p-4 space-y-3">
+    <div className="min-h-full p-4 space-y-4">
       <h2 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">Wardrobe</h2>
       <WardrobeLibrary
         items={studio.wardrobeItems}

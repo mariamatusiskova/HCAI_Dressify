@@ -302,13 +302,13 @@ const CanvasEditor = ({
     emptyStateMessage ??
     (preUploadState
       ? "Start with a photo. The preview will fill in as you build the look."
-      : "Generate pieces to start arranging the outfit on your canvas.");
+      : "Generate pieces to start arranging the outfit on your board.");
 
   return (
     <div className={cn("space-y-3 flex flex-1 min-h-0 flex-col", className)}>
       {!hideTitle && (
         <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
-          Canvas
+          Board
         </h3>
       )}
       <div
@@ -414,7 +414,7 @@ const CanvasEditor = ({
                   alt={item.category}
                   className="w-full h-full object-fill pointer-events-none"
                 />
-                <Badge className="absolute -top-1 -right-1 text-[8px] px-1 py-0 bg-ai-badge/90 text-foreground border-0 pointer-events-none">
+                <Badge className="absolute top-1 left-1 text-[9px] px-1 py-0 border-0 bg-background/80 text-foreground">
                   AI
                 </Badge>
               </div>
@@ -457,8 +457,8 @@ const CanvasEditor = ({
                       size="icon"
                       className="h-7 w-7 rounded shadow-sm hover:bg-primary hover:text-primary-foreground"
                       onMouseDown={(e) => handleDelete(e, item.id)}
-                      title="Remove from canvas"
-                      aria-label="Remove from canvas"
+                      title="Remove from board"
+                      aria-label="Remove from board"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>

@@ -10,7 +10,7 @@ const SavedPage = () => {
       <h2 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">Saved</h2>
       <div className="flex gap-2">
         <NavLink to="items" end className={tabBase} activeClassName={tabActive}>
-          Items
+          AI Items
         </NavLink>
         <NavLink to="outfits" className={tabBase} activeClassName={tabActive}>
           Outfits

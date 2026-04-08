@@ -13,7 +13,7 @@ import type { StyleTemplate } from "@/types/styleTemplates";
 import { DEFAULT_STYLE_TEMPLATES } from "@/types/styleTemplates";
 
 // When a new item is generated, this component calls onItemGenerated(item) so the parent 
-// can store it (and later display it / add to canvas).
+// can store it (and later display it / add to board).
 interface GeneratePanelProps {
   onItemGenerated: (item: GeneratedItem) => void;
   hideTitle?: boolean;

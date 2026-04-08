@@ -18,6 +18,22 @@ import { useOutfits, type CanvasItem, type GeneratedItem } from "@/hooks/useOutf
 import { useWardrobe } from "@/hooks/useWardrobe";
 import MenuNav from "./MenuNav";
 
+interface SavedGeneratedItem extends GeneratedItem {
+  savedId: string;
+  savedAt: string;
+}
+
+const SAVED_GENERATED_ITEMS_KEY = "dressify-saved-generated-items";
+
+function readSavedGeneratedItems(): SavedGeneratedItem[] {
+  try {
+    const stored = window.localStorage.getItem(SAVED_GENERATED_ITEMS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
 // components logic (saved outfits, wardrobe, etc.)
 function useStudioInternal() {
   // if the user agreed or not (data policy)
@@ -29,6 +45,7 @@ function useStudioInternal() {
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   // AI-generated clothing items
   const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
+  const [savedGeneratedItems, setSavedGeneratedItems] = useState<SavedGeneratedItem[]>(() => readSavedGeneratedItems());
   // items placed on canvas editor
   const [canvasItems, setCanvasItems] = useState<CanvasItem[]>([]);
   // stores the name type for the outfit
@@ -69,6 +86,10 @@ function useStudioInternal() {
     }
   }, [wardrobeSyncError]);
 
+  useEffect(() => {
+    window.localStorage.setItem(SAVED_GENERATED_ITEMS_KEY, JSON.stringify(savedGeneratedItems));
+  }, [savedGeneratedItems]);
+
   const handleAgree = useCallback(() => {
     setConsented(true);
     setShowConsent(false);
@@ -104,6 +125,35 @@ function useStudioInternal() {
   const handleDeleteGeneratedItem = useCallback((itemId: string) => {
     setGeneratedItems((prev) => prev.filter((item) => item.id !== itemId));
     toast.success("Generated item removed");
+  }, []);
+
+  const handleSaveGeneratedItem = useCallback((item: GeneratedItem) => {
+    const alreadySaved = savedGeneratedItems.some(
+      (savedItem) =>
+        savedItem.category === item.category &&
+        savedItem.imageUrl === item.imageUrl &&
+        savedItem.prompt === item.prompt,
+    );
+
+    if (alreadySaved) {
+      toast.info("Item already saved");
+      return;
+    }
+
+    setSavedGeneratedItems((prev) => [
+      {
+        ...item,
+        savedId: createId(),
+        savedAt: new Date().toISOString(),
+      },
+      ...prev,
+    ]);
+    toast.success("Item saved");
+  }, [savedGeneratedItems]);
+
+  const handleDeleteSavedGeneratedItem = useCallback((savedId: string) => {
+    setSavedGeneratedItems((prev) => prev.filter((item) => item.savedId !== savedId));
+    toast.success("Saved item removed");
   }, []);
 
   // add generated items to canvas
@@ -198,6 +248,11 @@ function useStudioInternal() {
     async (item: GeneratedItem) => {
       const result = await addWardrobeItem(item.category, item.imageUrl);
 
+      if (result.alreadyExists) {
+        toast.info("Already in wardrobe");
+        return;
+      }
+
       if (result.savedToCloud) {
         toast.success("Added to wardrobe");
       } else {
@@ -226,6 +281,11 @@ function useStudioInternal() {
       try {
         const result = await addWardrobeItem(category, imageUrl);
 
+        if (result.alreadyExists) {
+          toast.info("Photo is already in wardrobe");
+          return;
+        }
+
         if (result.savedToCloud) {
           toast.success("Photo added to wardrobe");
         } else {
@@ -252,6 +312,7 @@ function useStudioInternal() {
     setUserPhoto,
     generatedItems,
     setGeneratedItems,
+    savedGeneratedItems,
     canvasItems,
     setCanvasItems,
     outfitName,
@@ -265,6 +326,8 @@ function useStudioInternal() {
     handleItemGenerated,
     handleItemUpdate,
     handleDeleteGeneratedItem,
+    handleSaveGeneratedItem,
+    handleDeleteSavedGeneratedItem,
     handleAddToCanvas,
     handleAddWardrobeToCanvas,
     handleDeleteItem,

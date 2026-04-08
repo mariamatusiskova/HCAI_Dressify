@@ -75,7 +75,7 @@ const ImageEditorDialog = ({ open, item, onClose, onApply }: ImageEditorDialogPr
         createdAt: new Date().toISOString(),
       };
       setPreviewItem(newItem);
-      toast.success("Preview ready");
+      toast.success("Board ready");
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Failed to modify item";
       console.error("[Modify] Replicate modification failed:", error);
