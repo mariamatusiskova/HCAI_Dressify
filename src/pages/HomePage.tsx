@@ -3,14 +3,13 @@ import { Save } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-// upload user photo
-import UploadSection from "@/components/UploadSection";
 // generate outfit/item ideas
 import GeneratePanel from "@/components/GeneratePanel";
 // show generated items
 import GeneratedItemsList from "@/components/GeneratedItemsList";
 // place items on the canvas
 import CanvasEditor from "@/components/CanvasEditor";
+import WardrobeLibrary from "@/components/WardrobeLibrary";
 import { cn } from "@/lib/utils";
 import { useStudio } from "./Index";
 
@@ -21,7 +20,6 @@ const HomePage = () => {
   const hasPhoto = Boolean(studio.userPhoto);
   const hasCanvasContent = studio.canvasItems.length > 0;
   const canSaveOutfit = hasCanvasContent && !studio.isLoading;
-  const uploadIsPrimary = !hasPhoto;
   const generateIsPrimary = hasPhoto && !hasCanvasContent;
   const exampleCanvasCards = [
     {
@@ -54,27 +52,8 @@ const HomePage = () => {
       <div className="flex-1 min-h-0 overflow-hidden px-4 pb-24 pt-2 md:px-6 lg:px-10 lg:pb-6">
         <div className="mx-auto grid h-full max-w-[1440px] min-h-0 gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="min-h-0">
-            <section
-              className={cn(
-                panelShell,
-                "h-full overflow-y-auto transition-all duration-300",
-                uploadIsPrimary && "border-primary/18 bg-background/76 shadow-[0_0_0_1px_hsl(var(--primary)/0.06),0_18px_44px_hsl(var(--primary)/0.08)]",
-              )}
-            >
+            <section className={cn(panelShell, "space-y-4 transition-all duration-300")}>
               <div className="space-y-4">
-                <div className="space-y-3">
-                  <p className={cn(sectionEyebrow, uploadIsPrimary && "text-foreground/88")}>Upload background photo</p>
-                  <UploadSection
-                    photo={studio.userPhoto}
-                    onPhotoChange={studio.setUserPhoto}
-                    hideTitle
-                    emphasized={uploadIsPrimary}
-                    boxClassName="max-h-none min-h-[140px] md:min-h-[180px]"
-                  />
-                </div>
-
-                <div className="h-px bg-border/70" />
-
                 <div className="space-y-3">
                   <p className={sectionEyebrow}>Save outfit</p>
                   <div
@@ -105,6 +84,23 @@ const HomePage = () => {
                 </div>
               </div>
             </section>
+
+            <section className={cn(panelShell, "space-y-4 transition-all duration-300")}>
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <p className={sectionEyebrow}>Wardrobe</p>
+                  <div className="glass-panel-soft rounded-[24px] border p-3.5">
+                    <WardrobeLibrary
+                      items={studio.wardrobeItems}
+                      onAddToCanvas={studio.handleAddWardrobeToCanvas}
+                      onDelete={studio.deleteWardrobeItem}
+                      onAddPhoto={studio.addWardrobeItem}
+                      isLoading={studio.wardrobeLoading}
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
           </aside>
 
           <main className="min-h-0 space-y-4 overflow-y-auto pr-1">
@@ -126,6 +122,7 @@ const HomePage = () => {
 
               <CanvasEditor
                 userPhoto={studio.userPhoto}
+                onPhotoChange={studio.setUserPhoto}
                 items={studio.canvasItems}
                 onItemsChange={studio.setCanvasItems}
                 onDeleteItem={studio.handleDeleteItem}
@@ -133,11 +130,10 @@ const HomePage = () => {
                 emptyStateMessage={
                   hasPhoto
                     ? "Generate pieces to start arranging the outfit on your board."
-                    : "Start with a photo. The preview will fill in as you build the look."
+                    : "Start with a photo. Then build your look on the board"
                 }
                 hideTitle
                 className="space-y-0"
-                viewportClassName="min-h-[220px] md:min-h-[300px] xl:min-h-[340px]"
               />
             </section>
 
