@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import ItemCategoryBadge from "@/components/ItemCategoryBadge";
 import {
   RotateCw,
   ImageMinus,
@@ -630,9 +630,12 @@ const CanvasEditor = ({
                   alt={item.category}
                   className="h-full w-full object-fill pointer-events-none"
                 />
-                <Badge className="absolute left-2 top-2 rounded-full border border-white/10 bg-background/82 px-2 py-0.5 text-[10px] font-medium text-foreground shadow-none backdrop-blur-sm">
-                  {item.category || "Item"}
-                </Badge>
+                {item.source ? (
+                  <ItemCategoryBadge
+                    source={item.source}
+                    className="pointer-events-none z-10"
+                  />
+                ) : null}
               </div>
 
               {showToolbar && (

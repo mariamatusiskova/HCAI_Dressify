@@ -1,6 +1,7 @@
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import ItemCategoryBadge from "@/components/ItemCategoryBadge";
+import { getClothingCategoryLabel } from "@/lib/clothingCategory";
 import { useStudio } from "./Index";
 
 const ItemPage = () => {
@@ -19,9 +20,7 @@ const ItemPage = () => {
         <div key={item.savedId} className="rounded-lg border border-border bg-muted/20 p-2 space-y-2">
             <div className="relative aspect-square rounded-md overflow-hidden border border-border bg-muted/50">
               <img src={item.imageUrl} alt={item.category} className="w-full h-full object-cover" />
-              <Badge className="absolute top-1 left-1 text-[9px] px-1 py-0 border-0 bg-background/80 text-foreground">
-                AI
-              </Badge>
+              <ItemCategoryBadge source="ai" />
               <Button
                 variant="secondary"
                 size="icon"
@@ -34,10 +33,12 @@ const ItemPage = () => {
               </Button>
             </div>
 
-            <div className="text-[11px] text-muted-foreground truncate">{item.category}</div>
+            <div className="text-sm font-medium text-foreground">
+              {getClothingCategoryLabel(item.category, item.prompt)}
+            </div>
 
             {item.prompt ? (
-              <div className="text-[10px] text-muted-foreground line-clamp-2">{item.prompt}</div>
+              <div className="text-[10px] leading-4 text-muted-foreground line-clamp-2">{item.prompt}</div>
             ) : null}
 
             <div className="flex gap-2">

@@ -38,6 +38,10 @@ const HomePage = () => {
       alt: "Spring wardrobe view with jeans and grey t-shirt",
     },
   ];
+  const handleGenerateToBoard = (item: Parameters<typeof studio.handleItemGenerated>[0]) => {
+    studio.handleItemGenerated(item);
+    studio.handleAddToCanvas(item);
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -149,7 +153,7 @@ const HomePage = () => {
               </div>
 
               <GeneratePanel
-                onItemGenerated={studio.handleItemGenerated}
+                onItemGenerated={handleGenerateToBoard}
                 hideTitle
                 className="space-y-0"
                 buttonLabel="Generate outfit"

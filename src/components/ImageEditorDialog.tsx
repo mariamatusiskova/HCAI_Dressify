@@ -11,6 +11,7 @@ import StyleTemplateSelector from "@/components/StyleTemplateSelector";
 import type { StyleTemplate } from "@/types/styleTemplates";
 import { DEFAULT_STYLE_TEMPLATES } from "@/types/styleTemplates";
 import { useSystemPrompt } from "@/hooks/useSystemPrompt";
+import { detectClothingCategory } from "@/lib/clothingCategory";
 
 interface ImageEditorDialogProps {
   open: boolean;
@@ -67,9 +68,10 @@ const ImageEditorDialog = ({ open, item, onClose, onApply }: ImageEditorDialogPr
         aspectRatio: "1:1",
       });
       console.log("[Modify] Provider used: Replicate (p-image-edit)");
+      const inferredCategory = detectClothingCategory(userPrompt, item.category);
       const newItem: GeneratedItem = {
         id: createId(),
-        category: item.category,
+        category: inferredCategory,
         imageUrl,
         prompt: userPrompt,
         createdAt: new Date().toISOString(),
@@ -133,7 +135,7 @@ const ImageEditorDialog = ({ open, item, onClose, onApply }: ImageEditorDialogPr
           </div>
           <div className="space-y-3">
             <StyleTemplateSelector
-              category={"top"}
+              category={detectClothingCategory(prompt, item?.category ?? "top")}
               selectedTemplate={selectedTemplate}
               onTemplateChange={(template) => setSelectedTemplate(template)}
               systemPrompt={systemPrompt}
@@ -178,4 +180,3 @@ const ImageEditorDialog = ({ open, item, onClose, onApply }: ImageEditorDialogPr
 };
 
 export default ImageEditorDialog;
-

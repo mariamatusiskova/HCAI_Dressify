@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ImageMinus, Loader2, Wand2, Trash2, BookmarkPlus } from "lucide-react";
@@ -7,6 +6,8 @@ import { toast } from "sonner";
 import type { GeneratedItem } from "@/hooks/useOutfits";
 import { removeBackgroundAdvanced } from "@/services/backgroundRemoval";
 import ImageEditorDialog from "@/components/ImageEditorDialog";
+import ItemCategoryBadge from "@/components/ItemCategoryBadge";
+import { getClothingCategoryLabel } from "@/lib/clothingCategory";
 
 interface GeneratedItemsListProps {
   // the generated items to display
@@ -72,7 +73,7 @@ const GeneratedItemsList = ({
     <div className={cn("space-y-3", className)}>
       {!hideTitle && (
         <h3 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">
-          Generated Items
+          AI Items
         </h3>
       )}
       <div className={cn("grid grid-cols-2 gap-3 md:grid-cols-3", gridClassName)}>
@@ -83,14 +84,22 @@ const GeneratedItemsList = ({
             <div key={item.id} className="relative group">
               <button
                 onClick={() => onAddToCanvas(item)}
-                className="relative w-full rounded-lg overflow-hidden border border-border bg-muted aspect-square card-hover"
+                className="relative w-full overflow-hidden rounded-lg border border-border bg-muted text-left card-hover"
               >
-                <img src={item.imageUrl} alt={item.category} className="w-full h-full object-cover" />
-                <Badge className="absolute top-1 left-1 text-[9px] px-1 py-0 border-0 bg-background/80 text-foreground">
-                  AI
-                </Badge>
-                <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="text-xs font-medium text-primary">+ Board</span>
+                <div className="relative aspect-square overflow-hidden">
+                  <img src={item.imageUrl} alt={item.category} className="w-full h-full object-cover" />
+                  <ItemCategoryBadge source="ai" className="transition-opacity group-hover:opacity-0" />
+                  <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-xs font-medium text-primary">+ Board</span>
+                  </div>
+                </div>
+                <div className="space-y-1 px-2 pb-2 pt-2">
+                  <div className="text-sm font-medium text-foreground">
+                    {getClothingCategoryLabel(item.category, item.prompt)}
+                  </div>
+                  {item.prompt ? (
+                    <div className="text-[11px] leading-4 text-muted-foreground line-clamp-2">{item.prompt}</div>
+                  ) : null}
                 </div>
               </button>
               <Button

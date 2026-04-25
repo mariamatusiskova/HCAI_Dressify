@@ -16,6 +16,7 @@ import LanguageToggle from "@/components/LanguageToggle";
 import { createId } from "@/lib/id";
 import { useOutfits, type CanvasItem, type GeneratedItem } from "@/hooks/useOutfits";
 import { useWardrobe } from "@/hooks/useWardrobe";
+import { normalizeClothingCategory } from "@/lib/clothingCategory";
 import MenuNav from "./MenuNav";
 
 interface SavedGeneratedItem extends GeneratedItem {
@@ -90,6 +91,49 @@ function useStudioInternal() {
     window.localStorage.setItem(SAVED_GENERATED_ITEMS_KEY, JSON.stringify(savedGeneratedItems));
   }, [savedGeneratedItems]);
 
+  useEffect(() => {
+    setCanvasItems((prev) => {
+      let hasChanges = false;
+
+      const next = prev.map((canvasItem) => {
+        if (canvasItem.source === "wardrobe") {
+          return canvasItem;
+        }
+
+        const matchedGeneratedItem =
+          generatedItems.find((generatedItem) => generatedItem.imageUrl === canvasItem.imageUrl) ??
+          savedGeneratedItems.find((savedItem) => savedItem.imageUrl === canvasItem.imageUrl);
+
+        if (!matchedGeneratedItem) {
+          return canvasItem;
+        }
+
+        const normalizedCategory = normalizeClothingCategory(
+          matchedGeneratedItem.category,
+          matchedGeneratedItem.prompt,
+        );
+
+        if (
+          canvasItem.category === normalizedCategory &&
+          canvasItem.prompt === matchedGeneratedItem.prompt &&
+          canvasItem.source === "ai"
+        ) {
+          return canvasItem;
+        }
+
+        hasChanges = true;
+        return {
+          ...canvasItem,
+          category: normalizedCategory,
+          prompt: matchedGeneratedItem.prompt,
+          source: "ai" as const,
+        };
+      });
+
+      return hasChanges ? next : prev;
+    });
+  }, [generatedItems, savedGeneratedItems]);
+
   const handleAgree = useCallback(() => {
     setConsented(true);
     setShowConsent(false);
@@ -97,14 +141,22 @@ function useStudioInternal() {
 
   // adds the new generated item to the beginning of the list and shows a success message
   const handleItemGenerated = useCallback((item: GeneratedItem) => {
-    setGeneratedItems((prev) => [item, ...prev]);
-    toast.success(`${item.category} generated`);
+    const normalizedItem: GeneratedItem = {
+      ...item,
+      category: normalizeClothingCategory(item.category, item.prompt),
+    };
+    setGeneratedItems((prev) => [normalizedItem, ...prev]);
+    toast.success(`${normalizedItem.category} generated`);
   }, []);
 
   // updates an existing generated item
   const handleItemUpdate = useCallback((itemId: string, updatedItem: GeneratedItem) => {
+    const normalizedUpdatedItem: GeneratedItem = {
+      ...updatedItem,
+      category: normalizeClothingCategory(updatedItem.category, updatedItem.prompt),
+    };
     setGeneratedItems((prev) => {
-      const updated = prev.map((item) => (item.id === itemId ? updatedItem : item));
+      const updated = prev.map((item) => (item.id === itemId ? normalizedUpdatedItem : item));
       const oldItem = prev.find((item) => item.id === itemId);
 
       // replace the old item in generatedItems
@@ -112,7 +164,14 @@ function useStudioInternal() {
       if (oldItem) {
         setCanvasItems((currentCanvasItems) =>
           currentCanvasItems.map((canvasItem) =>
-            canvasItem.imageUrl === oldItem.imageUrl ? { ...canvasItem, imageUrl: updatedItem.imageUrl } : canvasItem,
+            canvasItem.imageUrl === oldItem.imageUrl
+              ? {
+                  ...canvasItem,
+                  imageUrl: normalizedUpdatedItem.imageUrl,
+                  category: normalizeClothingCategory(normalizedUpdatedItem.category, normalizedUpdatedItem.prompt),
+                  prompt: normalizedUpdatedItem.prompt,
+                }
+              : canvasItem,
           ),
         );
       }
@@ -128,11 +187,15 @@ function useStudioInternal() {
   }, []);
 
   const handleSaveGeneratedItem = useCallback((item: GeneratedItem) => {
+    const normalizedItem: GeneratedItem = {
+      ...item,
+      category: normalizeClothingCategory(item.category, item.prompt),
+    };
     const alreadySaved = savedGeneratedItems.some(
       (savedItem) =>
-        savedItem.category === item.category &&
-        savedItem.imageUrl === item.imageUrl &&
-        savedItem.prompt === item.prompt,
+        savedItem.category === normalizedItem.category &&
+        savedItem.imageUrl === normalizedItem.imageUrl &&
+        savedItem.prompt === normalizedItem.prompt,
     );
 
     if (alreadySaved) {
@@ -142,7 +205,7 @@ function useStudioInternal() {
 
     setSavedGeneratedItems((prev) => [
       {
-        ...item,
+        ...normalizedItem,
         savedId: createId(),
         savedAt: new Date().toISOString(),
       },
@@ -163,7 +226,9 @@ function useStudioInternal() {
       const canvasItem: CanvasItem = {
         id: createId(),
         imageUrl: item.imageUrl,
-        category: item.category,
+        category: normalizeClothingCategory(item.category, item.prompt),
+        prompt: item.prompt,
+        source: "ai",
         x: 40 + Math.random() * 80,
         y: 40 + Math.random() * 80,
         width: 80,
@@ -183,6 +248,7 @@ function useStudioInternal() {
         id: createId(),
         imageUrl: item.imageUrl,
         category: item.category,
+        source: "wardrobe",
         x: 40 + Math.random() * 80,
         y: 40 + Math.random() * 80,
         width: 80,

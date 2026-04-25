@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, Trash2, Upload } from "lucide-react";
 import type { WardrobeItem } from "@/hooks/useWardrobe";
+import ItemCategoryBadge from "@/components/ItemCategoryBadge";
+import { getClothingCategoryLabel } from "@/lib/clothingCategory";
 
 interface WardrobeLibraryProps {
   items: WardrobeItem[];
@@ -92,16 +93,19 @@ const WardrobeLibrary = ({ items, onAddToCanvas, onDelete, onAddPhoto, isLoading
             <div key={item.id} className="relative group">
               <button
                 onClick={() => onAddToCanvas(item)}
-                className="relative w-full overflow-hidden rounded-2xl border border-border bg-background/70 p-3 card-hover"
+                className="relative w-full overflow-hidden rounded-2xl border border-border bg-background/70 p-3 text-left card-hover"
               >
                 <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-muted/20">
                   <img src={item.imageUrl} alt={item.category} className="h-full w-full object-contain" />
+                  <ItemCategoryBadge source="wardrobe" />
+                  <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-xs font-medium text-primary">+ Board</span>
+                  </div>
                 </div>
-                <Badge className="absolute top-1 left-1 text-[9px] px-1 py-0 bg-background/80 text-foreground border-0">
-                  {item.category}
-                </Badge>
-                <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="text-xs font-medium text-primary">+ Board</span>
+                <div className="px-1 pb-1 pt-3">
+                  <div className="text-sm font-medium text-foreground">
+                    {getClothingCategoryLabel(item.category)}
+                  </div>
                 </div>
               </button>
               <div className="absolute bottom-1 left-1 right-1 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity z-10">
