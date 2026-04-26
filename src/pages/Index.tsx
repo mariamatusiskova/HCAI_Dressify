@@ -12,6 +12,7 @@ import AuthTopbar from "@/components/AuthTopbar";
 import ConsentModal from "@/components/ConsentModal";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageToggle from "@/components/LanguageToggle";
+import SystemWalkthrough from "@/components/SystemWalkthrough";
 // to make unique IDs
 import { createId } from "@/lib/id";
 import { useOutfits, type CanvasItem, type GeneratedItem } from "@/hooks/useOutfits";
@@ -400,6 +401,7 @@ const Index = () => {
         <main className="flex-1 min-h-0 overflow-y-auto pb-16 md:pb-0">
           <Outlet />
         </main>
+        <SystemWalkthrough />
       </div>
     </StudioContext.Provider>
   );
