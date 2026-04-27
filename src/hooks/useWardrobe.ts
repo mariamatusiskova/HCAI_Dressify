@@ -222,5 +222,6 @@ export function useWardrobe() {
     isLoading,
     isCloudSyncEnabled,
     syncError,
+    userId,
   };
 }

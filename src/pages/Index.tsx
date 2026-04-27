@@ -349,7 +349,7 @@ function useStudioInternal() {
 
         if (result.alreadyExists) {
           toast.info("Photo is already in wardrobe");
-          return;
+          return result.item;
         }
 
         if (result.savedToCloud) {
@@ -361,9 +361,12 @@ function useStudioInternal() {
               : "Photo saved locally only (no active Supabase session).",
           );
         }
+
+        return result.item;
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to add photo to wardrobe";
         toast.error(message);
+        return null;
       }
     },
     [addWardrobeItem],
