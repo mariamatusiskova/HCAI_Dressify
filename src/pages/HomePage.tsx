@@ -54,8 +54,8 @@ const HomePage = () => {
       </section>
 
       <div className="flex-1 min-h-0 overflow-hidden px-4 pb-24 pt-2 md:px-6 lg:px-10 lg:pb-6">
-        <div className="mx-auto grid h-full max-w-[1440px] min-h-0 gap-5 xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[380px_minmax(0,1fr)]">
-          <aside className="min-h-0 space-y-5">
+        <div className="mx-auto grid h-full max-w-[1500px] min-h-0 gap-7 xl:grid-cols-[420px_minmax(0,1fr)] 2xl:grid-cols-[440px_minmax(0,1fr)]">
+          <aside className="min-h-0 space-y-6">
             <section className={cn(panelShell, "space-y-4 transition-all duration-300")}>
               <div className="space-y-4">
                 <div className="space-y-3">

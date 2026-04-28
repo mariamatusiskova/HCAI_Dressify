@@ -151,19 +151,87 @@ function getAddedWardrobeItem(result: AddPhotoResult): WardrobeItem | null {
 function getCollectionMetaText(collection: CollectionCard) {
   const itemLabel = collection.count === 1 ? "item" : "items";
 
-  if (collection.id === "__all__") {
-    return `${collection.count} saved ${itemLabel}`;
-  }
-
-  if (collection.id === "__unsorted__") {
-    return collection.count > 0
-      ? `${collection.count} ${itemLabel} to sort`
-      : "Nothing to sort";
-  }
-
   return collection.count > 0
     ? `Your board · ${collection.count} ${itemLabel}`
     : "Your board";
+}
+
+interface CollectionAccentPalette {
+  edge: string;
+  dot: string;
+  dotGlow: string;
+  cornerGlow: string;
+  panelTint: string;
+  line: string;
+  lineGlow: string;
+}
+
+function getCollectionAccentPalette(
+  color: WardrobeFolderColor | string | null | undefined,
+): CollectionAccentPalette {
+  switch (color) {
+    case "amber":
+      return {
+        edge: "rgba(205, 150, 82, 0.18)",
+        dot: "rgba(220, 172, 103, 0.96)",
+        dotGlow: "rgba(220, 172, 103, 0.30)",
+        cornerGlow: "rgba(205, 150, 82, 0.16)",
+        panelTint: "rgba(138, 96, 52, 0.045)",
+        line: "rgba(210, 160, 92, 0.62)",
+        lineGlow: "rgba(210, 160, 92, 0.18)",
+      };
+    case "emerald":
+      return {
+        edge: "rgba(118, 170, 136, 0.16)",
+        dot: "rgba(113, 186, 142, 0.95)",
+        dotGlow: "rgba(113, 186, 142, 0.28)",
+        cornerGlow: "rgba(72, 150, 106, 0.14)",
+        panelTint: "rgba(70, 126, 98, 0.04)",
+        line: "rgba(118, 170, 136, 0.56)",
+        lineGlow: "rgba(118, 170, 136, 0.18)",
+      };
+    case "sky":
+      return {
+        edge: "rgba(104, 156, 208, 0.18)",
+        dot: "rgba(108, 183, 234, 0.96)",
+        dotGlow: "rgba(108, 183, 234, 0.30)",
+        cornerGlow: "rgba(78, 142, 192, 0.14)",
+        panelTint: "rgba(66, 98, 146, 0.04)",
+        line: "rgba(108, 183, 234, 0.62)",
+        lineGlow: "rgba(108, 183, 234, 0.18)",
+      };
+    case "violet":
+      return {
+        edge: "rgba(170, 132, 220, 0.18)",
+        dot: "rgba(176, 138, 232, 0.96)",
+        dotGlow: "rgba(176, 138, 232, 0.30)",
+        cornerGlow: "rgba(126, 88, 180, 0.16)",
+        panelTint: "rgba(86, 58, 128, 0.045)",
+        line: "rgba(176, 138, 232, 0.62)",
+        lineGlow: "rgba(176, 138, 232, 0.18)",
+      };
+    case "rose":
+      return {
+        edge: "rgba(212, 132, 166, 0.18)",
+        dot: "rgba(220, 138, 174, 0.96)",
+        dotGlow: "rgba(220, 138, 174, 0.30)",
+        cornerGlow: "rgba(172, 82, 122, 0.14)",
+        panelTint: "rgba(122, 60, 90, 0.04)",
+        line: "rgba(220, 138, 174, 0.60)",
+        lineGlow: "rgba(220, 138, 174, 0.18)",
+      };
+    case "stone":
+    default:
+      return {
+        edge: "rgba(152, 164, 124, 0.14)",
+        dot: "rgba(160, 174, 130, 0.92)",
+        dotGlow: "rgba(160, 174, 130, 0.24)",
+        cornerGlow: "rgba(118, 132, 94, 0.12)",
+        panelTint: "rgba(84, 92, 70, 0.035)",
+        line: "rgba(160, 174, 130, 0.50)",
+        lineGlow: "rgba(160, 174, 130, 0.16)",
+      };
+  }
 }
 
 const WardrobeLibrary = ({
@@ -374,6 +442,7 @@ const WardrobeLibrary = ({
     if (!nextFolder) return;
 
     setActiveCollectionId(nextFolder.id);
+    setActiveCollectionBoardTab("collections");
     setNewFolderName("");
     setNewFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
     setIsCreateFolderOpen(false);
@@ -414,6 +483,7 @@ const WardrobeLibrary = ({
       collectionId === "__unsorted__" ? null : collectionId,
     );
     setActiveCollectionId(collectionId);
+    setActiveCollectionBoardTab("collections");
   };
 
   if (isLoading || isFolderSyncLoading) {
@@ -480,7 +550,7 @@ const WardrobeLibrary = ({
         </div>
 
         {activeCollectionBoardTab === "collections" && (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-4">
             {visibleCollectionCards.length === 0 && (
               <div className="rounded-[24px] border border-dashed border-white/15 bg-background/30 p-6 text-sm text-muted-foreground">
                 No custom collections yet. Create a board to organize saved
@@ -492,17 +562,18 @@ const WardrobeLibrary = ({
               const isDropTarget =
                 dragOverCollectionId === collection.id &&
                 collection.id !== "__all__";
-              const colorOption = getWardrobeFolderColorOption(
+              const accentPalette = getCollectionAccentPalette(
                 collection.folder?.color,
               );
               const isUserFolder = collection.isUserFolder && collection.folder;
               const previewImages =
                 collectionPreviewImages[collection.id] ?? [];
-              const heroImage = previewImages[0];
-              const sideImages = previewImages.slice(1, 3);
+              const heroImage =
+                collection.folder?.coverImageUrl ?? previewImages[0];
+              const sideImages = previewImages.slice(heroImage ? 1 : 0, 3);
 
               return (
-                <div key={collection.id} className="space-y-3">
+                <div key={collection.id} className="space-y-4">
                   <div
                     onDragOver={(event) =>
                       handleCollectionDragOver(event, collection.id)
@@ -516,52 +587,127 @@ const WardrobeLibrary = ({
                       void handleCollectionDrop(event, collection.id)
                     }
                     className={cn(
-                      "group relative overflow-hidden rounded-[24px] border bg-background/36 p-2 transition-all duration-200",
-                      "hover:border-white/22 hover:bg-background/46",
-                      isActive &&
-                        "border-white/65 ring-1 ring-white/30 shadow-[0_0_0_1px_rgba(255,255,255,0.18)]",
-                      !isActive && "border-white/10",
-                      isDropTarget &&
-                        "scale-[1.01] border-white/70 ring-1 ring-white/40",
+                      "group relative overflow-hidden rounded-[30px] border p-[14px] transition-all duration-200",
+                      "border-white/10 bg-[linear-gradient(180deg,rgba(12,12,14,0.96),rgba(7,7,9,0.985))]",
+                      "hover:border-white/16",
+                      isActive && "border-white/18",
+                      isDropTarget && "scale-[1.01] border-white/22",
                     )}
+                    style={{
+                      boxShadow:
+                        "0 22px 56px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.045)",
+                    }}
                   >
+                    {isUserFolder && (
+                      <>
+                        <div
+                          className="pointer-events-none absolute left-0 top-0 h-44 w-44 rounded-tl-[30px]"
+                          style={{
+                            background: `radial-gradient(circle at 0 0, rgba(255,255,255,0.08) 0%, ${accentPalette.cornerGlow} 20%, rgba(255,255,255,0.02) 34%, transparent 68%)`,
+                            filter: "blur(10px)",
+                            opacity: 0.68,
+                            mixBlendMode: "screen",
+                          }}
+                        />
+                        <div
+                          className="pointer-events-none absolute left-6 top-[1px] h-px w-[112px] rounded-full"
+                          style={{
+                            background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 12%, ${accentPalette.line} 34%, ${accentPalette.edge} 62%, transparent 100%)`,
+                            boxShadow: `0 0 9px ${accentPalette.lineGlow}`,
+                            opacity: 0.76,
+                          }}
+                        />
+                        <div
+                          className="pointer-events-none absolute left-[1px] top-6 h-[112px] w-px rounded-full"
+                          style={{
+                            background: `linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 12%, ${accentPalette.line} 34%, ${accentPalette.edge} 62%, transparent 100%)`,
+                            boxShadow: `0 0 9px ${accentPalette.lineGlow}`,
+                            opacity: 0.76,
+                          }}
+                        />
+                        <div
+                          className="pointer-events-none absolute left-0 top-0 h-14 w-[120px]"
+                          style={{
+                            background: `linear-gradient(90deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.035) 32%, transparent 100%)`,
+                            filter: "blur(12px)",
+                            opacity: 0.28,
+                            mixBlendMode: "screen",
+                          }}
+                        />
+                        <div
+                          className="pointer-events-none absolute left-0 top-0 h-[120px] w-14"
+                          style={{
+                            background: `linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.035) 32%, transparent 100%)`,
+                            filter: "blur(12px)",
+                            opacity: 0.28,
+                            mixBlendMode: "screen",
+                          }}
+                        />
+                        <div
+                          className="pointer-events-none absolute inset-[14px] rounded-[24px]"
+                          style={{
+                            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.025)",
+                            border: "1px solid rgba(255,255,255,0.055)",
+                          }}
+                        />
+                      </>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => setActiveCollectionId(collection.id)}
-                      className="block w-full text-left"
+                      className="relative z-10 block w-full text-left"
                     >
-                      <div className="grid aspect-[1.08/1] grid-cols-[minmax(0,2.35fr)_minmax(0,1fr)] gap-2">
-                        <div className="relative overflow-hidden rounded-[18px] border border-black/5 bg-white/[0.03]">
+                      <div className="grid aspect-[1.08/1] grid-cols-[minmax(0,2.45fr)_minmax(0,1fr)] gap-4">
+                        <div
+                          className="relative overflow-hidden rounded-[24px] border border-white/6"
+                          style={{
+                            backgroundImage: [
+                              `radial-gradient(circle at 14% 18%, ${accentPalette.panelTint}, transparent 34%)`,
+                              "linear-gradient(180deg, rgba(6,6,8,0.90), rgba(4,4,5,0.96))",
+                            ].join(", "),
+                            boxShadow:
+                              "inset 0 1px 0 rgba(255,255,255,0.03), inset 0 0 0 1px rgba(255,255,255,0.02)",
+                          }}
+                        >
                           {heroImage ? (
                             <img
                               src={heroImage}
                               alt={collection.title}
-                              className="h-full w-full object-contain p-3"
+                              className="h-full w-full object-contain p-5"
                             />
                           ) : (
-                            <div className="flex h-full items-center justify-center text-muted-foreground/50">
-                              <ImageIcon className="h-7 w-7" />
+                            <div className="flex h-full items-center justify-center text-muted-foreground/42">
+                              <ImageIcon className="h-9 w-9" />
                             </div>
                           )}
                         </div>
 
-                        <div className="grid grid-rows-2 gap-2">
+                        <div className="grid grid-rows-2 gap-4">
                           {[0, 1].map((index) => {
                             const imageUrl = sideImages[index];
 
                             return (
                               <div
                                 key={index}
-                                className="relative overflow-hidden rounded-[14px] border border-black/5 bg-white/[0.03]"
+                                className="relative overflow-hidden rounded-[20px] border border-white/6"
+                                style={{
+                                  backgroundImage: [
+                                    `radial-gradient(circle at 14% 18%, ${accentPalette.panelTint}, transparent 34%)`,
+                                    "linear-gradient(180deg, rgba(6,6,8,0.90), rgba(4,4,5,0.96))",
+                                  ].join(", "),
+                                  boxShadow:
+                                    "inset 0 1px 0 rgba(255,255,255,0.03), inset 0 0 0 1px rgba(255,255,255,0.02)",
+                                }}
                               >
                                 {imageUrl ? (
                                   <img
                                     src={imageUrl}
                                     alt=""
-                                    className="h-full w-full object-contain p-2"
+                                    className="h-full w-full object-contain p-4"
                                   />
                                 ) : (
-                                  <div className="flex h-full items-center justify-center text-muted-foreground/35">
+                                  <div className="flex h-full items-center justify-center text-muted-foreground/28">
                                     <ImageIcon className="h-4 w-4" />
                                   </div>
                                 )}
@@ -573,14 +719,14 @@ const WardrobeLibrary = ({
                     </button>
 
                     {isUserFolder && (
-                      <div className="absolute bottom-3 right-3 z-20">
+                      <div className="absolute bottom-5 right-5 z-20">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
                               type="button"
                               variant="secondary"
                               size="icon"
-                              className="h-8 w-8 rounded-full border border-white/10 bg-background/86 shadow-sm transition-colors hover:bg-background"
+                              className="h-9 w-9 rounded-full border border-white/10 bg-[rgba(10,10,12,0.84)] shadow-[0_10px_20px_rgba(0,0,0,0.35)] transition-colors hover:bg-[rgba(18,18,22,0.92)]"
                             >
                               <Pencil className="h-3.5 w-3.5" />
                               <span className="sr-only">
@@ -659,18 +805,19 @@ const WardrobeLibrary = ({
                     onClick={() => setActiveCollectionId(collection.id)}
                     className="block px-1 text-left"
                   >
-                    <div className="flex items-center gap-2 text-xl font-medium text-foreground">
+                    <div className="flex items-center gap-3 text-[18px] font-medium text-foreground md:text-[19px]">
                       {isUserFolder && (
                         <span
-                          className={cn(
-                            "h-3 w-3 rounded-full",
-                            colorOption.chipClassName,
-                          )}
+                          className="h-3.5 w-3.5 rounded-full"
+                          style={{
+                            backgroundColor: accentPalette.dot,
+                            boxShadow: `0 0 16px ${accentPalette.dotGlow}`,
+                          }}
                         />
                       )}
                       <span className="truncate">{collection.title}</span>
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="mt-1.5 text-sm text-muted-foreground/92">
                       {getCollectionMetaText(collection)}
                     </p>
                   </button>
