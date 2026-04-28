@@ -34,12 +34,12 @@ import { cn } from "@/lib/utils";
 import {
   Check,
   ChevronRight,
-  FolderOpen,
   FolderPlus,
   ImageIcon,
   Loader2,
   MoreHorizontal,
   Palette,
+  Pencil,
   Plus,
   Search,
   SlidersHorizontal,
@@ -66,6 +66,7 @@ import {
 type WardrobeCategory = "top" | "trousers" | "shoes";
 type WardrobeFilter = "all" | WardrobeCategory;
 type WardrobeCollectionId = "__all__" | "__unsorted__" | string;
+type CollectionBoardTab = "all" | "collections" | "unsorted";
 type AddPhotoResult = WardrobeItem | AddWardrobeResult | null | void;
 
 interface WardrobeLibraryProps {
@@ -87,7 +88,6 @@ interface CollectionCard {
   count: number;
   isUserFolder: boolean;
   folder?: WardrobeFolder;
-  coverImageUrl?: string | null;
 }
 
 const compactTabs: Array<{ value: WardrobeFilter; label: string }> = [
@@ -96,6 +96,13 @@ const compactTabs: Array<{ value: WardrobeFilter; label: string }> = [
   { value: "trousers", label: "Bottoms" },
   { value: "shoes", label: "Shoes" },
 ];
+
+const collectionBoardTabs: Array<{ value: CollectionBoardTab; label: string }> =
+  [
+    { value: "all", label: "All" },
+    { value: "collections", label: "Collections" },
+    { value: "unsorted", label: "Unsorted" },
+  ];
 
 function getWardrobeItemTitle(category: string) {
   const normalized = normalizeClothingCategory(category);
@@ -118,19 +125,19 @@ function getWardrobeCollectionSummary(
   if (collectionId === "__all__") {
     return {
       title: "All pieces",
-      description: "Every wardrobe photo you decided to keep for styling.",
+      description: "Browse everything you saved for styling.",
     };
   }
 
   if (collectionId === "__unsorted__") {
     return {
       title: "Unsorted",
-      description: "Fresh additions waiting to be filed into a folder.",
+      description: "Fresh additions waiting to be filed into a collection.",
     };
   }
 
   return {
-    title: folderName ?? "Folder",
+    title: folderName ?? "Collection",
     description: "A focused collection you can build outfits from quickly.",
   };
 }
@@ -139,6 +146,24 @@ function getAddedWardrobeItem(result: AddPhotoResult): WardrobeItem | null {
   if (!result) return null;
   if ("item" in result) return result.item;
   return result;
+}
+
+function getCollectionMetaText(collection: CollectionCard) {
+  const itemLabel = collection.count === 1 ? "item" : "items";
+
+  if (collection.id === "__all__") {
+    return `${collection.count} saved ${itemLabel}`;
+  }
+
+  if (collection.id === "__unsorted__") {
+    return collection.count > 0
+      ? `${collection.count} ${itemLabel} to sort`
+      : "Nothing to sort";
+  }
+
+  return collection.count > 0
+    ? `Your board · ${collection.count} ${itemLabel}`
+    : "Your board";
 }
 
 const WardrobeLibrary = ({
@@ -162,6 +187,8 @@ const WardrobeLibrary = ({
   );
   const [activeCollectionId, setActiveCollectionId] =
     useState<WardrobeCollectionId>("__all__");
+  const [activeCollectionBoardTab, setActiveCollectionBoardTab] =
+    useState<CollectionBoardTab>("all");
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dragOverCollectionId, setDragOverCollectionId] =
     useState<WardrobeCollectionId | null>(null);
@@ -179,7 +206,6 @@ const WardrobeLibrary = ({
     assignItemToFolder,
     getAssignedFolderId,
     isLoading: isFolderSyncLoading,
-    isCloudSyncEnabled: isFolderCloudSyncEnabled,
     syncError: folderSyncError,
   } = useWardrobeFolders(items);
 
@@ -188,60 +214,48 @@ const WardrobeLibrary = ({
     [assignments, items],
   );
 
-  const folderCoverImages = useMemo(() => {
-    const covers: Record<string, string | null> = {};
+  const collectionCards = useMemo<CollectionCard[]>(() => {
+    return folders.map((folder) => ({
+      id: folder.id,
+      title: folder.name,
+      description: "Curated collection",
+      count: folderCounts[folder.id] ?? 0,
+      isUserFolder: true,
+      folder,
+    }));
+  }, [folderCounts, folders]);
+
+  const collectionPreviewImages = useMemo<Record<string, string[]>>(() => {
+    const previews: Record<string, string[]> = {
+      __all__: items
+        .map((item) => item.imageUrl)
+        .filter(Boolean)
+        .slice(0, 3),
+      __unsorted__: items
+        .filter((item) => !assignments[item.id])
+        .map((item) => item.imageUrl)
+        .filter(Boolean)
+        .slice(0, 3),
+    };
 
     for (const folder of folders) {
-      covers[folder.id] = folder.coverImageUrl ?? null;
+      previews[folder.id] = items
+        .filter((item) => assignments[item.id] === folder.id)
+        .map((item) => item.imageUrl)
+        .filter(Boolean)
+        .slice(0, 3);
     }
 
-    for (const item of items) {
-      const folderId = assignments[item.id];
-      if (!folderId || covers[folderId]) continue;
-      covers[folderId] = item.imageUrl;
-    }
-
-    return covers;
+    return previews;
   }, [assignments, folders, items]);
 
-  const collectionCards = useMemo<CollectionCard[]>(() => {
-    const firstUnsortedItem = items.find((item) => !assignments[item.id]);
+  const visibleCollectionCards = useMemo(() => {
+    if (activeCollectionBoardTab === "collections") {
+      return collectionCards;
+    }
 
-    return [
-      {
-        id: "__all__",
-        title: "All pieces",
-        description: "Everything you saved for styling.",
-        count: items.length,
-        isUserFolder: false,
-        coverImageUrl: items[0]?.imageUrl ?? null,
-      },
-      {
-        id: "__unsorted__",
-        title: "Unsorted",
-        description: "Fresh pieces waiting for a folder.",
-        count: uncategorizedCount,
-        isUserFolder: false,
-        coverImageUrl: firstUnsortedItem?.imageUrl ?? null,
-      },
-      ...folders.map((folder) => ({
-        id: folder.id,
-        title: folder.name,
-        description: "Curated collection",
-        count: folderCounts[folder.id] ?? 0,
-        isUserFolder: true,
-        folder,
-        coverImageUrl: folderCoverImages[folder.id] ?? null,
-      })),
-    ];
-  }, [
-    assignments,
-    folderCounts,
-    folderCoverImages,
-    folders,
-    items,
-    uncategorizedCount,
-  ]);
+    return collectionCards;
+  }, [activeCollectionBoardTab, collectionCards]);
 
   useEffect(() => {
     setActiveCollectionId((prev) => {
@@ -413,209 +427,263 @@ const WardrobeLibrary = ({
   if (!isCompact) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">
-              Keep your personal pieces filed into folders so the wardrobe stays
-              clean as it grows.
-            </p>
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground/70">
-              {isFolderCloudSyncEnabled
-                ? "Folders sync with Supabase, so collections travel across devices."
-                : "Folders are saved locally until Supabase sync is available."}
-            </p>
-            {folderSyncError && (
-              <p className="text-xs text-destructive/90">{folderSyncError}</p>
-            )}
+        <div className="space-y-1">
+          <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground/70">
+            Collection
+          </div>
+          <h2 className="text-2xl font-display font-medium text-foreground">
+            Saved boards
+          </h2>
+          {folderSyncError && (
+            <p className="text-xs text-destructive/90">{folderSyncError}</p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {collectionBoardTabs.map((tab) => (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => {
+                  setActiveCollectionBoardTab(tab.value);
+
+                  if (tab.value === "all") {
+                    setActiveCollectionId("__all__");
+                  }
+
+                  if (tab.value === "unsorted") {
+                    setActiveCollectionId("__unsorted__");
+                  }
+                }}
+                className={cn(
+                  "h-11 rounded-xl border px-5 text-sm font-medium transition-colors",
+                  activeCollectionBoardTab === tab.value
+                    ? "border-white/20 bg-white/[0.18] text-foreground shadow-sm"
+                    : "border-white/10 bg-background/56 text-foreground hover:border-white/20 hover:bg-background/70",
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
           <Button
             type="button"
             variant="secondary"
-            className="h-11 gap-2 rounded-xl border border-white/10 bg-background/56 px-4"
+            className="h-11 gap-2 rounded-xl border border-white/10 bg-background/56 px-5 text-sm font-medium text-foreground transition-colors hover:border-white/20 hover:bg-background/70"
             onClick={() => setIsCreateFolderOpen(true)}
           >
             <FolderPlus className="h-4 w-4" />
-            New folder
+            Create board
           </Button>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {collectionCards.map((collection) => {
-            const isActive = activeCollectionId === collection.id;
-            const isDropTarget =
-              dragOverCollectionId === collection.id &&
-              collection.id !== "__all__";
-            const colorOption = getWardrobeFolderColorOption(
-              collection.folder?.color,
-            );
-            const isUserFolder = collection.isUserFolder && collection.folder;
-
-            return (
-              <div
-                key={collection.id}
-                onDragOver={(event) =>
-                  handleCollectionDragOver(event, collection.id)
-                }
-                onDragLeave={() =>
-                  setDragOverCollectionId((prev) =>
-                    prev === collection.id ? null : prev,
-                  )
-                }
-                onDrop={(event) =>
-                  void handleCollectionDrop(event, collection.id)
-                }
-                className={cn(
-                  "group relative min-h-[168px] overflow-hidden rounded-[22px] border p-4 transition-all duration-200",
-                  isUserFolder
-                    ? colorOption.toneClassName
-                    : isActive
-                      ? "border-primary/60 bg-primary/[0.08] shadow-[0_0_0_1px_hsl(var(--primary)/0.16)]"
-                      : "border-white/8 bg-background/50 hover:border-primary/24 hover:bg-background/60",
-                  isActive && "ring-1 ring-primary/35",
-                  isDropTarget &&
-                    "scale-[1.01] border-primary/70 ring-2 ring-primary/35",
-                )}
-              >
-                {collection.coverImageUrl && (
-                  <div className="pointer-events-none absolute inset-y-0 right-0 w-32 opacity-28 blur-[0.2px]">
-                    <img
-                      src={collection.coverImageUrl}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => setActiveCollectionId(collection.id)}
-                  className="relative z-10 flex h-full w-full flex-col justify-between text-left"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground/70">
-                        {isUserFolder && (
-                          <span
-                            className={cn(
-                              "h-2 w-2 rounded-full",
-                              colorOption.chipClassName,
-                            )}
-                          />
-                        )}
-                        {isUserFolder ? "Folder" : "Collection"}
-                      </div>
-                      <div className="mt-2 text-lg font-medium text-foreground">
-                        {collection.title}
-                      </div>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {collection.description}
-                      </p>
-                    </div>
-                    <div className="rounded-full border border-white/10 bg-background/70 px-3 py-1 text-sm text-foreground">
-                      {collection.count}
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground/70">
-                    <FolderOpen className="h-3.5 w-3.5" />
-                    {collection.id === "__all__"
-                      ? "Open collection"
-                      : "Drop items here"}
-                  </div>
-                </button>
-
-                {isUserFolder && (
-                  <div className="absolute right-3 top-3 z-20">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="icon"
-                          className="h-7 w-7 rounded-full border border-white/10 bg-background/80 opacity-0 transition-opacity group-hover:opacity-100"
-                        >
-                          <MoreHorizontal className="h-3.5 w-3.5" />
-                          <span className="sr-only">Open folder actions</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel>
-                          {collection.title}
-                        </DropdownMenuLabel>
-                        <DropdownMenuSub>
-                          <DropdownMenuSubTrigger>
-                            <Palette className="mr-2 h-4 w-4" />
-                            Folder color
-                          </DropdownMenuSubTrigger>
-                          <DropdownMenuSubContent>
-                            <DropdownMenuRadioGroup
-                              value={collection.folder.color}
-                              onValueChange={(nextValue) =>
-                                void updateFolder(collection.folder!.id, {
-                                  color: nextValue as WardrobeFolderColor,
-                                })
-                              }
-                            >
-                              {WARDROBE_FOLDER_COLORS.map((option) => (
-                                <DropdownMenuRadioItem
-                                  key={option.value}
-                                  value={option.value}
-                                >
-                                  <span
-                                    className={cn(
-                                      "mr-2 h-2.5 w-2.5 rounded-full",
-                                      option.chipClassName,
-                                    )}
-                                  />
-                                  {option.label}
-                                </DropdownMenuRadioItem>
-                              ))}
-                            </DropdownMenuRadioGroup>
-                          </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-                        {collection.folder.coverImageUrl && (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              void updateFolder(collection.folder!.id, {
-                                coverImageUrl: null,
-                              })
-                            }
-                          >
-                            <ImageIcon className="mr-2 h-4 w-4" />
-                            Remove custom cover
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => {
-                            if (activeCollectionId === collection.id) {
-                              setActiveCollectionId("__all__");
-                            }
-                            void deleteFolder(collection.id);
-                          }}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete folder
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                )}
+        {activeCollectionBoardTab === "collections" && (
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {visibleCollectionCards.length === 0 && (
+              <div className="rounded-[24px] border border-dashed border-white/15 bg-background/30 p-6 text-sm text-muted-foreground">
+                No custom collections yet. Create a board to organize saved
+                pieces.
               </div>
-            );
-          })}
-        </div>
+            )}
+            {visibleCollectionCards.map((collection) => {
+              const isActive = activeCollectionId === collection.id;
+              const isDropTarget =
+                dragOverCollectionId === collection.id &&
+                collection.id !== "__all__";
+              const colorOption = getWardrobeFolderColorOption(
+                collection.folder?.color,
+              );
+              const isUserFolder = collection.isUserFolder && collection.folder;
+              const previewImages =
+                collectionPreviewImages[collection.id] ?? [];
+              const heroImage = previewImages[0];
+              const sideImages = previewImages.slice(1, 3);
+
+              return (
+                <div key={collection.id} className="space-y-3">
+                  <div
+                    onDragOver={(event) =>
+                      handleCollectionDragOver(event, collection.id)
+                    }
+                    onDragLeave={() =>
+                      setDragOverCollectionId((prev) =>
+                        prev === collection.id ? null : prev,
+                      )
+                    }
+                    onDrop={(event) =>
+                      void handleCollectionDrop(event, collection.id)
+                    }
+                    className={cn(
+                      "group relative overflow-hidden rounded-[24px] border bg-background/36 p-2 transition-all duration-200",
+                      "hover:border-white/22 hover:bg-background/46",
+                      isActive &&
+                        "border-white/65 ring-1 ring-white/30 shadow-[0_0_0_1px_rgba(255,255,255,0.18)]",
+                      !isActive && "border-white/10",
+                      isDropTarget &&
+                        "scale-[1.01] border-white/70 ring-1 ring-white/40",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setActiveCollectionId(collection.id)}
+                      className="block w-full text-left"
+                    >
+                      <div className="grid aspect-[1.08/1] grid-cols-[minmax(0,2.35fr)_minmax(0,1fr)] gap-2">
+                        <div className="relative overflow-hidden rounded-[18px] border border-black/5 bg-white/[0.03]">
+                          {heroImage ? (
+                            <img
+                              src={heroImage}
+                              alt={collection.title}
+                              className="h-full w-full object-contain p-3"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-muted-foreground/50">
+                              <ImageIcon className="h-7 w-7" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid grid-rows-2 gap-2">
+                          {[0, 1].map((index) => {
+                            const imageUrl = sideImages[index];
+
+                            return (
+                              <div
+                                key={index}
+                                className="relative overflow-hidden rounded-[14px] border border-black/5 bg-white/[0.03]"
+                              >
+                                {imageUrl ? (
+                                  <img
+                                    src={imageUrl}
+                                    alt=""
+                                    className="h-full w-full object-contain p-2"
+                                  />
+                                ) : (
+                                  <div className="flex h-full items-center justify-center text-muted-foreground/35">
+                                    <ImageIcon className="h-4 w-4" />
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </button>
+
+                    {isUserFolder && (
+                      <div className="absolute bottom-3 right-3 z-20">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="icon"
+                              className="h-8 w-8 rounded-full border border-white/10 bg-background/86 shadow-sm transition-colors hover:bg-background"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                              <span className="sr-only">
+                                Open collection actions
+                              </span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel>
+                              {collection.title}
+                            </DropdownMenuLabel>
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger>
+                                <Palette className="mr-2 h-4 w-4" />
+                                Collection color
+                              </DropdownMenuSubTrigger>
+                              <DropdownMenuSubContent>
+                                <DropdownMenuRadioGroup
+                                  value={collection.folder.color}
+                                  onValueChange={(nextValue) =>
+                                    void updateFolder(collection.folder!.id, {
+                                      color: nextValue as WardrobeFolderColor,
+                                    })
+                                  }
+                                >
+                                  {WARDROBE_FOLDER_COLORS.map((option) => (
+                                    <DropdownMenuRadioItem
+                                      key={option.value}
+                                      value={option.value}
+                                    >
+                                      <span
+                                        className={cn(
+                                          "mr-2 h-2.5 w-2.5 rounded-full",
+                                          option.chipClassName,
+                                        )}
+                                      />
+                                      {option.label}
+                                    </DropdownMenuRadioItem>
+                                  ))}
+                                </DropdownMenuRadioGroup>
+                              </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                            {collection.folder.coverImageUrl && (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  void updateFolder(collection.folder!.id, {
+                                    coverImageUrl: null,
+                                  })
+                                }
+                              >
+                                <ImageIcon className="mr-2 h-4 w-4" />
+                                Remove custom cover
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => {
+                                if (activeCollectionId === collection.id) {
+                                  setActiveCollectionId("__all__");
+                                }
+                                void deleteFolder(collection.id);
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete collection
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveCollectionId(collection.id)}
+                    className="block px-1 text-left"
+                  >
+                    <div className="flex items-center gap-2 text-xl font-medium text-foreground">
+                      {isUserFolder && (
+                        <span
+                          className={cn(
+                            "h-3 w-3 rounded-full",
+                            colorOption.chipClassName,
+                          )}
+                        />
+                      )}
+                      <span className="truncate">{collection.title}</span>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {getCollectionMetaText(collection)}
+                    </p>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <div className="glass-panel rounded-[28px] border p-5">
           <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div className="space-y-1">
-                <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground/70">
-                  Current collection
-                </div>
                 <h3 className="text-2xl font-display font-medium text-foreground">
                   {activeCollectionSummary.title}
                 </h3>
@@ -625,8 +693,9 @@ const WardrobeLibrary = ({
                 {activeCollectionId !== "__all__" &&
                   activeCollectionId !== "__unsorted__" && (
                     <p className="text-xs uppercase tracking-[0.16em] text-primary/80">
-                      New photos added here will go straight into this folder.
-                      Drag pieces onto folder cards to move them.
+                      New photos added here will go straight into this
+                      collection. Drag pieces onto collection cards to move
+                      them.
                     </p>
                   )}
               </div>
@@ -657,7 +726,7 @@ const WardrobeLibrary = ({
                   ) : (
                     <Upload className="h-4 w-4" />
                   )}
-                  Add wardrobe photo
+                  Add item photo
                 </Button>
               </div>
             </div>
@@ -725,7 +794,7 @@ const WardrobeLibrary = ({
                 <p className="mt-1 text-xs text-muted-foreground">
                   {items.length === 0
                     ? "Start by adding a few photos of the pieces you actually own."
-                    : "Try another folder, another category, or add a new wardrobe photo."}
+                    : "Try another collection, another category, or add a new wardrobe photo."}
                 </p>
               </div>
             ) : (
@@ -788,7 +857,7 @@ const WardrobeLibrary = ({
                           <div className="flex items-center justify-between gap-3">
                             <div className="min-w-0 text-xs uppercase tracking-[0.16em] text-muted-foreground/80">
                               {assignedFolderName
-                                ? `Folder: ${assignedFolderName}`
+                                ? `Collection: ${assignedFolderName}`
                                 : "Unsorted"}
                             </div>
                             <div className="text-xs uppercase tracking-[0.16em] text-primary/85">
@@ -833,13 +902,13 @@ const WardrobeLibrary = ({
                                 }
                               >
                                 <ImageIcon className="mr-2 h-4 w-4" />
-                                Use as folder cover
+                                Use as collection cover
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
                             <DropdownMenuSub>
                               <DropdownMenuSubTrigger>
-                                Move to folder
+                                Move to collection
                               </DropdownMenuSubTrigger>
                               <DropdownMenuSubContent>
                                 <DropdownMenuRadioGroup
@@ -895,10 +964,10 @@ const WardrobeLibrary = ({
         <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
           <DialogContent className="max-w-md border-border bg-card">
             <DialogHeader>
-              <DialogTitle>Create wardrobe folder</DialogTitle>
+              <DialogTitle>Create wardrobe collection</DialogTitle>
               <DialogDescription>
                 Group pieces into saved boards. Pick a color now, then set a
-                cover from any item inside the folder.
+                cover from any item inside the collection.
               </DialogDescription>
             </DialogHeader>
 
@@ -908,7 +977,7 @@ const WardrobeLibrary = ({
                   htmlFor="wardrobe-folder-name"
                   className="text-sm font-medium text-foreground"
                 >
-                  Folder name
+                  Collection name
                 </label>
                 <Input
                   id="wardrobe-folder-name"
@@ -927,7 +996,7 @@ const WardrobeLibrary = ({
 
               <div className="space-y-2">
                 <div className="text-sm font-medium text-foreground">
-                  Folder color
+                  Collection color
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {WARDROBE_FOLDER_COLORS.map((option) => (
@@ -972,7 +1041,7 @@ const WardrobeLibrary = ({
                 onClick={() => void handleCreateFolder()}
                 disabled={!newFolderName.trim()}
               >
-                Create folder
+                Create Collection
               </Button>
             </DialogFooter>
           </DialogContent>

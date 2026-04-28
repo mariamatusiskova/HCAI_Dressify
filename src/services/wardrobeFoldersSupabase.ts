@@ -84,7 +84,7 @@ export async function createSupabaseWardrobeFolder(
     .single();
 
   if (inserted.error || !inserted.data) {
-    throw inserted.error ?? new Error("Failed to create wardrobe folder");
+    throw inserted.error ?? new Error("Failed to create wardrobe collection");
   }
 
   return inserted.data as WardrobeFolderRecord;

@@ -194,7 +194,7 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
         if (!resolvedUserId) {
           setIsCloudSyncEnabled(false);
           setUserId(null);
-          setSyncError("Folder boards are saved locally until you sign in.");
+          setSyncError("Collection boards are saved locally until you sign in.");
           hasInitializedRef.current = true;
           setIsLoading(false);
           return;
@@ -272,7 +272,7 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
         setIsCloudSyncEnabled(false);
         setUserId(null);
         setSyncError(
-          `Folder sync failed (${message}). Folder boards are saved locally on this device.`,
+          `Collection sync failed (${message}). Collection boards are saved locally on this device.`,
         );
       } finally {
         if (mounted) {
@@ -355,7 +355,7 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
         } catch (error) {
           const message = describeUnknownError(error, "Unknown Supabase error");
           setSyncError(
-            `Could not sync new folder (${message}). Saved locally for now.`,
+            `Could not sync new collection (${message}). Saved locally for now.`,
           );
         }
       }
@@ -407,7 +407,7 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
           setSyncError(null);
         } catch (error) {
           const message = describeUnknownError(error, "Unknown Supabase error");
-          setSyncError(`Could not sync folder update (${message}).`);
+          setSyncError(`Could not sync collection update (${message}).`);
         }
       }
     },
@@ -438,7 +438,7 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
           setSyncError(null);
         } catch (error) {
           const message = describeUnknownError(error, "Unknown Supabase error");
-          setSyncError(`Could not sync folder delete (${message}).`);
+          setSyncError(`Could not sync collection delete (${message}).`);
         }
       }
     },
@@ -472,7 +472,7 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
           setSyncError(null);
         } catch (error) {
           const message = describeUnknownError(error, "Unknown Supabase error");
-          setSyncError(`Could not sync folder move (${message}).`);
+          setSyncError(`Could not sync collection move (${message}).`);
         }
       }
     },
