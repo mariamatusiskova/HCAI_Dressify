@@ -6,16 +6,17 @@ import { useStudio } from "./Index";
 const OutfitsPage = () => {
   const studio = useStudio();
 
+  // SavedPage already supplies horizontal + bottom padding for the whole
+  // saved area, so we render the library directly without an extra wrapper —
+  // otherwise the duplicated padding leaves a visible strip under the tabs.
   return (
-    <div className="px-1 pb-6 md:px-2">
-      <SavedOutfitsLibrary
-        outfits={studio.outfits}
-        onLoad={studio.handleLoad}
-        onDelete={(id) => void studio.handleDeleteOutfit(id)}
-        onUpdateName={studio.handleUpdateOutfitName}
-        isLoading={studio.isLoading}
-      />
-    </div>
+    <SavedOutfitsLibrary
+      outfits={studio.outfits}
+      onLoad={studio.handleLoad}
+      onDelete={(id) => void studio.handleDeleteOutfit(id)}
+      onUpdateName={studio.handleUpdateOutfitName}
+      isLoading={studio.isLoading}
+    />
   );
 };
 

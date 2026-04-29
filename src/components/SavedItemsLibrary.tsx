@@ -478,7 +478,7 @@ const SavedItemsLibrary = ({
           onClick={() => setIsCreateFolderOpen(true)}
         >
           <FolderPlus className="h-4 w-4" />
-          Create board
+          Create collection
         </Button>
       </div>
 
@@ -821,14 +821,30 @@ const SavedItemsLibrary = ({
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0 truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground/80">
-                            {assignedFolderName
-                              ? `Collection: ${assignedFolderName}`
-                              : "Unsorted"}
+                        {/* Collection meta line: drop the "Collection:" prefix */}
+                        {/* (the dot palette already signals which board the */}
+                        {/* item belongs to) and keep the click hint short so */}
+                        {/* the folder name has the room it needs. */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex min-w-0 items-center gap-1.5 truncate text-[11px] uppercase tracking-[0.12em] text-muted-foreground/80">
+                            {assignedFolderName ? (
+                              <>
+                                <span
+                                  className="h-1.5 w-1.5 shrink-0 rounded-full"
+                                  style={{
+                                    backgroundColor: getCollectionAccentPalette(
+                                      assignedFolder?.color,
+                                    ).dot,
+                                  }}
+                                />
+                                <span className="truncate">{assignedFolderName}</span>
+                              </>
+                            ) : (
+                              <span className="truncate">Unsorted</span>
+                            )}
                           </div>
-                          <div className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-primary/85">
-                            Drag or click
+                          <div className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-primary/80">
+                            Tap to add
                           </div>
                         </div>
                       </div>

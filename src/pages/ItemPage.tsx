@@ -23,16 +23,17 @@ const ItemPage = () => {
     studio.handleAddToCanvas(asGenerated);
   };
 
+  // SavedPage already supplies horizontal + bottom padding for the whole
+  // saved area, so we render the library directly without an extra wrapper —
+  // otherwise the duplicated padding leaves a visible strip under the tabs.
   return (
-    <div className="px-1 pb-6 md:px-2">
-      <SavedItemsLibrary
-        items={studio.savedGeneratedItems}
-        onAddToCanvas={handleAddSavedItemToCanvas}
-        onDelete={(id) => void studio.handleDeleteSavedGeneratedItem(id)}
-        onUpdateName={studio.handleUpdateSavedItemName}
-        isLoading={studio.savedItemsLoading}
-      />
-    </div>
+    <SavedItemsLibrary
+      items={studio.savedGeneratedItems}
+      onAddToCanvas={handleAddSavedItemToCanvas}
+      onDelete={(id) => void studio.handleDeleteSavedGeneratedItem(id)}
+      onUpdateName={studio.handleUpdateSavedItemName}
+      isLoading={studio.savedItemsLoading}
+    />
   );
 };
 

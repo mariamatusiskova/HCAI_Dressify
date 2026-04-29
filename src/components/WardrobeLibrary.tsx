@@ -826,12 +826,21 @@ const WardrobeLibrary = ({
             onClick={() => setIsCreateFolderOpen(true)}
           >
             <FolderPlus className="h-4 w-4" />
-            Create board
+            Create collection
           </Button>
         </div>
 
         {activeCollectionBoardTab === "collections" && (
-          <div className="grid justify-items-start gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          // Auto-fill keeps cards adjacent: the grid only opens a new column
+          // when one will actually fit, so leftover horizontal space stops
+          // ballooning into the gutter between cards.
+          <div
+            className="grid gap-4"
+            style={{
+              gridTemplateColumns:
+                "repeat(auto-fill, minmax(min(100%, 220px), 268px))",
+            }}
+          >
             {visibleCollectionCards.length === 0 && (
               <div className="rounded-[24px] border border-dashed border-white/15 bg-background/30 p-6 text-sm text-muted-foreground">
                 No custom collections yet. Create a board to organize saved
@@ -854,7 +863,7 @@ const WardrobeLibrary = ({
               const sideImages = previewImages.slice(heroImage ? 1 : 0, 3);
 
               return (
-                <div key={collection.id} className="w-full max-w-[268px] space-y-2.5">
+                <div key={collection.id} className="w-full space-y-2.5">
                   <div
                     onDragOver={(event) =>
                       handleCollectionDragOver(event, collection.id)
@@ -1304,14 +1313,30 @@ const WardrobeLibrary = ({
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0 truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground/80">
-                              {assignedFolderName
-                                ? `Collection: ${assignedFolderName}`
-                                : "Unsorted"}
+                          {/* Collection meta line: drop the "Collection:" prefix */}
+                          {/* (the dot palette already signals which board the */}
+                          {/* item belongs to) and keep the click hint short so */}
+                          {/* the folder name has the room it needs. */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex min-w-0 items-center gap-1.5 truncate text-[11px] uppercase tracking-[0.12em] text-muted-foreground/80">
+                              {assignedFolderName ? (
+                                <>
+                                  <span
+                                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                                    style={{
+                                      backgroundColor: getCollectionAccentPalette(
+                                        assignedFolder?.color,
+                                      ).dot,
+                                    }}
+                                  />
+                                  <span className="truncate">{assignedFolderName}</span>
+                                </>
+                              ) : (
+                                <span className="truncate">Unsorted</span>
+                              )}
                             </div>
-                            <div className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-primary/85">
-                              Drag or click
+                            <div className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-primary/80">
+                              Tap to add
                             </div>
                           </div>
                         </div>
@@ -1618,12 +1643,6 @@ const WardrobeLibrary = ({
           <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground/80">
             Collections
           </div>
-          <Link
-            to="/wardrobe"
-            className="text-xs uppercase tracking-[0.16em] text-primary/85 transition-colors hover:text-primary"
-          >
-            Open page
-          </Link>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
           {compactCollectionCards.map((collection) => {
