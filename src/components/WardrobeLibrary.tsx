@@ -1335,9 +1335,6 @@ const WardrobeLibrary = ({
                                 <span className="truncate">Unsorted</span>
                               )}
                             </div>
-                            <div className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-primary/80">
-                              Tap to add
-                            </div>
                           </div>
                         </div>
                       </button>
