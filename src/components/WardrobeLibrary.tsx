@@ -831,7 +831,7 @@ const WardrobeLibrary = ({
         </div>
 
         {activeCollectionBoardTab === "collections" && (
-          <div className="grid justify-items-start gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid justify-items-start gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {visibleCollectionCards.length === 0 && (
               <div className="rounded-[24px] border border-dashed border-white/15 bg-background/30 p-6 text-sm text-muted-foreground">
                 No custom collections yet. Create a board to organize saved
@@ -854,7 +854,7 @@ const WardrobeLibrary = ({
               const sideImages = previewImages.slice(heroImage ? 1 : 0, 3);
 
               return (
-                <div key={collection.id} className="w-full max-w-[310px] space-y-3">
+                <div key={collection.id} className="w-full max-w-[268px] space-y-2.5">
                   <div
                     onDragOver={(event) =>
                       handleCollectionDragOver(event, collection.id)
@@ -868,10 +868,10 @@ const WardrobeLibrary = ({
                       void handleCollectionDrop(event, collection.id)
                     }
                     className={cn(
-                      "group relative overflow-hidden rounded-[24px] border p-3 transition-all duration-200",
+                      "group relative overflow-hidden rounded-[22px] border p-2.5 transition-all duration-200",
                       isDarkTheme
                         ? "border-white/10 bg-[linear-gradient(180deg,rgba(12,12,14,0.96),rgba(7,7,9,0.985))]"
-                        : "border-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(243,238,229,0.96))]",
+                        : "border-border/85 bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(246,241,233,0.98))]",
                       "hover:border-white/16",
                       isActive && "border-white/18",
                       isDropTarget && "scale-[1.01] border-white/22",
@@ -879,56 +879,59 @@ const WardrobeLibrary = ({
                     style={{
                       boxShadow: isDarkTheme
                         ? "0 18px 42px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.045)"
-                        : "0 16px 36px rgba(89,73,48,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
+                        : "0 14px 28px rgba(89,73,48,0.07), inset 0 1px 0 rgba(255,255,255,0.86)",
+                      backgroundColor: isDarkTheme
+                        ? "rgba(10,10,12,0.97)"
+                        : "rgba(249,245,239,0.98)",
                     }}
                   >
                     {isUserFolder && (
                       <>
                         <div
-                          className="pointer-events-none absolute left-0 top-0 h-44 w-44 rounded-tl-[30px]"
+                          className="pointer-events-none absolute left-0 top-0 h-48 w-48 rounded-tl-[32px]"
                           style={{
-                            background: `radial-gradient(circle at 0 0, ${isDarkTheme ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.42)"} 0%, ${accentPalette.cornerGlow} 20%, ${isDarkTheme ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.06)"} 34%, transparent 68%)`,
-                            filter: "blur(10px)",
-                            opacity: 0.68,
+                            background: `radial-gradient(circle at 0 0, ${isDarkTheme ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.62)"} 0%, ${accentPalette.cornerGlow} 14%, ${accentPalette.edge} 26%, ${isDarkTheme ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.10)"} 40%, transparent 68%)`,
+                            filter: "blur(16px)",
+                            opacity: 0.78,
                             mixBlendMode: "screen",
                           }}
                         />
                         <div
-                          className="pointer-events-none absolute left-5 top-[1px] h-px w-[96px] rounded-full"
+                          className="pointer-events-none absolute left-0 top-0 h-16 w-[156px]"
                           style={{
-                            background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 12%, ${accentPalette.line} 34%, ${accentPalette.edge} 62%, transparent 100%)`,
-                            boxShadow: `0 0 9px ${accentPalette.lineGlow}`,
-                            opacity: 0.76,
-                          }}
-                        />
-                        <div
-                          className="pointer-events-none absolute left-[1px] top-5 h-[96px] w-px rounded-full"
-                          style={{
-                            background: `linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 12%, ${accentPalette.line} 34%, ${accentPalette.edge} 62%, transparent 100%)`,
-                            boxShadow: `0 0 9px ${accentPalette.lineGlow}`,
-                            opacity: 0.76,
-                          }}
-                        />
-                        <div
-                          className="pointer-events-none absolute left-0 top-0 h-14 w-[120px]"
-                          style={{
-                            background: `linear-gradient(90deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.035) 32%, transparent 100%)`,
-                            filter: "blur(12px)",
-                            opacity: 0.28,
+                            background: `linear-gradient(90deg, ${isDarkTheme ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.38)"} 0%, ${accentPalette.edge} 18%, ${accentPalette.cornerGlow} 40%, transparent 100%)`,
+                            filter: "blur(14px)",
+                            opacity: 0.42,
                             mixBlendMode: "screen",
                           }}
                         />
                         <div
-                          className="pointer-events-none absolute left-0 top-0 h-[120px] w-14"
+                          className="pointer-events-none absolute left-0 top-0 h-[156px] w-16"
                           style={{
-                            background: `linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.035) 32%, transparent 100%)`,
-                            filter: "blur(12px)",
-                            opacity: 0.28,
+                            background: `linear-gradient(180deg, ${isDarkTheme ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.38)"} 0%, ${accentPalette.edge} 18%, ${accentPalette.cornerGlow} 40%, transparent 100%)`,
+                            filter: "blur(14px)",
+                            opacity: 0.42,
                             mixBlendMode: "screen",
                           }}
                         />
                         <div
-                          className="pointer-events-none absolute inset-3 rounded-[20px]"
+                          className="pointer-events-none absolute left-5 top-[1px] h-px w-[112px] rounded-full"
+                          style={{
+                            background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${isDarkTheme ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.46)"} 12%, ${accentPalette.line} 36%, ${accentPalette.edge} 62%, transparent 100%)`,
+                            boxShadow: `0 0 10px ${accentPalette.lineGlow}`,
+                            opacity: 0.88,
+                          }}
+                        />
+                        <div
+                          className="pointer-events-none absolute left-[1px] top-5 h-[112px] w-px rounded-full"
+                          style={{
+                            background: `linear-gradient(180deg, rgba(255,255,255,0) 0%, ${isDarkTheme ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.46)"} 12%, ${accentPalette.line} 36%, ${accentPalette.edge} 62%, transparent 100%)`,
+                            boxShadow: `0 0 10px ${accentPalette.lineGlow}`,
+                            opacity: 0.88,
+                          }}
+                        />
+                        <div
+                          className="pointer-events-none absolute inset-2.5 rounded-[19px]"
                           style={{
                             boxShadow: isDarkTheme
                               ? "inset 0 1px 0 rgba(255,255,255,0.025)"
@@ -946,13 +949,16 @@ const WardrobeLibrary = ({
                       onClick={() => setActiveCollectionId(collection.id)}
                       className="relative z-10 block w-full text-left"
                     >
-                      <div className="grid aspect-[0.9/1] grid-cols-[minmax(0,2fr)_minmax(0,0.9fr)] gap-3">
+                      <div className="grid aspect-[0.84/1] grid-cols-[minmax(0,1.85fr)_minmax(0,0.88fr)] gap-2.5">
                         <div
                           className={cn(
-                            "relative overflow-hidden rounded-[20px] border",
+                            "relative overflow-hidden rounded-[18px] border",
                             isDarkTheme ? "border-white/6" : "border-border/75",
                           )}
                           style={{
+                            backgroundColor: isDarkTheme
+                              ? "rgba(5,5,7,0.96)"
+                              : "rgba(250,247,242,0.98)",
                             backgroundImage: (
                               isDarkTheme
                                 ? [
@@ -960,8 +966,8 @@ const WardrobeLibrary = ({
                                     "linear-gradient(180deg, rgba(6,6,8,0.90), rgba(4,4,5,0.96))",
                                   ]
                                 : [
-                                    "radial-gradient(circle at 14% 18%, rgba(255,255,255,0.48), transparent 38%)",
-                                    "linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,239,231,0.96))",
+                                    "radial-gradient(circle at 14% 18%, rgba(255,255,255,0.68), transparent 42%)",
+                                    "linear-gradient(180deg, rgba(250,247,242,0.99), rgba(241,236,228,0.97))",
                                   ]
                             ).join(", "),
                             boxShadow: isDarkTheme
@@ -973,7 +979,7 @@ const WardrobeLibrary = ({
                             <img
                               src={heroImage}
                               alt={collection.title}
-                              className="h-full w-full object-contain p-3.5"
+                              className="h-full w-full object-contain p-3"
                             />
                           ) : (
                             <div className="flex h-full items-center justify-center text-muted-foreground/42">
@@ -990,10 +996,13 @@ const WardrobeLibrary = ({
                               <div
                                 key={index}
                                 className={cn(
-                                  "relative overflow-hidden rounded-[16px] border",
+                                  "relative overflow-hidden rounded-[15px] border",
                                   isDarkTheme ? "border-white/6" : "border-border/75",
                                 )}
                                 style={{
+                                  backgroundColor: isDarkTheme
+                                    ? "rgba(5,5,7,0.96)"
+                                    : "rgba(250,247,242,0.98)",
                                   backgroundImage: (
                                     isDarkTheme
                                       ? [
@@ -1001,8 +1010,8 @@ const WardrobeLibrary = ({
                                           "linear-gradient(180deg, rgba(6,6,8,0.90), rgba(4,4,5,0.96))",
                                         ]
                                       : [
-                                          "radial-gradient(circle at 14% 18%, rgba(255,255,255,0.48), transparent 38%)",
-                                          "linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,239,231,0.96))",
+                                          "radial-gradient(circle at 14% 18%, rgba(255,255,255,0.68), transparent 42%)",
+                                          "linear-gradient(180deg, rgba(250,247,242,0.99), rgba(241,236,228,0.97))",
                                         ]
                                   ).join(", "),
                                   boxShadow: isDarkTheme
@@ -1014,7 +1023,7 @@ const WardrobeLibrary = ({
                                   <img
                                     src={imageUrl}
                                     alt=""
-                                    className="h-full w-full object-contain p-2.5"
+                                    className="h-full w-full object-contain p-2.25"
                                   />
                                 ) : (
                                   <div className="flex h-full items-center justify-center text-muted-foreground/28">
@@ -1095,7 +1104,7 @@ const WardrobeLibrary = ({
                     onClick={() => setActiveCollectionId(collection.id)}
                     className="block px-1 text-left"
                   >
-                    <div className="flex items-center gap-2.5 text-[15px] font-medium text-foreground md:text-[16px]">
+                      <div className="flex items-center gap-2.5 text-[14px] font-medium text-foreground md:text-[15px]">
                       {isUserFolder && (
                         <span
                           className="h-3 w-3 rounded-full"
@@ -1107,7 +1116,7 @@ const WardrobeLibrary = ({
                       )}
                       <span className="truncate">{collection.title}</span>
                     </div>
-                    <p className="mt-1 text-[11px] text-muted-foreground/90">
+                    <p className="mt-1 text-[10px] text-muted-foreground/90">
                       {getCollectionMetaText(collection)}
                     </p>
                   </button>

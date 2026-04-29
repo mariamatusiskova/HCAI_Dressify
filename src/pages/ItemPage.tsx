@@ -1,58 +1,37 @@
-import { Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import ItemCategoryBadge from "@/components/ItemCategoryBadge";
-import { getClothingCategoryLabel } from "@/lib/clothingCategory";
+import SavedItemsLibrary from "@/components/SavedItemsLibrary";
 import { useStudio } from "./Index";
+import type { GeneratedItem } from "@/hooks/useOutfits";
+import type { SavedAiItem } from "@/hooks/useSavedItems";
 
+// Saved AI items page. Mirrors the wardrobe page layout (collections,
+// search, edit name, drag-and-drop) but for pieces the user generated and
+// flagged as saved instead of personal photos.
 const ItemPage = () => {
   const studio = useStudio();
-  const savedGeneratedItems = [...studio.savedGeneratedItems].sort(
-    (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime(),
-  );
 
-  if (savedGeneratedItems.length === 0) {
-    return <div className="text-xs text-muted-foreground text-center py-4">No saved items yet</div>;
-  }
+  const handleAddSavedItemToCanvas = (item: SavedAiItem) => {
+    // The board's add-to-canvas handler expects the GeneratedItem shape,
+    // so synthesize one here. The original generated item may no longer
+    // exist, but the canvas only needs the minimal fields below.
+    const asGenerated: GeneratedItem = {
+      id: item.id,
+      category: item.category,
+      imageUrl: item.imageUrl,
+      prompt: item.prompt,
+      createdAt: item.savedAt,
+    };
+    studio.handleAddToCanvas(asGenerated);
+  };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-      {savedGeneratedItems.map((item) => (
-        <div key={item.savedId} className="rounded-lg border border-border bg-muted/20 p-2 space-y-2">
-            <div className="relative aspect-square rounded-md overflow-hidden border border-border bg-muted/50">
-              <img src={item.imageUrl} alt={item.category} className="w-full h-full object-cover" />
-              <ItemCategoryBadge source="ai" />
-              <Button
-                variant="secondary"
-                size="icon"
-                className="absolute top-1 right-1 h-6 w-6"
-                onClick={() => studio.handleDeleteSavedGeneratedItem(item.savedId)}
-                title="Remove saved item"
-                aria-label="Remove saved item"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
-
-            <div className="text-sm font-medium text-foreground">
-              {getClothingCategoryLabel(item.category, item.prompt)}
-            </div>
-
-            {item.prompt ? (
-              <div className="text-[10px] leading-4 text-muted-foreground line-clamp-2">{item.prompt}</div>
-            ) : null}
-
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => studio.handleAddToCanvas(item)}
-              >
-                + Board
-              </Button>
-            </div>
-          </div>
-      ))}
+    <div className="px-1 pb-6 md:px-2">
+      <SavedItemsLibrary
+        items={studio.savedGeneratedItems}
+        onAddToCanvas={handleAddSavedItemToCanvas}
+        onDelete={(id) => void studio.handleDeleteSavedGeneratedItem(id)}
+        onUpdateName={studio.handleUpdateSavedItemName}
+        isLoading={studio.savedItemsLoading}
+      />
     </div>
   );
 };
