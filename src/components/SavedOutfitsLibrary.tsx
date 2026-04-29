@@ -510,6 +510,51 @@ const SavedOutfitsLibrary = ({
                       mixBlendMode: "screen",
                     }}
                   />
+                  <div
+                    className="pointer-events-none absolute left-0 top-0 h-16 w-[156px]"
+                    style={{
+                      background: `linear-gradient(90deg, ${isDarkTheme ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.38)"} 0%, ${accentPalette.edge} 18%, ${accentPalette.cornerGlow} 40%, transparent 100%)`,
+                      filter: "blur(14px)",
+                      opacity: 0.42,
+                      mixBlendMode: "screen",
+                    }}
+                  />
+                  <div
+                    className="pointer-events-none absolute left-0 top-0 h-[156px] w-16"
+                    style={{
+                      background: `linear-gradient(180deg, ${isDarkTheme ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.38)"} 0%, ${accentPalette.edge} 18%, ${accentPalette.cornerGlow} 40%, transparent 100%)`,
+                      filter: "blur(14px)",
+                      opacity: 0.42,
+                      mixBlendMode: "screen",
+                    }}
+                  />
+                  <div
+                    className="pointer-events-none absolute left-5 top-[1px] h-px w-[112px] rounded-full"
+                    style={{
+                      background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, ${isDarkTheme ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.46)"} 12%, ${accentPalette.line} 36%, ${accentPalette.edge} 62%, transparent 100%)`,
+                      boxShadow: `0 0 10px ${accentPalette.lineGlow}`,
+                      opacity: 0.88,
+                    }}
+                  />
+                  <div
+                    className="pointer-events-none absolute left-[1px] top-5 h-[112px] w-px rounded-full"
+                    style={{
+                      background: `linear-gradient(180deg, rgba(255,255,255,0) 0%, ${isDarkTheme ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.46)"} 12%, ${accentPalette.line} 36%, ${accentPalette.edge} 62%, transparent 100%)`,
+                      boxShadow: `0 0 10px ${accentPalette.lineGlow}`,
+                      opacity: 0.88,
+                    }}
+                  />
+                  <div
+                    className="pointer-events-none absolute inset-2.5 rounded-[19px]"
+                    style={{
+                      boxShadow: isDarkTheme
+                        ? "inset 0 1px 0 rgba(255,255,255,0.025)"
+                        : "inset 0 1px 0 rgba(255,255,255,0.72)",
+                      border: isDarkTheme
+                        ? "1px solid rgba(255,255,255,0.055)"
+                        : "1px solid rgba(103, 86, 65, 0.12)",
+                    }}
+                  />
 
                   <button
                     type="button"
@@ -526,6 +571,20 @@ const SavedOutfitsLibrary = ({
                           backgroundColor: isDarkTheme
                             ? "rgba(5,5,7,0.96)"
                             : "rgba(250,247,242,0.98)",
+                          backgroundImage: (
+                            isDarkTheme
+                              ? [
+                                  `radial-gradient(circle at 14% 18%, ${accentPalette.panelTint}, transparent 34%)`,
+                                  "linear-gradient(180deg, rgba(6,6,8,0.90), rgba(4,4,5,0.96))",
+                                ]
+                              : [
+                                  "radial-gradient(circle at 14% 18%, rgba(255,255,255,0.68), transparent 42%)",
+                                  "linear-gradient(180deg, rgba(250,247,242,0.99), rgba(241,236,228,0.97))",
+                                ]
+                          ).join(", "),
+                          boxShadow: isDarkTheme
+                            ? "inset 0 1px 0 rgba(255,255,255,0.03), inset 0 0 0 1px rgba(255,255,255,0.02)"
+                            : "inset 0 1px 0 rgba(255,255,255,0.7), inset 0 0 0 1px rgba(120,103,78,0.06)",
                         }}
                       >
                         {heroImage ? (
@@ -555,6 +614,20 @@ const SavedOutfitsLibrary = ({
                                 backgroundColor: isDarkTheme
                                   ? "rgba(5,5,7,0.96)"
                                   : "rgba(250,247,242,0.98)",
+                                backgroundImage: (
+                                  isDarkTheme
+                                    ? [
+                                        `radial-gradient(circle at 14% 18%, ${accentPalette.panelTint}, transparent 34%)`,
+                                        "linear-gradient(180deg, rgba(6,6,8,0.90), rgba(4,4,5,0.96))",
+                                      ]
+                                    : [
+                                        "radial-gradient(circle at 14% 18%, rgba(255,255,255,0.68), transparent 42%)",
+                                        "linear-gradient(180deg, rgba(250,247,242,0.99), rgba(241,236,228,0.97))",
+                                      ]
+                                ).join(", "),
+                                boxShadow: isDarkTheme
+                                  ? "inset 0 1px 0 rgba(255,255,255,0.03), inset 0 0 0 1px rgba(255,255,255,0.02)"
+                                  : "inset 0 1px 0 rgba(255,255,255,0.7), inset 0 0 0 1px rgba(120,103,78,0.06)",
                               }}
                             >
                               {imageUrl ? (
