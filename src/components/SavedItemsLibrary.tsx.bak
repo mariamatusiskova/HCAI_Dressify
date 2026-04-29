@@ -619,7 +619,7 @@ const SavedItemsLibrary = ({
 
                   <button
                     type="button"
-                    onClick={() => focusItemsPanel(collection.id)}
+                    onClick={() => setActiveCollectionId(collection.id)}
                     className="relative z-10 block w-full text-left"
                   >
                     <div className="grid aspect-[0.84/1] grid-cols-[minmax(0,1.85fr)_minmax(0,0.88fr)] gap-2.5">
@@ -763,7 +763,7 @@ const SavedItemsLibrary = ({
 
                 <button
                   type="button"
-                  onClick={() => focusItemsPanel(collection.id)}
+                  onClick={() => setActiveCollectionId(collection.id)}
                   className="block px-1 text-left"
                 >
                   <div className="flex items-center gap-2.5 text-[14px] font-medium text-foreground md:text-[15px]">
@@ -786,7 +786,7 @@ const SavedItemsLibrary = ({
         </div>
       )}
 
-      <div ref={itemsPanelRef} className="glass-panel rounded-[28px] border p-5 scroll-mt-4">
+      <div className="glass-panel rounded-[28px] border p-5">
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-1">
@@ -800,15 +800,6 @@ const SavedItemsLibrary = ({
                 activeCollectionId !== "__unsorted__" && (
                   <p className="text-xs uppercase tracking-[0.16em] text-primary/80">
                     Drag pieces onto collection cards to move them between boards.
-                  </p>
-                )}
-              {/* Always-on hint so the drag affordances are discoverable on */}
-              {/* the "All saved items" / "Unsorted" views too. */}
-              {(activeCollectionId === "__all__" ||
-                activeCollectionId === "__unsorted__") &&
-                folders.length > 0 && (
-                  <p className="text-xs uppercase tracking-[0.16em] text-primary/80">
-                    You can also drag and drop the item into collection.
                   </p>
                 )}
             </div>
@@ -905,13 +896,12 @@ const SavedItemsLibrary = ({
                       draggedItemId === item.id && "opacity-60 ring-1 ring-primary/40",
                     )}
                   >
-                    {/* Card click no longer adds to the board — the */}
-                    {/* dropdown menu's "Add to board" item handles that */}
-                    {/* explicitly. Tapping the card just selects it for */}
-                    {/* visual feedback; drag-to-board still works. */}
                     <button
                       type="button"
-                      onClick={() => setSelectedItemId(item.id)}
+                      onClick={() => {
+                        setSelectedItemId(item.id);
+                        onAddToCanvas(item);
+                      }}
                       className="w-full text-left"
                     >
                       <div className="relative aspect-[4/5] overflow-hidden rounded-[16px] border border-white/8 bg-white/[0.03]">
@@ -954,6 +944,9 @@ const SavedItemsLibrary = ({
                             ) : (
                               <span className="truncate">Unsorted</span>
                             )}
+                          </div>
+                          <div className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-primary/80">
+                            Drag or tap
                           </div>
                         </div>
                       </div>

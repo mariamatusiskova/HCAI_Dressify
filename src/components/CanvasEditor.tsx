@@ -10,6 +10,7 @@ import {
   ArrowDown,
   ChevronsUp,
   ChevronsDown,
+  Eraser,
   Trash2,
   Upload,
   X,
@@ -20,7 +21,22 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { CanvasItem } from "@/hooks/useOutfits";
+import { createId } from "@/lib/id";
+import { normalizeClothingCategory } from "@/lib/clothingCategory";
 import { removeBackgroundAdvanced } from "@/services/backgroundRemoval";
+
+// Custom MIME used by the wardrobe / saved-AI lists to advertise that the
+// drag carries a styleable piece (not a file or plain text). Listening for
+// this lets the canvas accept drops from anywhere in the app without
+// confusing wardrobe collection-card drops with file uploads.
+export const CANVAS_PIECE_MIME = "application/x-dressify-piece";
+
+export interface CanvasPiecePayload {
+  source: "wardrobe" | "ai";
+  imageUrl: string;
+  category: string;
+  prompt?: string;
+}
 
 interface CanvasEditorProps {
   userPhoto: string | null;
@@ -173,6 +189,73 @@ const CanvasEditor = ({
       if (file) handleFile(file);
     },
     [handleFile],
+  );
+
+  // Accept piece drops anywhere on the stage. We pre-parse on dragOver so we
+  // can decide whether to call preventDefault — without that the browser
+  // refuses to fire onDrop on a non-form-element div.
+  const stageHasPieceDrag = useCallback((e: React.DragEvent) => {
+    return e.dataTransfer.types.includes(CANVAS_PIECE_MIME);
+  }, []);
+
+  const handleStageDragOver = useCallback(
+    (e: React.DragEvent) => {
+      if (!stageHasPieceDrag(e)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+    },
+    [stageHasPieceDrag],
+  );
+
+  const handleStageDrop = useCallback(
+    (e: React.DragEvent) => {
+      const raw = e.dataTransfer.getData(CANVAS_PIECE_MIME);
+      if (!raw) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      let payload: CanvasPiecePayload | null = null;
+      try {
+        payload = JSON.parse(raw) as CanvasPiecePayload;
+      } catch {
+        return;
+      }
+      if (!payload?.imageUrl) return;
+
+      const stageRect = stageRef.current?.getBoundingClientRect();
+      if (!stageRect) return;
+
+      // Default piece size matches what handleAddToCanvas uses (80x80) so the
+      // dropped piece visually matches a clicked-add piece. Center the piece
+      // under the cursor instead of using its top-left corner.
+      const width = 80;
+      const height = 80;
+      const x = e.clientX - stageRect.left - width / 2;
+      const y = e.clientY - stageRect.top - height / 2;
+
+      const maxZIndex =
+        items.length > 0 ? Math.max(...items.map((i) => i.zIndex ?? 0)) : -1;
+
+      const newItem: CanvasItem = {
+        id: createId(),
+        imageUrl: payload.imageUrl,
+        category:
+          payload.source === "ai"
+            ? normalizeClothingCategory(payload.category, payload.prompt)
+            : payload.category,
+        prompt: payload.prompt,
+        source: payload.source,
+        x,
+        y,
+        width,
+        height,
+        rotation: 0,
+        zIndex: maxZIndex + 1,
+      };
+
+      onItemsChange([...items, newItem]);
+    },
+    [items, onItemsChange],
   );
 
   const handleMouseMove = useCallback(
@@ -479,6 +562,26 @@ const CanvasEditor = ({
 
         {showBoardPhotoControls && (
           <div className="absolute right-4 top-4 z-30 flex items-center gap-2">
+            {/* Clear-board action sits next to the photo controls so the user */}
+            {/* can wipe just the styled pieces without losing their photo. */}
+            {items.length > 0 && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="h-9 rounded-full border border-white/10 bg-background/80 px-3 shadow-sm backdrop-blur-md"
+                onClick={() => {
+                  onItemsChange([]);
+                  setActiveItemId(null);
+                  toast.success("Board cleared");
+                }}
+                title="Remove every piece from the board"
+                aria-label="Clear board"
+              >
+                <Eraser className="mr-1 h-3.5 w-3.5" />
+                <span>Clear board</span>
+              </Button>
+            )}
             <Button
               type="button"
               variant="secondary"
@@ -509,6 +612,8 @@ const CanvasEditor = ({
           <div
             ref={stageRef}
             data-stage-mode={stageMode}
+            onDragOver={handleStageDragOver}
+            onDrop={handleStageDrop}
             // overflow:visible (was overflow-hidden) lets items, the rotation
             // handle, the resize dots, and the floating toolbar bleed outside
             // the photo's bounding box. Anything that drifts too far is still
@@ -537,8 +642,8 @@ const CanvasEditor = ({
 
             {!preUploadState && items.length === 0 && (
               <div className="pointer-events-none absolute inset-x-4 bottom-4 z-20 flex justify-center">
-                <div className="rounded-full border border-border/80 bg-background/95 px-5 py-2.5 text-sm font-medium text-foreground shadow-[0_8px_24px_rgba(0,0,0,0.12)] supports-[backdrop-filter]:bg-background/88 supports-[backdrop-filter]:backdrop-blur-md dark:border-white/12 dark:bg-black/78 dark:text-white dark:shadow-[0_14px_34px_rgba(0,0,0,0.34)]">
-                  Add pieces to style on the photo.
+                <div className="rounded-full border border-border/80 bg-background/95 px-5 py-2.5 text-center text-sm font-medium text-foreground shadow-[0_8px_24px_rgba(0,0,0,0.12)] supports-[backdrop-filter]:bg-background/88 supports-[backdrop-filter]:backdrop-blur-md dark:border-white/12 dark:bg-black/78 dark:text-white dark:shadow-[0_14px_34px_rgba(0,0,0,0.34)]">
+                  Click a piece to add it, or drag it onto the board.
                 </div>
               </div>
             )}

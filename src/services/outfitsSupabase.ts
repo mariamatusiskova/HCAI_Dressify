@@ -220,6 +220,11 @@ export async function createSupabaseOutfit(
       image_path: item.imageUrl,
       thumb_path: item.imageUrl,
       tags: [],
+      // Wardrobe pieces dragged from the user's wardrobe stay marked as
+      // 'wardrobe'; everything else (AI generations, freshly saved items)
+      // is tagged 'ai' so listSupabaseWardrobeItems skips it. This stops
+      // canvas-only pieces from leaking into the wardrobe page.
+      source: item.source === "wardrobe" ? "wardrobe" : "ai",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }));

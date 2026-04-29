@@ -10,6 +10,7 @@ import WardrobePage from "./pages/WardrobePage";
 import SavedPage from "./pages/SavedPage";
 import ItemPage from "./pages/ItemPage";
 import OutfitsPage from "./pages/OutfitsPage";
+import OutfitDetailPage from "./pages/OutfitDetailPage";
 import ProfilePage from "./pages/ProfilePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -41,6 +42,9 @@ const App = () => (
                 <Route index element={<Navigate to="items" replace />} />
                 <Route path="items" element={<ItemPage />} />
                 <Route path="outfits" element={<OutfitsPage />} />
+                {/* Detail view for a single saved outfit; reached by tapping */}
+                {/* one of the cards in /saved/outfits. */}
+                <Route path="outfits/:outfitId" element={<OutfitDetailPage />} />
               </Route>
               <Route path="/profile" element={<ProfilePage />} />
             </Route>

@@ -1,9 +1,11 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type DragEvent,
 } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,6 +108,16 @@ const SavedOutfitsLibrary = ({
 }: SavedOutfitsLibraryProps) => {
   const { resolvedTheme } = useTheme();
   const isDarkTheme = resolvedTheme !== "light";
+  const navigate = useNavigate();
+  // Items panel ref for the smooth scroll on collection-card clicks.
+  const itemsPanelRef = useRef<HTMLDivElement>(null);
+
+  // Tapping an outfit card now opens its detail page (the user can review
+  // every piece + decide whether to load it onto the canvas). The dropdown
+  // still exposes "Open on board" for the previous one-click flow.
+  const handleOpenDetail = (outfitId: string) => {
+    navigate(`/saved/outfits/${outfitId}`);
+  };
 
   const [searchQuery, setSearchQuery] = useState("");
   const [editingOutfit, setEditingOutfit] = useState<Outfit | null>(null);
@@ -132,6 +144,16 @@ const SavedOutfitsLibrary = ({
   const [draggedOutfitId, setDraggedOutfitId] = useState<string | null>(null);
   const [dragOverCollectionId, setDragOverCollectionId] =
     useState<OutfitCollectionId | null>(null);
+
+  const focusItemsPanel = (collectionId: OutfitCollectionId) => {
+    setActiveCollectionId(collectionId);
+    requestAnimationFrame(() => {
+      itemsPanelRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
 
   const normalizedSearch = searchQuery.trim().toLowerCase();
 
@@ -558,7 +580,7 @@ const SavedOutfitsLibrary = ({
 
                   <button
                     type="button"
-                    onClick={() => setActiveCollectionId(collection.id)}
+                    onClick={() => focusItemsPanel(collection.id)}
                     className="relative z-10 block w-full text-left"
                   >
                     <div className="grid aspect-[0.84/1] grid-cols-[minmax(0,1.85fr)_minmax(0,0.88fr)] gap-2.5">
@@ -702,7 +724,7 @@ const SavedOutfitsLibrary = ({
 
                 <button
                   type="button"
-                  onClick={() => setActiveCollectionId(collection.id)}
+                  onClick={() => focusItemsPanel(collection.id)}
                   className="block px-1 text-left"
                 >
                   <div className="flex items-center gap-2.5 text-[14px] font-medium text-foreground md:text-[15px]">
@@ -725,7 +747,7 @@ const SavedOutfitsLibrary = ({
         </div>
       )}
 
-      <div className="glass-panel rounded-[28px] border p-5">
+      <div ref={itemsPanelRef} className="glass-panel rounded-[28px] border p-5 scroll-mt-4">
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-1">
@@ -815,7 +837,7 @@ const SavedOutfitsLibrary = ({
                   >
                     <button
                       type="button"
-                      onClick={() => onLoad(outfit.id)}
+                      onClick={() => handleOpenDetail(outfit.id)}
                       className="w-full text-left"
                     >
                       <div className="relative aspect-[4/5] overflow-hidden rounded-[16px] border border-white/8 bg-white/[0.03] p-2">
@@ -882,7 +904,7 @@ const SavedOutfitsLibrary = ({
                             )}
                           </div>
                           <div className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-primary/80">
-                            Tap to open
+                            Tap for details
                           </div>
                         </div>
                       </div>

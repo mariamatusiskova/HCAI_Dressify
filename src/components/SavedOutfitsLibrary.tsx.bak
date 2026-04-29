@@ -5,6 +5,7 @@ import {
   useState,
   type DragEvent,
 } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,53 +32,35 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
-  Check,
+  FolderOpen,
   FolderPlus,
   ImageIcon,
   Loader2,
   MoreHorizontal,
   Pencil,
-  Plus,
   RotateCcw,
   Search,
   Trash2,
 } from "lucide-react";
-import ItemCategoryBadge from "@/components/ItemCategoryBadge";
-import {
-  getClothingCategoryLabel,
-  normalizeClothingCategory,
-} from "@/lib/clothingCategory";
 import {
   DEFAULT_WARDROBE_FOLDER_COLOR,
   WARDROBE_FOLDER_COLORS,
   type WardrobeFolderColor,
 } from "@/lib/wardrobeFolders";
-import { CANVAS_PIECE_MIME, type CanvasPiecePayload } from "@/components/CanvasEditor";
 import { getCollectionAccentPalette } from "@/lib/collectionAccents";
-import {
-  useSavedItemFolders,
-  type SavedItemFolder,
-} from "@/hooks/useSavedItemFolders";
-import type { SavedAiItem } from "@/hooks/useSavedItems";
+import { useOutfitFolders, type OutfitFolder } from "@/hooks/useOutfitFolders";
+import type { Outfit } from "@/hooks/useOutfits";
 
-type SavedItemFilter = "all" | "top" | "trousers" | "shoes";
-type SavedCollectionId = "__all__" | "__unsorted__" | string;
+type OutfitCollectionId = "__all__" | "__unsorted__" | string;
 type CollectionBoardTab = "all" | "collections" | "unsorted";
 
-interface SavedItemsLibraryProps {
-  items: SavedAiItem[];
-  onAddToCanvas: (item: SavedAiItem) => void;
+interface SavedOutfitsLibraryProps {
+  outfits: Outfit[];
+  onLoad: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdateName: (id: string, name: string) => Promise<void> | void;
   isLoading?: boolean;
 }
-
-const filterTabs: Array<{ value: SavedItemFilter; label: string }> = [
-  { value: "all", label: "All" },
-  { value: "top", label: "Tops" },
-  { value: "trousers", label: "Bottoms" },
-  { value: "shoes", label: "Shoes" },
-];
 
 const collectionBoardTabs: Array<{ value: CollectionBoardTab; label: string }> = [
   { value: "all", label: "All" },
@@ -85,58 +68,61 @@ const collectionBoardTabs: Array<{ value: CollectionBoardTab; label: string }> =
   { value: "unsorted", label: "Unsorted" },
 ];
 
-function getSavedItemDisplayName(item: SavedAiItem) {
-  const trimmed = item.name?.trim();
-  if (trimmed) return trimmed;
-  return getClothingCategoryLabel(item.category, item.prompt);
-}
-
-function getCollectionSummary(id: SavedCollectionId, folderName?: string) {
+function getCollectionSummary(id: OutfitCollectionId, folderName?: string) {
   if (id === "__all__") {
     return {
-      title: "All saved items",
-      description: "Browse every AI piece you saved for styling.",
+      title: "All outfits",
+      description: "Browse every outfit you saved.",
     };
   }
   if (id === "__unsorted__") {
     return {
       title: "Unsorted",
-      description: "Saved pieces waiting to be filed into a collection.",
+      description: "Recently saved outfits waiting to be filed into a collection.",
     };
   }
   return {
     title: folderName ?? "Collection",
-    description: "A focused board of saved AI pieces you can build outfits from quickly.",
+    description: "A focused board of outfits you can revisit any time.",
   };
 }
 
 function getCollectionMetaText(count: number) {
-  const itemLabel = count === 1 ? "item" : "items";
+  const itemLabel = count === 1 ? "outfit" : "outfits";
   return count > 0 ? `Your board · ${count} ${itemLabel}` : "Your board";
 }
 
-const SavedItemsLibrary = ({
-  items,
-  onAddToCanvas,
+function getOutfitPreviewImages(outfit: Outfit): string[] {
+  return outfit.canvasItems
+    .map((item) => item.imageUrl)
+    .filter((url): url is string => Boolean(url))
+    .slice(0, 4);
+}
+
+const SavedOutfitsLibrary = ({
+  outfits,
+  onLoad,
   onDelete,
   onUpdateName,
   isLoading = false,
-}: SavedItemsLibraryProps) => {
+}: SavedOutfitsLibraryProps) => {
   const { resolvedTheme } = useTheme();
   const isDarkTheme = resolvedTheme !== "light";
-
-  // Items panel ref let a collection-card tap smooth-scroll the items
-  // section into view so the user immediately sees what's inside. The
-  // helper is declared after the relevant useState calls so the setter
-  // is in scope.
+  const navigate = useNavigate();
+  // Items panel ref for the smooth scroll on collection-card clicks.
   const itemsPanelRef = useRef<HTMLDivElement>(null);
 
-  const [activeFilter, setActiveFilter] = useState<SavedItemFilter>("all");
+  // Tapping an outfit card now opens its detail page (the user can review
+  // every piece + decide whether to load it onto the canvas). The dropdown
+  // still exposes "Open on board" for the previous one-click flow.
+  const handleOpenDetail = (outfitId: string) => {
+    navigate(`/saved/outfits/${outfitId}`);
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [editingItem, setEditingItem] = useState<SavedAiItem | null>(null);
-  const [editItemName, setEditItemName] = useState("");
-  const [isRenamingItem, setIsRenamingItem] = useState(false);
+  const [editingOutfit, setEditingOutfit] = useState<Outfit | null>(null);
+  const [editOutfitName, setEditOutfitName] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
 
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
@@ -144,22 +130,22 @@ const SavedItemsLibrary = ({
     DEFAULT_WARDROBE_FOLDER_COLOR,
   );
 
-  const [editingFolder, setEditingFolder] = useState<SavedItemFolder | null>(null);
+  const [editingFolder, setEditingFolder] = useState<OutfitFolder | null>(null);
   const [editFolderName, setEditFolderName] = useState("");
   const [editFolderColor, setEditFolderColor] = useState<WardrobeFolderColor>(
     DEFAULT_WARDROBE_FOLDER_COLOR,
   );
 
   const [activeCollectionId, setActiveCollectionId] =
-    useState<SavedCollectionId>("__all__");
+    useState<OutfitCollectionId>("__all__");
   const [activeCollectionBoardTab, setActiveCollectionBoardTab] =
     useState<CollectionBoardTab>("collections");
 
-  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [draggedOutfitId, setDraggedOutfitId] = useState<string | null>(null);
   const [dragOverCollectionId, setDragOverCollectionId] =
-    useState<SavedCollectionId | null>(null);
+    useState<OutfitCollectionId | null>(null);
 
-  const focusItemsPanel = (collectionId: SavedCollectionId) => {
+  const focusItemsPanel = (collectionId: OutfitCollectionId) => {
     setActiveCollectionId(collectionId);
     requestAnimationFrame(() => {
       itemsPanelRef.current?.scrollIntoView({
@@ -182,18 +168,17 @@ const SavedItemsLibrary = ({
     getAssignedFolderId,
     isLoading: isFolderSyncLoading,
     syncError: folderSyncError,
-  } = useSavedItemFolders(items);
+  } = useOutfitFolders(outfits);
 
   const uncategorizedCount = useMemo(
-    () => items.filter((item) => !assignments[item.id]).length,
-    [assignments, items],
+    () => outfits.filter((outfit) => !assignments[outfit.id]).length,
+    [assignments, outfits],
   );
 
   const collectionCards = useMemo(() => {
     return folders.map((folder) => ({
-      id: folder.id as SavedCollectionId,
+      id: folder.id as OutfitCollectionId,
       title: folder.name,
-      description: "Curated collection",
       count: folderCounts[folder.id] ?? 0,
       isUserFolder: true,
       folder,
@@ -202,23 +187,23 @@ const SavedItemsLibrary = ({
 
   const collectionPreviewImages = useMemo<Record<string, string[]>>(() => {
     const previews: Record<string, string[]> = {
-      __all__: items.map((item) => item.imageUrl).filter(Boolean).slice(0, 3),
-      __unsorted__: items
-        .filter((item) => !assignments[item.id])
-        .map((item) => item.imageUrl)
-        .filter(Boolean)
+      __all__: outfits
+        .flatMap((outfit) => getOutfitPreviewImages(outfit))
+        .slice(0, 3),
+      __unsorted__: outfits
+        .filter((outfit) => !assignments[outfit.id])
+        .flatMap((outfit) => getOutfitPreviewImages(outfit))
         .slice(0, 3),
     };
 
     for (const folder of folders) {
-      previews[folder.id] = items
-        .filter((item) => assignments[item.id] === folder.id)
-        .map((item) => item.imageUrl)
-        .filter(Boolean)
+      previews[folder.id] = outfits
+        .filter((outfit) => assignments[outfit.id] === folder.id)
+        .flatMap((outfit) => getOutfitPreviewImages(outfit))
         .slice(0, 3);
     }
     return previews;
-  }, [assignments, folders, items]);
+  }, [assignments, folders, outfits]);
 
   useEffect(() => {
     setActiveCollectionId((prev) => {
@@ -233,13 +218,9 @@ const SavedItemsLibrary = ({
     });
   }, [folders, uncategorizedCount]);
 
-  const filteredItems = useMemo(() => {
-    return items.filter((item) => {
-      const normalizedCategory = normalizeClothingCategory(item.category, item.prompt);
-      const matchesFilter = activeFilter === "all" || normalizedCategory === activeFilter;
-      if (!matchesFilter) return false;
-
-      const assignedFolderId = assignments[item.id];
+  const filteredOutfits = useMemo(() => {
+    return outfits.filter((outfit) => {
+      const assignedFolderId = assignments[outfit.id];
       const matchesCollection =
         activeCollectionId === "__all__"
           ? true
@@ -250,27 +231,12 @@ const SavedItemsLibrary = ({
 
       if (!normalizedSearch) return true;
 
-      const assignedFolderName =
+      const folderName =
         folders.find((folder) => folder.id === assignedFolderId)?.name ?? "";
-      const haystack = [
-        getSavedItemDisplayName(item),
-        getClothingCategoryLabel(item.category, item.prompt),
-        item.prompt,
-        assignedFolderName,
-      ]
-        .join(" ")
-        .toLowerCase();
-
+      const haystack = [outfit.name, folderName].join(" ").toLowerCase();
       return haystack.includes(normalizedSearch);
     });
-  }, [
-    activeCollectionId,
-    activeFilter,
-    assignments,
-    folders,
-    items,
-    normalizedSearch,
-  ]);
+  }, [activeCollectionId, assignments, folders, normalizedSearch, outfits]);
 
   const activeFolderName = folders.find(
     (folder) => folder.id === activeCollectionId,
@@ -279,14 +245,11 @@ const SavedItemsLibrary = ({
     activeCollectionId,
     activeFolderName,
   );
-  const canResetFilters = activeFilter !== "all" || normalizedSearch.length > 0;
+  const canResetFilters = normalizedSearch.length > 0;
 
-  const resetFilters = () => {
-    setActiveFilter("all");
-    setSearchQuery("");
-  };
+  const resetFilters = () => setSearchQuery("");
 
-  const openEditFolderDialog = (folder: SavedItemFolder) => {
+  const openEditFolderDialog = (folder: OutfitFolder) => {
     setEditingFolder(folder);
     setEditFolderName(folder.name);
     setEditFolderColor(folder.color);
@@ -313,47 +276,36 @@ const SavedItemsLibrary = ({
     setEditFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
   };
 
-  const openEditItemNameDialog = (item: SavedAiItem) => {
-    setEditingItem(item);
-    setEditItemName(item.name ?? "");
+  const openEditOutfitNameDialog = (outfit: Outfit) => {
+    setEditingOutfit(outfit);
+    setEditOutfitName(outfit.name);
   };
 
-  const closeEditItemNameDialog = () => {
-    setEditingItem(null);
-    setEditItemName("");
+  const closeEditOutfitNameDialog = () => {
+    setEditingOutfit(null);
+    setEditOutfitName("");
   };
 
-  const handleUpdateItemName = async () => {
-    if (!editingItem) return;
-    setIsRenamingItem(true);
+  const handleUpdateOutfitName = async () => {
+    if (!editingOutfit) return;
+    setIsRenaming(true);
     try {
-      await onUpdateName(editingItem.id, editItemName);
-      closeEditItemNameDialog();
+      await onUpdateName(editingOutfit.id, editOutfitName);
+      closeEditOutfitNameDialog();
     } finally {
-      setIsRenamingItem(false);
+      setIsRenaming(false);
     }
   };
 
-  const handleItemDragStart = (event: DragEvent<HTMLElement>, item: SavedAiItem) => {
-    setDraggedItemId(item.id);
-    // "move" drives the collection assignment drag; the canvas accepts a
-    // separate "copy" drag — we attach both payloads so a single drag handles
-    // either drop target.
-    event.dataTransfer.effectAllowed = "copyMove";
-    event.dataTransfer.setData("text/plain", item.id);
-
-    const payload: CanvasPiecePayload = {
-      source: "ai",
-      imageUrl: item.imageUrl,
-      category: item.category,
-      prompt: item.prompt,
-    };
-    event.dataTransfer.setData(CANVAS_PIECE_MIME, JSON.stringify(payload));
+  const handleOutfitDragStart = (event: DragEvent<HTMLElement>, outfitId: string) => {
+    setDraggedOutfitId(outfitId);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", outfitId);
   };
 
   const handleCollectionDragOver = (
     event: DragEvent<HTMLElement>,
-    collectionId: SavedCollectionId,
+    collectionId: OutfitCollectionId,
   ) => {
     if (collectionId === "__all__") return;
     event.preventDefault();
@@ -363,16 +315,16 @@ const SavedItemsLibrary = ({
 
   const handleCollectionDrop = async (
     event: DragEvent<HTMLElement>,
-    collectionId: SavedCollectionId,
+    collectionId: OutfitCollectionId,
   ) => {
     event.preventDefault();
-    const itemId = event.dataTransfer.getData("text/plain") || draggedItemId;
+    const outfitId = event.dataTransfer.getData("text/plain") || draggedOutfitId;
     setDragOverCollectionId(null);
-    setDraggedItemId(null);
-    if (!itemId || collectionId === "__all__") return;
+    setDraggedOutfitId(null);
+    if (!outfitId || collectionId === "__all__") return;
 
     await assignItemToFolder(
-      itemId,
+      outfitId,
       collectionId === "__unsorted__" ? null : collectionId,
     );
     setActiveCollectionId(collectionId);
@@ -382,63 +334,68 @@ const SavedItemsLibrary = ({
   if (isLoading || isFolderSyncLoading) {
     return (
       <div className="py-4 text-center text-xs text-muted-foreground">
-        Loading saved items...
+        Loading saved outfits...
       </div>
     );
   }
 
-  const editItemNameDialog = (
+  const editOutfitNameDialog = (
     <Dialog
-      open={Boolean(editingItem)}
+      open={Boolean(editingOutfit)}
       onOpenChange={(open) => {
-        if (!open && !isRenamingItem) {
-          closeEditItemNameDialog();
+        if (!open && !isRenaming) {
+          closeEditOutfitNameDialog();
         }
       }}
     >
       <DialogContent className="max-w-md border-border bg-card">
         <DialogHeader>
-          <DialogTitle>Edit saved item name</DialogTitle>
+          <DialogTitle>Edit outfit name</DialogTitle>
           <DialogDescription>
-            Rename this saved AI piece. Leave it blank to fall back to the
-            generated category name.
+            Rename this saved outfit so it is easier to find later.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {editingItem?.imageUrl && (
+          {editingOutfit && (
             <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-background/44 p-3">
-              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
-                <img
-                  src={editingItem.imageUrl}
-                  alt={getSavedItemDisplayName(editingItem)}
-                  className="h-full w-full object-contain"
-                />
+              <div className="grid h-20 w-20 shrink-0 grid-cols-2 grid-rows-2 gap-1 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] p-1">
+                {getOutfitPreviewImages(editingOutfit)
+                  .slice(0, 4)
+                  .map((url, index) => (
+                    <img
+                      key={`${editingOutfit.id}-preview-${index}`}
+                      src={url}
+                      alt=""
+                      className="h-full w-full rounded-md object-contain"
+                    />
+                  ))}
               </div>
               <div className="min-w-0 text-sm text-muted-foreground">
-                <div className="font-medium text-foreground">
-                  {getClothingCategoryLabel(editingItem.category, editingItem.prompt)}
+                <div className="font-medium text-foreground">{editingOutfit.name}</div>
+                <div>
+                  {editingOutfit.canvasItems.length}{" "}
+                  {editingOutfit.canvasItems.length === 1 ? "item" : "items"}
                 </div>
-                <div>{getSavedItemDisplayName(editingItem)}</div>
               </div>
             </div>
           )}
 
           <div className="space-y-2">
-            <label htmlFor="saved-item-edit-name" className="text-sm font-medium text-foreground">
-              Saved item name
+            <label htmlFor="outfit-edit-name" className="text-sm font-medium text-foreground">
+              Outfit name
             </label>
             <Input
-              id="saved-item-edit-name"
-              value={editItemName}
-              onChange={(e) => setEditItemName(e.target.value)}
-              placeholder="Olive linen overshirt"
+              id="outfit-edit-name"
+              value={editOutfitName}
+              onChange={(e) => setEditOutfitName(e.target.value)}
+              placeholder="Friday brunch fit"
               className="h-11"
               autoFocus
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault();
-                  void handleUpdateItemName();
+                  void handleUpdateOutfitName();
                 }
               }}
             />
@@ -449,13 +406,17 @@ const SavedItemsLibrary = ({
           <Button
             type="button"
             variant="secondary"
-            onClick={closeEditItemNameDialog}
-            disabled={isRenamingItem}
+            onClick={closeEditOutfitNameDialog}
+            disabled={isRenaming}
           >
             Cancel
           </Button>
-          <Button type="button" onClick={() => void handleUpdateItemName()} disabled={isRenamingItem}>
-            {isRenamingItem ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          <Button
+            type="button"
+            onClick={() => void handleUpdateOutfitName()}
+            disabled={isRenaming || !editOutfitName.trim()}
+          >
+            {isRenaming ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Save name
           </Button>
         </DialogFooter>
@@ -470,7 +431,7 @@ const SavedItemsLibrary = ({
           Collection
         </div>
         <h2 className="text-2xl font-display font-medium text-foreground">
-          Saved AI pieces
+          Saved outfits
         </h2>
         {folderSyncError && (
           <p className="text-xs text-destructive/90">{folderSyncError}</p>
@@ -524,7 +485,7 @@ const SavedItemsLibrary = ({
         >
           {collectionCards.length === 0 && (
             <div className="rounded-[24px] border border-dashed border-white/15 bg-background/30 p-6 text-sm text-muted-foreground">
-              No collections yet. Create a board to organize saved AI pieces.
+              No collections yet. Create a board to organize saved outfits.
             </div>
           )}
           {collectionCards.map((collection) => {
@@ -619,7 +580,7 @@ const SavedItemsLibrary = ({
 
                   <button
                     type="button"
-                    onClick={() => focusItemsPanel(collection.id)}
+                    onClick={() => setActiveCollectionId(collection.id)}
                     className="relative z-10 block w-full text-left"
                   >
                     <div className="grid aspect-[0.84/1] grid-cols-[minmax(0,1.85fr)_minmax(0,0.88fr)] gap-2.5">
@@ -763,7 +724,7 @@ const SavedItemsLibrary = ({
 
                 <button
                   type="button"
-                  onClick={() => focusItemsPanel(collection.id)}
+                  onClick={() => setActiveCollectionId(collection.id)}
                   className="block px-1 text-left"
                 >
                   <div className="flex items-center gap-2.5 text-[14px] font-medium text-foreground md:text-[15px]">
@@ -786,7 +747,7 @@ const SavedItemsLibrary = ({
         </div>
       )}
 
-      <div ref={itemsPanelRef} className="glass-panel rounded-[28px] border p-5 scroll-mt-4">
+      <div className="glass-panel rounded-[28px] border p-5">
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-1">
@@ -799,78 +760,49 @@ const SavedItemsLibrary = ({
               {activeCollectionId !== "__all__" &&
                 activeCollectionId !== "__unsorted__" && (
                   <p className="text-xs uppercase tracking-[0.16em] text-primary/80">
-                    Drag pieces onto collection cards to move them between boards.
-                  </p>
-                )}
-              {/* Always-on hint so the drag affordances are discoverable on */}
-              {/* the "All saved items" / "Unsorted" views too. */}
-              {(activeCollectionId === "__all__" ||
-                activeCollectionId === "__unsorted__") &&
-                folders.length > 0 && (
-                  <p className="text-xs uppercase tracking-[0.16em] text-primary/80">
-                    You can also drag and drop the item into collection.
+                    Drag outfits onto collection cards to move them between boards.
                   </p>
                 )}
             </div>
           </div>
 
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-              <div className="relative flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={`Search ${activeCollectionSummary.title.toLowerCase()}...`}
-                  className="h-11 rounded-xl border-white/10 bg-background/56 pl-10"
-                />
-              </div>
-
-              <Button
-                type="button"
-                variant="secondary"
-                className="h-11 gap-2 rounded-xl border border-white/10 bg-background/56 px-4"
-                onClick={resetFilters}
-                disabled={!canResetFilters}
-                title="Clear search and category filters"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Clear filters
-              </Button>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Search ${activeCollectionSummary.title.toLowerCase()}...`}
+                className="h-11 rounded-xl border-white/10 bg-background/56 pl-10"
+              />
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {filterTabs.map((tab) => (
-                <button
-                  key={tab.value}
-                  type="button"
-                  onClick={() => setActiveFilter(tab.value)}
-                  className={cn(
-                    "rounded-full border px-3 py-1.5 text-sm transition-colors",
-                    activeFilter === tab.value
-                      ? "border-primary/60 bg-primary/12 text-primary"
-                      : "border-transparent bg-transparent text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-11 gap-2 rounded-xl border border-white/10 bg-background/56 px-4"
+              onClick={resetFilters}
+              disabled={!canResetFilters}
+              title="Clear search"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Clear filters
+            </Button>
           </div>
 
-          {filteredItems.length === 0 ? (
+          {filteredOutfits.length === 0 ? (
             <div className="glass-panel-soft rounded-[22px] border px-4 py-10 text-center">
               <p className="text-sm text-foreground">
-                {items.length === 0
-                  ? "No saved AI pieces yet"
+                {outfits.length === 0
+                  ? "No saved outfits yet"
                   : activeCollectionId === "__all__"
-                    ? "No pieces match this filter"
-                    : `No pieces in ${activeCollectionSummary.title.toLowerCase()} yet`}
+                    ? "No outfits match this filter"
+                    : `No outfits in ${activeCollectionSummary.title.toLowerCase()} yet`}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {items.length === 0
-                  ? "Generate a piece on the Home page and tap the bookmark to save it."
-                  : "Try another collection, another category, or clear your filters."}
+                {outfits.length === 0
+                  ? "Build a look on the Home page and tap Save outfit."
+                  : "Try another collection or clear your search."}
               </p>
             </div>
           ) : (
@@ -878,64 +810,80 @@ const SavedItemsLibrary = ({
               className="grid justify-start gap-3"
               style={{
                 gridTemplateColumns:
-                  "repeat(auto-fill, minmax(min(100%, 180px), 220px))",
+                  "repeat(auto-fill, minmax(min(100%, 200px), 240px))",
               }}
             >
-              {filteredItems.map((item) => {
-                const isSelected = selectedItemId === item.id;
-                const assignedFolderId = getAssignedFolderId(item.id);
+              {filteredOutfits.map((outfit) => {
+                const previewImages = getOutfitPreviewImages(outfit);
+                const assignedFolderId = getAssignedFolderId(outfit.id);
                 const assignedFolder =
                   folders.find((folder) => folder.id === assignedFolderId) ?? null;
                 const assignedFolderName = assignedFolder?.name ?? null;
 
                 return (
                   <div
-                    key={item.id}
+                    key={outfit.id}
                     draggable
-                    onDragStart={(event) => handleItemDragStart(event, item)}
+                    onDragStart={(event) => handleOutfitDragStart(event, outfit.id)}
                     onDragEnd={() => {
-                      setDraggedItemId(null);
+                      setDraggedOutfitId(null);
                       setDragOverCollectionId(null);
                     }}
                     className={cn(
                       "group relative overflow-hidden rounded-[18px] border bg-background/52 p-2 transition-all duration-200",
-                      isSelected
-                        ? "border-primary/70 shadow-[0_0_0_1px_hsl(var(--primary)/0.18)]"
-                        : "border-white/8 hover:border-primary/30 hover:bg-background/64",
-                      draggedItemId === item.id && "opacity-60 ring-1 ring-primary/40",
+                      "border-white/8 hover:border-primary/30 hover:bg-background/64",
+                      draggedOutfitId === outfit.id && "opacity-60 ring-1 ring-primary/40",
                     )}
                   >
-                    {/* Card click no longer adds to the board — the */}
-                    {/* dropdown menu's "Add to board" item handles that */}
-                    {/* explicitly. Tapping the card just selects it for */}
-                    {/* visual feedback; drag-to-board still works. */}
                     <button
                       type="button"
-                      onClick={() => setSelectedItemId(item.id)}
+                      onClick={() => handleOpenDetail(outfit.id)}
                       className="w-full text-left"
                     >
-                      <div className="relative aspect-[4/5] overflow-hidden rounded-[16px] border border-white/8 bg-white/[0.03]">
-                        <img
-                          src={item.imageUrl}
-                          alt={getSavedItemDisplayName(item)}
-                          className="h-full w-full object-contain"
-                        />
-                        <ItemCategoryBadge source="ai" />
+                      <div className="relative aspect-[4/5] overflow-hidden rounded-[16px] border border-white/8 bg-white/[0.03] p-2">
+                        {previewImages.length === 0 ? (
+                          <div className="flex h-full items-center justify-center text-muted-foreground/30">
+                            <ImageIcon className="h-8 w-8" />
+                          </div>
+                        ) : (
+                          <div className="grid h-full grid-cols-2 grid-rows-2 gap-1.5">
+                            {Array.from({ length: 4 }).map((_, index) => {
+                              const url = previewImages[index];
+                              return (
+                                <div
+                                  key={index}
+                                  className="overflow-hidden rounded-[12px] border border-white/8 bg-white/[0.03]"
+                                >
+                                  {url ? (
+                                    <img
+                                      src={url}
+                                      alt=""
+                                      className="h-full w-full object-contain p-1"
+                                    />
+                                  ) : null}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
 
                       <div className="space-y-2 px-1 pb-1 pt-2.5">
                         <div className="space-y-1">
                           <div className="truncate text-sm font-medium text-foreground">
-                            {getSavedItemDisplayName(item)}
+                            {outfit.name}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {getClothingCategoryLabel(item.category, item.prompt)}
+                            {outfit.canvasItems.length}{" "}
+                            {outfit.canvasItems.length === 1 ? "item" : "items"}
+                            {" · "}
+                            {new Date(outfit.timestamp).toLocaleDateString()}
                           </div>
                         </div>
 
                         {/* Collection meta line: drop the "Collection:" prefix */}
                         {/* (the dot palette already signals which board the */}
-                        {/* item belongs to) and keep the click hint short so */}
+                        {/* outfit belongs to) and keep the click hint short so */}
                         {/* the folder name has the room it needs. */}
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex min-w-0 items-center gap-1.5 truncate text-[11px] uppercase tracking-[0.12em] text-muted-foreground/80">
@@ -955,6 +903,9 @@ const SavedItemsLibrary = ({
                               <span className="truncate">Unsorted</span>
                             )}
                           </div>
+                          <div className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-primary/80">
+                            Tap for details
+                          </div>
                         </div>
                       </div>
                     </button>
@@ -969,38 +920,21 @@ const SavedItemsLibrary = ({
                             className="h-7 w-7 rounded-full border border-white/10 bg-background/82 opacity-0 transition-opacity group-hover:opacity-100"
                           >
                             <MoreHorizontal className="h-3.5 w-3.5" />
-                            <span className="sr-only">Open saved item actions</span>
+                            <span className="sr-only">Open outfit actions</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
                           <DropdownMenuLabel className="truncate">
-                            {getSavedItemDisplayName(item)}
+                            {outfit.name}
                           </DropdownMenuLabel>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedItemId(item.id);
-                              onAddToCanvas(item);
-                            }}
-                          >
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add to board
+                          <DropdownMenuItem onClick={() => onLoad(outfit.id)}>
+                            <FolderOpen className="mr-2 h-4 w-4" />
+                            Open on board
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openEditItemNameDialog(item)}>
+                          <DropdownMenuItem onClick={() => openEditOutfitNameDialog(outfit)}>
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit name
                           </DropdownMenuItem>
-                          {assignedFolder && (
-                            <DropdownMenuItem
-                              onClick={() =>
-                                void updateFolder(assignedFolder.id, {
-                                  coverImageUrl: item.imageUrl,
-                                })
-                              }
-                            >
-                              <ImageIcon className="mr-2 h-4 w-4" />
-                              Use as collection cover
-                            </DropdownMenuItem>
-                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuSub>
                             <DropdownMenuSubTrigger>Move to collection</DropdownMenuSubTrigger>
@@ -1009,7 +943,7 @@ const SavedItemsLibrary = ({
                                 value={assignedFolderId ?? "__unsorted__"}
                                 onValueChange={(nextValue) =>
                                   void assignItemToFolder(
-                                    item.id,
+                                    outfit.id,
                                     nextValue === "__unsorted__" ? null : nextValue,
                                   )
                                 }
@@ -1028,20 +962,14 @@ const SavedItemsLibrary = ({
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
-                            onClick={() => onDelete(item.id)}
+                            onClick={() => onDelete(outfit.id)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete saved item
+                            Delete outfit
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-
-                    {isSelected && (
-                      <div className="absolute bottom-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
-                        <Check className="h-3 w-3" />
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -1053,23 +981,23 @@ const SavedItemsLibrary = ({
       <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
         <DialogContent className="max-w-md border-border bg-card">
           <DialogHeader>
-            <DialogTitle>Create saved-item collection</DialogTitle>
+            <DialogTitle>Create outfit collection</DialogTitle>
             <DialogDescription>
-              Group AI pieces into saved boards. Pick a color now, then set a
-              cover from any item inside the collection.
+              Group outfits into saved boards. Pick a color now, then set a
+              cover from any outfit inside the collection.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="saved-item-folder-name" className="text-sm font-medium text-foreground">
+              <label htmlFor="outfit-folder-name" className="text-sm font-medium text-foreground">
                 Collection name
               </label>
               <Input
-                id="saved-item-folder-name"
+                id="outfit-folder-name"
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="Office looks"
+                placeholder="Weekend looks"
                 className="h-11"
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
@@ -1138,7 +1066,7 @@ const SavedItemsLibrary = ({
       >
         <DialogContent className="max-w-md border-border bg-card">
           <DialogHeader>
-            <DialogTitle>Edit saved-item collection</DialogTitle>
+            <DialogTitle>Edit outfit collection</DialogTitle>
             <DialogDescription>
               Rename your collection or change its accent color.
             </DialogDescription>
@@ -1147,16 +1075,16 @@ const SavedItemsLibrary = ({
           <div className="space-y-4">
             <div className="space-y-2">
               <label
-                htmlFor="saved-item-folder-edit-name"
+                htmlFor="outfit-folder-edit-name"
                 className="text-sm font-medium text-foreground"
               >
                 Collection name
               </label>
               <Input
-                id="saved-item-folder-edit-name"
+                id="outfit-folder-edit-name"
                 value={editFolderName}
                 onChange={(e) => setEditFolderName(e.target.value)}
-                placeholder="Office looks"
+                placeholder="Weekend looks"
                 className="h-11"
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
@@ -1213,9 +1141,9 @@ const SavedItemsLibrary = ({
         </DialogContent>
       </Dialog>
 
-      {editItemNameDialog}
+      {editOutfitNameDialog}
     </div>
   );
 };
 
-export default SavedItemsLibrary;
+export default SavedOutfitsLibrary;

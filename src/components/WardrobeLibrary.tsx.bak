@@ -805,6 +805,12 @@ const WardrobeLibrary = ({
     return (
       <div className="space-y-6">
         <div className="space-y-1">
+          <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground/70">
+            Collection
+          </div>
+          <h2 className="text-2xl font-display font-medium text-foreground">
+            Saved boards
+          </h2>
           {folderSyncError && (
             <p className="text-xs text-destructive/90">{folderSyncError}</p>
           )}
@@ -975,7 +981,7 @@ const WardrobeLibrary = ({
 
                     <button
                       type="button"
-                      onClick={() => focusItemsPanel(collection.id)}
+                      onClick={() => setActiveCollectionId(collection.id)}
                       className="relative z-10 block w-full text-left"
                     >
                       <div className="grid aspect-[0.84/1] grid-cols-[minmax(0,1.85fr)_minmax(0,0.88fr)] gap-2.5">
@@ -1130,7 +1136,7 @@ const WardrobeLibrary = ({
 
                   <button
                     type="button"
-                    onClick={() => focusItemsPanel(collection.id)}
+                    onClick={() => setActiveCollectionId(collection.id)}
                     className="block px-1 text-left"
                   >
                       <div className="flex items-center gap-2.5 text-[14px] font-medium text-foreground md:text-[15px]">
@@ -1171,16 +1177,6 @@ const WardrobeLibrary = ({
                       New photos added here will go straight into this
                       collection. Drag pieces onto collection cards to move
                       them.
-                    </p>
-                  )}
-                {/* Always-on hint so the drag affordances are discoverable */}
-                {/* even on the "All pieces" / "Unsorted" views, where the */}
-                {/* collection-specific message above does not show. */}
-                {(activeCollectionId === "__all__" ||
-                  activeCollectionId === "__unsorted__") &&
-                  folders.length > 0 && (
-                    <p className="text-xs uppercase tracking-[0.16em] text-primary/80">
-                      You can also drag and drop the item into collection.
                     </p>
                   )}
               </div>
@@ -1316,14 +1312,12 @@ const WardrobeLibrary = ({
                           "opacity-60 ring-1 ring-primary/40",
                       )}
                     >
-                      {/* Card click no longer adds to the board — the */}
-                      {/* dropdown menu's "Add to board" item handles that */}
-                      {/* explicitly. Tapping the card just selects it for */}
-                      {/* visual feedback so the user knows which piece is */}
-                      {/* highlighted; drag-to-board still works. */}
                       <button
                         type="button"
-                        onClick={() => setSelectedItemId(item.id)}
+                        onClick={() => {
+                          setSelectedItemId(item.id);
+                          onAddToCanvas(item);
+                        }}
                         className="w-full text-left"
                       >
                         <div className="relative aspect-[4/5] overflow-hidden rounded-[16px] border border-white/8 bg-white/[0.03]">
@@ -1366,6 +1360,9 @@ const WardrobeLibrary = ({
                               ) : (
                                 <span className="truncate">Unsorted</span>
                               )}
+                            </div>
+                            <div className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-primary/80">
+                              Drag or tap
                             </div>
                           </div>
                         </div>
@@ -1685,7 +1682,7 @@ const WardrobeLibrary = ({
               <button
                 key={collection.id}
                 type="button"
-                onClick={() => focusItemsPanel(collection.id)}
+                onClick={() => setActiveCollectionId(collection.id)}
                 className={cn(
                   "group relative min-w-[132px] overflow-hidden rounded-[18px] border p-2.5 text-left transition-all duration-200",
                   isDarkTheme

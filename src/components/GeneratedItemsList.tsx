@@ -8,6 +8,7 @@ import { removeBackgroundAdvanced } from "@/services/backgroundRemoval";
 import ImageEditorDialog from "@/components/ImageEditorDialog";
 import ItemCategoryBadge from "@/components/ItemCategoryBadge";
 import { getClothingCategoryLabel } from "@/lib/clothingCategory";
+import { CANVAS_PIECE_MIME, type CanvasPiecePayload } from "@/components/CanvasEditor";
 
 interface GeneratedItemsListProps {
   // the generated items to display
@@ -81,7 +82,24 @@ const GeneratedItemsList = ({
           const isProcessing = processingIds.has(item.id);
           const alreadySaved = isSaved?.(item) ?? false;
           return (
-            <div key={item.id} className="relative group">
+            <div
+              key={item.id}
+              draggable
+              // Publish a CanvasPiecePayload so the user can drag a freshly
+              // generated piece straight onto the board, just like wardrobe
+              // and saved-AI items.
+              onDragStart={(event) => {
+                const payload: CanvasPiecePayload = {
+                  source: "ai",
+                  imageUrl: item.imageUrl,
+                  category: item.category,
+                  prompt: item.prompt,
+                };
+                event.dataTransfer.effectAllowed = "copy";
+                event.dataTransfer.setData(CANVAS_PIECE_MIME, JSON.stringify(payload));
+              }}
+              className="relative group"
+            >
               <button
                 onClick={() => onAddToCanvas(item)}
                 className="relative w-full overflow-hidden rounded-lg border border-border bg-muted text-left card-hover"

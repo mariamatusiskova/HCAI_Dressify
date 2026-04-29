@@ -9,6 +9,10 @@ export interface WardrobeItemRecord {
   tags: string[] | null;
   created_at: string;
   name?: string | null;
+  // 'wardrobe' = user-uploaded photo (shows on the wardrobe page).
+  // 'ai'       = canvas piece persisted as a wardrobe row purely so that
+  //              outfit_items can reference it (hidden from the wardrobe page).
+  source?: "wardrobe" | "ai" | null;
 }
 
 function requireSupabase() {
@@ -23,7 +27,8 @@ function normalizeName(name?: string | null) {
   return trimmed ? trimmed : null;
 }
 
-const WARDROBE_ITEM_SELECT = "id, user_id, category, image_path, thumb_path, tags, created_at, name";
+const WARDROBE_ITEM_SELECT =
+  "id, user_id, category, image_path, thumb_path, tags, created_at, name, source";
 
 async function ensureWardrobe(userId: string): Promise<string> {
   const client = requireSupabase();
@@ -66,11 +71,31 @@ async function ensureWardrobe(userId: string): Promise<string> {
 export async function listSupabaseWardrobeItems(userId: string): Promise<WardrobeItemRecord[]> {
   const client = requireSupabase();
 
-  const result = await client
+  // Filter to source='wardrobe' so AI canvas pieces persisted on outfit save
+  // don't pollute the wardrobe page. Older deployments may not have the
+  // column yet; the fallback retries the query without the filter so the
+  // page still loads while migrations are pending.
+  let result = await client
     .from("wardrobe_items")
     .select(WARDROBE_ITEM_SELECT)
     .eq("user_id", userId)
+    .or("source.eq.wardrobe,source.is.null")
     .order("created_at", { ascending: false });
+
+  if (
+    result.error &&
+    /source/i.test(result.error.message ?? "")
+  ) {
+    const fallback = await client
+      .from("wardrobe_items")
+      .select("id, user_id, category, image_path, thumb_path, tags, created_at, name")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    if (fallback.error) {
+      throw fallback.error;
+    }
+    return (fallback.data ?? []) as WardrobeItemRecord[];
+  }
 
   if (result.error) {
     throw result.error;
@@ -98,6 +123,8 @@ export async function createSupabaseWardrobeItem(
       thumb_path: imagePath,
       tags: [],
       name: normalizeName(name),
+      // Explicit user-upload tag so this row shows up on the wardrobe page.
+      source: "wardrobe",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
