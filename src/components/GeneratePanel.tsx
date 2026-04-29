@@ -11,6 +11,7 @@ import { useSystemPrompt } from "@/hooks/useSystemPrompt";
 import StyleTemplateSelector from "@/components/StyleTemplateSelector";
 import type { StyleTemplate } from "@/types/styleTemplates";
 import { DEFAULT_STYLE_TEMPLATES } from "@/types/styleTemplates";
+import { detectClothingCategory } from "@/lib/clothingCategory";
 
 // When a new item is generated, this component calls onItemGenerated(item) so the parent 
 // can store it (and later display it / add to board).
@@ -56,11 +57,11 @@ const GeneratePanel = ({
     try {
       // Combine: user input + global system prompt + style descriptor
       const fullPrompt = `${userPrompt}. ${systemPrompt}. ${selectedTemplate.styleDescriptor}`;
-      // Pass a default category ('top') to keep compatibility with the current API shape
-      const imageUrl = await generateClothingItem(fullPrompt, "top", selectedTemplate);
+      const inferredCategory = detectClothingCategory(userPrompt, "top");
+      const imageUrl = await generateClothingItem(fullPrompt, inferredCategory, selectedTemplate);
       const item: GeneratedItem = {
         id: createId(),
-        category: "top",
+        category: inferredCategory,
         imageUrl,
         prompt: userPrompt, // Store only user input, not full prompt
         createdAt: new Date().toISOString(),
@@ -91,7 +92,7 @@ const GeneratePanel = ({
 
       <div className="glass-panel-soft space-y-3 rounded-[24px] border p-3.5">
         <StyleTemplateSelector
-          category={"top"}
+          category={detectClothingCategory(prompt, "top")}
           selectedTemplate={selectedTemplate}
           onTemplateChange={(template) => setSelectedTemplate(template)}
           systemPrompt={systemPrompt}

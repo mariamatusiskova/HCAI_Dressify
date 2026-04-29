@@ -1,5 +1,5 @@
 // save icon
-import { Save } from "lucide-react";
+import { Bookmark, Save, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,10 @@ const HomePage = () => {
       alt: "Spring wardrobe view with jeans and grey t-shirt",
     },
   ];
+  const handleGenerateToBoard = (item: Parameters<typeof studio.handleItemGenerated>[0]) => {
+    studio.handleItemGenerated(item);
+    studio.handleAddToCanvas(item);
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -50,55 +54,64 @@ const HomePage = () => {
       </section>
 
       <div className="flex-1 min-h-0 overflow-hidden px-4 pb-24 pt-2 md:px-6 lg:px-10 lg:pb-6">
-        <div className="mx-auto grid h-full max-w-[1440px] min-h-0 gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="min-h-0">
-            <section className={cn(panelShell, "space-y-4 transition-all duration-300")}>
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <p className={sectionEyebrow}>Save outfit</p>
-                  <div
-                    className={cn(
-                      "glass-panel-soft space-y-3 rounded-[24px] border p-3.5 transition-all duration-300",
-                      !canSaveOutfit && "opacity-70",
-                    )}
-                  >
-                    <Input
-                      placeholder="Outfit name..."
-                      value={studio.outfitName}
-                      onChange={(e) => studio.setOutfitName(e.target.value)}
-                      className="h-10 rounded-xl bg-background/48 px-4 dark:border-white/[0.08] dark:bg-black/16"
-                      onKeyDown={(e) => canSaveOutfit && e.key === "Enter" && void studio.handleSave()}
-                    />
-                    <Button
-                      onClick={() => void studio.handleSave()}
-                      className="h-10 w-full gap-2 rounded-xl"
-                      disabled={!canSaveOutfit}
-                    >
-                      <Save className="h-4 w-4" />
-                      Save outfit
-                    </Button>
-                    <Button asChild variant="secondary" className="h-10 w-full rounded-xl">
-                      <Link to="/saved/outfits">View saved outfits</Link>
-                    </Button>
-                  </div>
+        {/* Trim the sidebar so the canvas gets back the breathing room: 360/380 */}
+        {/* fits the wardrobe/saved cards comfortably without dwarfing the board. */}
+        <div className="mx-auto grid h-full max-w-[1500px] min-h-0 gap-7 xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[380px_minmax(0,1fr)]">
+          <aside className="min-h-0 space-y-5">
+            <section className={cn(panelShell, "space-y-3 p-3.5 transition-all duration-300")}>
+              <p className={sectionEyebrow}>Save outfit</p>
+              <div
+                className={cn(
+                  "glass-panel-soft space-y-2.5 rounded-[20px] border p-3 transition-all duration-300",
+                  !canSaveOutfit && "opacity-70",
+                )}
+              >
+                <Input
+                  placeholder="Outfit name..."
+                  value={studio.outfitName}
+                  onChange={(e) => studio.setOutfitName(e.target.value)}
+                  className="h-10 rounded-xl bg-background/48 px-4 dark:border-white/[0.08] dark:bg-black/16"
+                  onKeyDown={(e) => canSaveOutfit && e.key === "Enter" && void studio.handleSave()}
+                />
+                <Button
+                  onClick={() => void studio.handleSave()}
+                  className="h-10 w-full gap-2 rounded-xl"
+                  disabled={!canSaveOutfit}
+                >
+                  <Save className="h-4 w-4" />
+                  Save outfit
+                </Button>
+                {/* Two compact links sit side-by-side so the panel stops dominating */}
+                {/* the sidebar and surfaces the new saved-AI-items page too. */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button asChild variant="secondary" className="h-9 gap-1.5 rounded-xl px-2 text-xs">
+                    <Link to="/saved/outfits">
+                      <Bookmark className="h-3.5 w-3.5" />
+                      Outfits
+                    </Link>
+                  </Button>
+                  <Button asChild variant="secondary" className="h-9 gap-1.5 rounded-xl px-2 text-xs">
+                    <Link to="/saved/items">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      AI items
+                    </Link>
+                  </Button>
                 </div>
               </div>
             </section>
 
-            <section className={cn(panelShell, "space-y-4 transition-all duration-300")}>
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <p className={sectionEyebrow}>Wardrobe</p>
-                  <div className="glass-panel-soft rounded-[24px] border p-3.5">
-                    <WardrobeLibrary
-                      items={studio.wardrobeItems}
-                      onAddToCanvas={studio.handleAddWardrobeToCanvas}
-                      onDelete={studio.deleteWardrobeItem}
-                      onAddPhoto={studio.addWardrobeItem}
-                      isLoading={studio.wardrobeLoading}
-                    />
-                  </div>
-                </div>
+            <section className={cn(panelShell, "space-y-3 p-3.5 transition-all duration-300")}>
+              <p className={sectionEyebrow}>Wardrobe</p>
+              <div className="glass-panel-soft rounded-[20px] border p-3">
+                <WardrobeLibrary
+                  items={studio.wardrobeItems}
+                  onAddToCanvas={studio.handleAddWardrobeToCanvas}
+                  onDelete={(id) => void studio.handleDeleteWardrobeItem(id)}
+                  onAddPhoto={studio.handleAddPhotoToWardrobe}
+                  onUpdateName={studio.handleUpdateWardrobeItemName}
+                  isLoading={studio.wardrobeLoading}
+                  variant="compact"
+                />
               </div>
             </section>
           </aside>
@@ -149,7 +162,7 @@ const HomePage = () => {
               </div>
 
               <GeneratePanel
-                onItemGenerated={studio.handleItemGenerated}
+                onItemGenerated={handleGenerateToBoard}
                 hideTitle
                 className="space-y-0"
                 buttonLabel="Generate outfit"

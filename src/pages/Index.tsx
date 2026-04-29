@@ -17,23 +17,9 @@ import SystemWalkthrough from "@/components/SystemWalkthrough";
 import { createId } from "@/lib/id";
 import { useOutfits, type CanvasItem, type GeneratedItem } from "@/hooks/useOutfits";
 import { useWardrobe } from "@/hooks/useWardrobe";
+import { useSavedItems, type SavedAiItem } from "@/hooks/useSavedItems";
+import { normalizeClothingCategory } from "@/lib/clothingCategory";
 import MenuNav from "./MenuNav";
-
-interface SavedGeneratedItem extends GeneratedItem {
-  savedId: string;
-  savedAt: string;
-}
-
-const SAVED_GENERATED_ITEMS_KEY = "dressify-saved-generated-items";
-
-function readSavedGeneratedItems(): SavedGeneratedItem[] {
-  try {
-    const stored = window.localStorage.getItem(SAVED_GENERATED_ITEMS_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
 
 // components logic (saved outfits, wardrobe, etc.)
 function useStudioInternal() {
@@ -46,21 +32,21 @@ function useStudioInternal() {
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   // AI-generated clothing items
   const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
-  const [savedGeneratedItems, setSavedGeneratedItems] = useState<SavedGeneratedItem[]>(() => readSavedGeneratedItems());
   // items placed on canvas editor
   const [canvasItems, setCanvasItems] = useState<CanvasItem[]>([]);
   // stores the name type for the outfit
   const [outfitName, setOutfitName] = useState("");
 
   // outfit actions
-  const { 
-    outfits, 
-    saveOutfit, 
-    deleteOutfit, 
-    loadOutfit, 
-    isLoading, 
-    isCloudSyncEnabled, 
-    syncError 
+  const {
+    outfits,
+    saveOutfit,
+    deleteOutfit,
+    loadOutfit,
+    updateOutfitName,
+    isLoading,
+    isCloudSyncEnabled,
+    syncError,
   } = useOutfits();
 
   // wardrobe actions
@@ -68,10 +54,22 @@ function useStudioInternal() {
     items: wardrobeItems,
     addItem: addWardrobeItem,
     deleteItem: deleteWardrobeItem,
+    updateItemName: updateWardrobeItemName,
     isLoading: wardrobeLoading,
     isCloudSyncEnabled: isWardrobeCloudSyncEnabled,
     syncError: wardrobeSyncError,
   } = useWardrobe();
+
+  // saved AI items actions
+  const {
+    items: savedGeneratedItems,
+    addItem: addSavedItem,
+    deleteItem: deleteSavedItem,
+    updateItemName: updateSavedItemName,
+    isLoading: savedItemsLoading,
+    isCloudSyncEnabled: isSavedItemsCloudSyncEnabled,
+    syncError: savedItemsSyncError,
+  } = useSavedItems();
 
   // outfit sync problem popup
   useEffect(() => {
@@ -87,9 +85,55 @@ function useStudioInternal() {
     }
   }, [wardrobeSyncError]);
 
+  // saved AI item sync problem popup
   useEffect(() => {
-    window.localStorage.setItem(SAVED_GENERATED_ITEMS_KEY, JSON.stringify(savedGeneratedItems));
-  }, [savedGeneratedItems]);
+    if (savedItemsSyncError) {
+      toast.warning(savedItemsSyncError);
+    }
+  }, [savedItemsSyncError]);
+
+  useEffect(() => {
+    setCanvasItems((prev) => {
+      let hasChanges = false;
+
+      const next = prev.map((canvasItem) => {
+        if (canvasItem.source === "wardrobe") {
+          return canvasItem;
+        }
+
+        const matchedGeneratedItem =
+          generatedItems.find((generatedItem) => generatedItem.imageUrl === canvasItem.imageUrl) ??
+          savedGeneratedItems.find((savedItem) => savedItem.imageUrl === canvasItem.imageUrl);
+
+        if (!matchedGeneratedItem) {
+          return canvasItem;
+        }
+
+        const normalizedCategory = normalizeClothingCategory(
+          matchedGeneratedItem.category,
+          matchedGeneratedItem.prompt,
+        );
+
+        if (
+          canvasItem.category === normalizedCategory &&
+          canvasItem.prompt === matchedGeneratedItem.prompt &&
+          canvasItem.source === "ai"
+        ) {
+          return canvasItem;
+        }
+
+        hasChanges = true;
+        return {
+          ...canvasItem,
+          category: normalizedCategory,
+          prompt: matchedGeneratedItem.prompt,
+          source: "ai" as const,
+        };
+      });
+
+      return hasChanges ? next : prev;
+    });
+  }, [generatedItems, savedGeneratedItems]);
 
   const handleAgree = useCallback(() => {
     setConsented(true);
@@ -98,14 +142,22 @@ function useStudioInternal() {
 
   // adds the new generated item to the beginning of the list and shows a success message
   const handleItemGenerated = useCallback((item: GeneratedItem) => {
-    setGeneratedItems((prev) => [item, ...prev]);
-    toast.success(`${item.category} generated`);
+    const normalizedItem: GeneratedItem = {
+      ...item,
+      category: normalizeClothingCategory(item.category, item.prompt),
+    };
+    setGeneratedItems((prev) => [normalizedItem, ...prev]);
+    toast.success(`${normalizedItem.category} generated`);
   }, []);
 
   // updates an existing generated item
   const handleItemUpdate = useCallback((itemId: string, updatedItem: GeneratedItem) => {
+    const normalizedUpdatedItem: GeneratedItem = {
+      ...updatedItem,
+      category: normalizeClothingCategory(updatedItem.category, updatedItem.prompt),
+    };
     setGeneratedItems((prev) => {
-      const updated = prev.map((item) => (item.id === itemId ? updatedItem : item));
+      const updated = prev.map((item) => (item.id === itemId ? normalizedUpdatedItem : item));
       const oldItem = prev.find((item) => item.id === itemId);
 
       // replace the old item in generatedItems
@@ -113,7 +165,14 @@ function useStudioInternal() {
       if (oldItem) {
         setCanvasItems((currentCanvasItems) =>
           currentCanvasItems.map((canvasItem) =>
-            canvasItem.imageUrl === oldItem.imageUrl ? { ...canvasItem, imageUrl: updatedItem.imageUrl } : canvasItem,
+            canvasItem.imageUrl === oldItem.imageUrl
+              ? {
+                  ...canvasItem,
+                  imageUrl: normalizedUpdatedItem.imageUrl,
+                  category: normalizeClothingCategory(normalizedUpdatedItem.category, normalizedUpdatedItem.prompt),
+                  prompt: normalizedUpdatedItem.prompt,
+                }
+              : canvasItem,
           ),
         );
       }
@@ -128,34 +187,77 @@ function useStudioInternal() {
     toast.success("Generated item removed");
   }, []);
 
-  const handleSaveGeneratedItem = useCallback((item: GeneratedItem) => {
-    const alreadySaved = savedGeneratedItems.some(
-      (savedItem) =>
-        savedItem.category === item.category &&
-        savedItem.imageUrl === item.imageUrl &&
-        savedItem.prompt === item.prompt,
-    );
+  const handleSaveGeneratedItem = useCallback(
+    async (item: GeneratedItem) => {
+      const normalizedCategory = normalizeClothingCategory(item.category, item.prompt);
+      const result = await addSavedItem({
+        category: normalizedCategory,
+        imageUrl: item.imageUrl,
+        prompt: item.prompt,
+      });
 
-    if (alreadySaved) {
-      toast.info("Item already saved");
-      return;
-    }
+      if (result.alreadyExists) {
+        toast.info("Item already saved");
+        return;
+      }
 
-    setSavedGeneratedItems((prev) => [
-      {
-        ...item,
-        savedId: createId(),
-        savedAt: new Date().toISOString(),
-      },
-      ...prev,
-    ]);
-    toast.success("Item saved");
-  }, [savedGeneratedItems]);
+      if (result.savedToCloud) {
+        toast.success("Item saved");
+      } else {
+        toast.warning(
+          result.cloudError
+            ? `Saved locally only: ${result.cloudError}`
+            : "Saved locally only (no active Supabase session).",
+        );
+      }
+    },
+    [addSavedItem],
+  );
 
-  const handleDeleteSavedGeneratedItem = useCallback((savedId: string) => {
-    setSavedGeneratedItems((prev) => prev.filter((item) => item.savedId !== savedId));
-    toast.success("Saved item removed");
-  }, []);
+  const handleDeleteSavedGeneratedItem = useCallback(
+    async (id: string) => {
+      try {
+        await deleteSavedItem(id);
+        toast.success("Saved item removed");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to remove saved item";
+        toast.error(message);
+      }
+    },
+    [deleteSavedItem],
+  );
+
+  const handleUpdateSavedItemName = useCallback(
+    async (id: string, name: string) => {
+      try {
+        await updateSavedItemName(id, name);
+        toast.success(name.trim() ? "Saved item renamed" : "Saved item name cleared");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to rename saved item";
+        toast.error(message);
+      }
+    },
+    [updateSavedItemName],
+  );
+
+  const handleUpdateOutfitName = useCallback(
+    async (id: string, name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) {
+        toast.error("Enter a name for the outfit");
+        return;
+      }
+
+      try {
+        await updateOutfitName(id, trimmed);
+        toast.success("Outfit renamed");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to rename outfit";
+        toast.error(message);
+      }
+    },
+    [updateOutfitName],
+  );
 
   // add generated items to canvas
   const handleAddToCanvas = useCallback((item: GeneratedItem) => {
@@ -164,7 +266,9 @@ function useStudioInternal() {
       const canvasItem: CanvasItem = {
         id: createId(),
         imageUrl: item.imageUrl,
-        category: item.category,
+        category: normalizeClothingCategory(item.category, item.prompt),
+        prompt: item.prompt,
+        source: "ai",
         x: 40 + Math.random() * 80,
         y: 40 + Math.random() * 80,
         width: 80,
@@ -184,6 +288,7 @@ function useStudioInternal() {
         id: createId(),
         imageUrl: item.imageUrl,
         category: item.category,
+        source: "wardrobe",
         x: 40 + Math.random() * 80,
         y: 40 + Math.random() * 80,
         width: 80,
@@ -270,21 +375,26 @@ function useStudioInternal() {
   // delete wardrobe item
   const handleDeleteWardrobeItem = useCallback(
     async (id: string) => {
-      await deleteWardrobeItem(id);
-      toast.success("Wardrobe item deleted");
+      try {
+        await deleteWardrobeItem(id);
+        toast.success("Wardrobe item deleted");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to delete wardrobe item";
+        toast.error(message);
+      }
     },
     [deleteWardrobeItem],
   );
 
   // add photo directly to wardrobe
   const handleAddPhotoToWardrobe = useCallback(
-    async (imageUrl: string, category: string) => {
+    async (imageUrl: string, category: string, name?: string | null) => {
       try {
-        const result = await addWardrobeItem(category, imageUrl);
+        const result = await addWardrobeItem(category, imageUrl, name);
 
         if (result.alreadyExists) {
           toast.info("Photo is already in wardrobe");
-          return;
+          return result.item;
         }
 
         if (result.savedToCloud) {
@@ -296,12 +406,29 @@ function useStudioInternal() {
               : "Photo saved locally only (no active Supabase session).",
           );
         }
+
+        return result.item;
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to add photo to wardrobe";
         toast.error(message);
+        return null;
       }
     },
     [addWardrobeItem],
+  );
+
+  // rename wardrobe item
+  const handleUpdateWardrobeItemName = useCallback(
+    async (id: string, name: string) => {
+      try {
+        await updateWardrobeItemName(id, name);
+        toast.success(name.trim() ? "Wardrobe item renamed" : "Wardrobe item name cleared");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to rename wardrobe item";
+        toast.error(message);
+      }
+    },
+    [updateWardrobeItemName],
   );
 
   // return the shared studio object
@@ -314,6 +441,8 @@ function useStudioInternal() {
     generatedItems,
     setGeneratedItems,
     savedGeneratedItems,
+    savedItemsLoading,
+    isSavedItemsCloudSyncEnabled,
     canvasItems,
     setCanvasItems,
     outfitName,
@@ -329,17 +458,24 @@ function useStudioInternal() {
     handleDeleteGeneratedItem,
     handleSaveGeneratedItem,
     handleDeleteSavedGeneratedItem,
+    handleUpdateSavedItemName,
     handleAddToCanvas,
     handleAddWardrobeToCanvas,
     handleDeleteItem,
     handleSave,
     handleLoad,
     handleDeleteOutfit,
+    handleUpdateOutfitName,
     handleAddGeneratedToWardrobe,
     handleDeleteWardrobeItem,
     handleAddPhotoToWardrobe,
+    handleUpdateWardrobeItemName,
   };
 }
+
+// Re-export so consumer pages can keep using the shared type without
+// importing directly from the saved-items hook.
+export type { SavedAiItem };
 
 // context -> the context type should match whatever useStudioInternal() return
 type StudioContextType = ReturnType<typeof useStudioInternal>;

@@ -5,15 +5,17 @@ const WardrobePage = () => {
   const studio = useStudio();
 
   return (
-    <div className="min-h-full p-4 space-y-4">
-      <h2 className="text-sm font-display font-medium text-muted-foreground uppercase tracking-wider">Wardrobe</h2>
-      <WardrobeLibrary
-        items={studio.wardrobeItems}
-        onAddToCanvas={studio.handleAddWardrobeToCanvas}
-        onDelete={(id) => void studio.handleDeleteWardrobeItem(id)}
-        onAddPhoto={(imageUrl, category) => void studio.handleAddPhotoToWardrobe(imageUrl, category)}
-        isLoading={studio.wardrobeLoading}
-      />
+    <div className="min-h-full px-4 pb-24 pt-2 md:px-6 lg:px-10 lg:pb-6">
+      <div className="mx-auto max-w-[1500px] space-y-6">
+        <WardrobeLibrary
+          items={studio.wardrobeItems}
+          onAddToCanvas={studio.handleAddWardrobeToCanvas}
+          onDelete={(id) => void studio.handleDeleteWardrobeItem(id)}
+          onAddPhoto={studio.handleAddPhotoToWardrobe}
+          onUpdateName={studio.handleUpdateWardrobeItemName}
+          isLoading={studio.wardrobeLoading}
+        />
+      </div>
     </div>
   );
 };

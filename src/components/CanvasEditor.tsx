@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import ItemCategoryBadge from "@/components/ItemCategoryBadge";
 import {
   RotateCw,
   ImageMinus,
@@ -193,16 +193,25 @@ const CanvasEditor = ({
       const containerWidth = rect.width;
       const containerHeight = rect.height;
 
+      // Items used to be clamped strictly inside the stage, but the user wants
+      // to be able to place pieces anywhere on the canvas (including the dark
+      // area around the photo). We allow items to bleed up to ~70% of their
+      // own size past each edge so the user can still grab them back; the
+      // outer glass-viewport's overflow-hidden takes care of clipping
+      // anything that strays too far.
+      const overscanX = item.width * 0.7;
+      const overscanY = item.height * 0.7;
+
       let updatedItem: CanvasItem = { ...item };
 
       if (interactionMode === "drag") {
         const newX = Math.max(
-          0,
-          Math.min(containerWidth - item.width, startItem.x + deltaX),
+          -overscanX,
+          Math.min(containerWidth - item.width + overscanX, startItem.x + deltaX),
         );
         const newY = Math.max(
-          0,
-          Math.min(containerHeight - item.height, startItem.y + deltaY),
+          -overscanY,
+          Math.min(containerHeight - item.height + overscanY, startItem.y + deltaY),
         );
         updatedItem = { ...item, x: newX, y: newY };
       } else if (interactionMode === "resize") {
@@ -231,10 +240,12 @@ const CanvasEditor = ({
           newHeight = newHeightValue;
         }
 
-        newX = Math.max(0, Math.min(newX, containerWidth - minSize));
-        newY = Math.max(0, Math.min(newY, containerHeight - minSize));
-        newWidth = Math.max(minSize, Math.min(newWidth, containerWidth - newX));
-        newHeight = Math.max(minSize, Math.min(newHeight, containerHeight - newY));
+        // Same overscan idea on resize: keep at least a sliver of the item
+        // visible relative to the stage rather than clamping to its edges.
+        newX = Math.max(-overscanX, Math.min(newX, containerWidth - minSize + overscanX));
+        newY = Math.max(-overscanY, Math.min(newY, containerHeight - minSize + overscanY));
+        newWidth = Math.max(minSize, newWidth);
+        newHeight = Math.max(minSize, newHeight);
 
         updatedItem = {
           ...item,
@@ -498,7 +509,12 @@ const CanvasEditor = ({
           <div
             ref={stageRef}
             data-stage-mode={stageMode}
-            className="relative overflow-hidden"
+            // overflow:visible (was overflow-hidden) lets items, the rotation
+            // handle, the resize dots, and the floating toolbar bleed outside
+            // the photo's bounding box. Anything that drifts too far is still
+            // clipped by the outer glass-viewport card so the rounded corners
+            // stay clean.
+            className="relative overflow-visible"
             style={stageSizeStyle}
           >
             {userPhoto && (
@@ -630,9 +646,12 @@ const CanvasEditor = ({
                   alt={item.category}
                   className="h-full w-full object-fill pointer-events-none"
                 />
-                <Badge className="absolute left-2 top-2 rounded-full border border-white/10 bg-background/82 px-2 py-0.5 text-[10px] font-medium text-foreground shadow-none backdrop-blur-sm">
-                  {item.category || "Item"}
-                </Badge>
+                {item.source ? (
+                  <ItemCategoryBadge
+                    source={item.source}
+                    className="pointer-events-none z-10"
+                  />
+                ) : null}
               </div>
 
               {showToolbar && (
