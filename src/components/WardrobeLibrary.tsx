@@ -1233,7 +1233,13 @@ const WardrobeLibrary = ({
                 </p>
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div
+                className="grid justify-start gap-3"
+                style={{
+                  gridTemplateColumns:
+                    "repeat(auto-fill, minmax(min(100%, 180px), 220px))",
+                }}
+              >
                 {filteredItems.map((item) => {
                   const isSelected = selectedItemId === item.id;
                   const assignedFolderId = getAssignedFolderId(item.id);
@@ -1254,7 +1260,7 @@ const WardrobeLibrary = ({
                         setDragOverCollectionId(null);
                       }}
                       className={cn(
-                        "group relative overflow-hidden rounded-[22px] border bg-background/52 p-3 transition-all duration-200",
+                        "group relative overflow-hidden rounded-[18px] border bg-background/52 p-2 transition-all duration-200",
                         isSelected
                           ? "border-primary/70 shadow-[0_0_0_1px_hsl(var(--primary)/0.18)]"
                           : "border-white/8 hover:border-primary/30 hover:bg-background/64",
@@ -1270,7 +1276,7 @@ const WardrobeLibrary = ({
                         }}
                         className="w-full text-left"
                       >
-                        <div className="relative aspect-[4/5] overflow-hidden rounded-[18px] border border-white/8 bg-white/[0.03]">
+                        <div className="relative aspect-[4/5] overflow-hidden rounded-[16px] border border-white/8 bg-white/[0.03]">
                           <img
                             src={item.imageUrl}
                             alt={getWardrobeItemDisplayName(item)}
@@ -1279,39 +1285,39 @@ const WardrobeLibrary = ({
                           <ItemCategoryBadge source="wardrobe" />
                         </div>
 
-                        <div className="space-y-3 px-1 pb-1 pt-4">
+                        <div className="space-y-2 px-1 pb-1 pt-2.5">
                           <div className="space-y-1">
-                            <div className="text-base font-medium text-foreground">
+                            <div className="truncate text-sm font-medium text-foreground">
                               {getWardrobeItemDisplayName(item)}
                             </div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-xs text-muted-foreground">
                               {getClothingCategoryLabel(item.category)}
                             </div>
                           </div>
 
                           <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0 text-xs uppercase tracking-[0.16em] text-muted-foreground/80">
+                            <div className="min-w-0 truncate text-[11px] uppercase tracking-[0.14em] text-muted-foreground/80">
                               {assignedFolderName
                                 ? `Collection: ${assignedFolderName}`
                                 : "Unsorted"}
                             </div>
-                            <div className="text-xs uppercase tracking-[0.16em] text-primary/85">
+                            <div className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-primary/85">
                               Drag or click
                             </div>
                           </div>
                         </div>
                       </button>
 
-                      <div className="absolute right-4 top-4 flex items-center gap-2">
+                      <div className="absolute right-3 top-3 flex items-center gap-2">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
                               type="button"
                               variant="secondary"
                               size="icon"
-                              className="h-8 w-8 rounded-full border border-white/10 bg-background/82 opacity-0 transition-opacity group-hover:opacity-100"
+                              className="h-7 w-7 rounded-full border border-white/10 bg-background/82 opacity-0 transition-opacity group-hover:opacity-100"
                             >
-                              <MoreHorizontal className="h-4 w-4" />
+                              <MoreHorizontal className="h-3.5 w-3.5" />
                               <span className="sr-only">
                                 Open wardrobe item actions
                               </span>
@@ -1390,8 +1396,8 @@ const WardrobeLibrary = ({
                       </div>
 
                       {isSelected && (
-                        <div className="absolute bottom-4 right-4 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
-                          <Check className="h-3.5 w-3.5" />
+                        <div className="absolute bottom-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
+                          <Check className="h-3 w-3" />
                         </div>
                       )}
                     </div>
