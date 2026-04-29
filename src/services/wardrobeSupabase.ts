@@ -139,6 +139,16 @@ export async function updateSupabaseWardrobeItemName(
 export async function deleteSupabaseWardrobeItem(userId: string, itemId: string): Promise<void> {
   const client = requireSupabase();
 
+  const assignmentDelete = await client
+    .from("wardrobe_folder_items")
+    .delete()
+    .eq("user_id", userId)
+    .eq("wardrobe_item_id", itemId);
+
+  if (assignmentDelete.error) {
+    throw assignmentDelete.error;
+  }
+
   const result = await client
     .from("wardrobe_items")
     .delete()

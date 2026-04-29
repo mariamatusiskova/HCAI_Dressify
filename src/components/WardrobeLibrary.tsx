@@ -76,7 +76,9 @@ interface WardrobeLibraryProps {
   onAddPhoto: (
     imageUrl: string,
     category: string,
+    name?: string | null,
   ) => Promise<AddPhotoResult> | AddPhotoResult;
+  onUpdateName: (id: string, name: string) => Promise<void> | void;
   isLoading?: boolean;
   variant?: "default" | "compact";
 }
@@ -116,6 +118,18 @@ function getWardrobeItemSubtitle(category: string) {
   if (normalized === "trousers") return "Bottoms";
   if (normalized === "shoes") return "Shoes";
   return "Tops";
+}
+
+function getWardrobeItemDisplayName(item: WardrobeItem) {
+  const trimmedName = item.name?.trim();
+  return trimmedName || getWardrobeItemTitle(item.category);
+}
+
+function getWardrobeItemNamePlaceholder(category: string) {
+  const normalized = normalizeClothingCategory(category);
+  if (normalized === "trousers") return "Dark straight-leg trousers";
+  if (normalized === "shoes") return "Black leather loafers";
+  return "White Marco Polo t-shirt";
 }
 
 function getWardrobeCollectionSummary(
@@ -239,6 +253,7 @@ const WardrobeLibrary = ({
   onAddToCanvas,
   onDelete,
   onAddPhoto,
+  onUpdateName,
   isLoading = false,
   variant = "default",
 }: WardrobeLibraryProps) => {
@@ -246,6 +261,14 @@ const WardrobeLibrary = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadCategory, setUploadCategory] = useState<WardrobeCategory>("top");
+  const [pendingUpload, setPendingUpload] = useState<{
+    imageUrl: string;
+    category: WardrobeCategory;
+  } | null>(null);
+  const [newItemName, setNewItemName] = useState("");
+  const [editingItem, setEditingItem] = useState<WardrobeItem | null>(null);
+  const [editItemName, setEditItemName] = useState("");
+  const [isRenamingItem, setIsRenamingItem] = useState(false);
   const [activeFilter, setActiveFilter] = useState<WardrobeFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -404,7 +427,7 @@ const WardrobeLibrary = ({
       const assignedFolderName =
         folders.find((folder) => folder.id === assignedFolderId)?.name ?? "";
       const haystack = [
-        getWardrobeItemTitle(item.category),
+        getWardrobeItemDisplayName(item),
         getWardrobeItemSubtitle(item.category),
         getClothingCategoryLabel(item.category),
         assignedFolderName,
@@ -456,16 +479,37 @@ const WardrobeLibrary = ({
     }
 
     const category = activeFilter === "all" ? uploadCategory : activeFilter;
-    const addedItem = getAddedWardrobeItem(
-      await onAddPhoto(imageUrl, category),
-    );
+    setPendingUpload({ imageUrl, category });
+    setNewItemName("");
+  };
 
-    if (
-      addedItem &&
-      activeCollectionId !== "__all__" &&
-      activeCollectionId !== "__unsorted__"
-    ) {
-      await assignItemToFolder(addedItem.id, activeCollectionId);
+  const clearPendingUpload = () => {
+    setPendingUpload(null);
+    setNewItemName("");
+  };
+
+  const handleConfirmAddPhoto = async () => {
+    if (!pendingUpload) return;
+
+    setIsUploading(true);
+    try {
+      const addedItem = getAddedWardrobeItem(
+        await onAddPhoto(pendingUpload.imageUrl, pendingUpload.category, newItemName),
+      );
+
+      if (
+        addedItem &&
+        activeCollectionId !== "__all__" &&
+        activeCollectionId !== "__unsorted__"
+      ) {
+        await assignItemToFolder(addedItem.id, activeCollectionId);
+      }
+
+      clearPendingUpload();
+    } catch (error) {
+      console.error("Wardrobe photo upload failed:", error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -508,6 +552,28 @@ const WardrobeLibrary = ({
     setEditFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
   };
 
+  const openEditItemNameDialog = (item: WardrobeItem) => {
+    setEditingItem(item);
+    setEditItemName(item.name ?? "");
+  };
+
+  const closeEditItemNameDialog = () => {
+    setEditingItem(null);
+    setEditItemName("");
+  };
+
+  const handleUpdateItemName = async () => {
+    if (!editingItem) return;
+
+    setIsRenamingItem(true);
+    try {
+      await onUpdateName(editingItem.id, editItemName);
+      closeEditItemNameDialog();
+    } finally {
+      setIsRenamingItem(false);
+    }
+  };
+
   const handleItemDragStart = (
     event: DragEvent<HTMLElement>,
     itemId: string,
@@ -545,6 +611,161 @@ const WardrobeLibrary = ({
     setActiveCollectionId(collectionId);
     setActiveCollectionBoardTab("collections");
   };
+
+  const pendingUploadCategory = pendingUpload?.category ?? uploadCategory;
+  const pendingUploadLabel = getClothingCategoryLabel(pendingUploadCategory);
+  const pendingUploadPlaceholder = getWardrobeItemNamePlaceholder(pendingUploadCategory);
+  const editingItemPlaceholder = editingItem
+    ? getWardrobeItemNamePlaceholder(editingItem.category)
+    : "White Marco Polo t-shirt";
+
+  const addItemNameDialog = (
+    <Dialog
+      open={Boolean(pendingUpload)}
+      onOpenChange={(open) => {
+        if (!open && !isUploading) {
+          clearPendingUpload();
+        }
+      }}
+    >
+      <DialogContent className="max-w-md border-border bg-card">
+        <DialogHeader>
+          <DialogTitle>Name this wardrobe piece</DialogTitle>
+          <DialogDescription>
+            Add a searchable name now. You can edit it later from the item actions.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {pendingUpload?.imageUrl && (
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-background/44 p-3">
+              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
+                <img
+                  src={pendingUpload.imageUrl}
+                  alt="Selected wardrobe piece preview"
+                  className="h-full w-full object-contain"
+                />
+              </div>
+              <div className="min-w-0 text-sm text-muted-foreground">
+                <div className="font-medium text-foreground">{pendingUploadLabel}</div>
+                <div>Example: White Marco Polo t-shirt</div>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <label htmlFor="wardrobe-item-name" className="text-sm font-medium text-foreground">
+              Piece name
+            </label>
+            <Input
+              id="wardrobe-item-name"
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              placeholder={pendingUploadPlaceholder}
+              className="h-11"
+              autoFocus
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void handleConfirmAddPhoto();
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={clearPendingUpload}
+            disabled={isUploading}
+          >
+            Cancel
+          </Button>
+          <Button type="button" onClick={() => void handleConfirmAddPhoto()} disabled={isUploading}>
+            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Add item
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  const editItemNameDialog = (
+    <Dialog
+      open={Boolean(editingItem)}
+      onOpenChange={(open) => {
+        if (!open && !isRenamingItem) {
+          closeEditItemNameDialog();
+        }
+      }}
+    >
+      <DialogContent className="max-w-md border-border bg-card">
+        <DialogHeader>
+          <DialogTitle>Edit piece name</DialogTitle>
+          <DialogDescription>
+            Rename this wardrobe piece. Leave it blank to show the default category name.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {editingItem?.imageUrl && (
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-background/44 p-3">
+              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
+                <img
+                  src={editingItem.imageUrl}
+                  alt={getWardrobeItemDisplayName(editingItem)}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+              <div className="min-w-0 text-sm text-muted-foreground">
+                <div className="font-medium text-foreground">
+                  {getClothingCategoryLabel(editingItem.category)}
+                </div>
+                <div>{getWardrobeItemDisplayName(editingItem)}</div>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <label htmlFor="wardrobe-item-edit-name" className="text-sm font-medium text-foreground">
+              Piece name
+            </label>
+            <Input
+              id="wardrobe-item-edit-name"
+              value={editItemName}
+              onChange={(e) => setEditItemName(e.target.value)}
+              placeholder={editingItemPlaceholder}
+              className="h-11"
+              autoFocus
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void handleUpdateItemName();
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={closeEditItemNameDialog}
+            disabled={isRenamingItem}
+          >
+            Cancel
+          </Button>
+          <Button type="button" onClick={() => void handleUpdateItemName()} disabled={isRenamingItem}>
+            {isRenamingItem ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Save name
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 
   if (isLoading || isFolderSyncLoading) {
     return (
@@ -1052,7 +1273,7 @@ const WardrobeLibrary = ({
                         <div className="relative aspect-[4/5] overflow-hidden rounded-[18px] border border-white/8 bg-white/[0.03]">
                           <img
                             src={item.imageUrl}
-                            alt={item.category}
+                            alt={getWardrobeItemDisplayName(item)}
                             className="h-full w-full object-contain"
                           />
                           <ItemCategoryBadge source="wardrobe" />
@@ -1061,7 +1282,7 @@ const WardrobeLibrary = ({
                         <div className="space-y-3 px-1 pb-1 pt-4">
                           <div className="space-y-1">
                             <div className="text-base font-medium text-foreground">
-                              {getWardrobeItemTitle(item.category)}
+                              {getWardrobeItemDisplayName(item)}
                             </div>
                             <div className="text-sm text-muted-foreground">
                               {getClothingCategoryLabel(item.category)}
@@ -1097,7 +1318,9 @@ const WardrobeLibrary = ({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuLabel>Wardrobe item</DropdownMenuLabel>
+                            <DropdownMenuLabel className="truncate">
+                              {getWardrobeItemDisplayName(item)}
+                            </DropdownMenuLabel>
                             <DropdownMenuItem
                               onClick={() => {
                                 setSelectedItemId(item.id);
@@ -1106,6 +1329,10 @@ const WardrobeLibrary = ({
                             >
                               <Plus className="mr-2 h-4 w-4" />
                               Add to board
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEditItemNameDialog(item)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit name
                             </DropdownMenuItem>
                             {assignedFolder && (
                               <DropdownMenuItem
@@ -1355,6 +1582,9 @@ const WardrobeLibrary = ({
           </DialogContent>
         </Dialog>
 
+        {addItemNameDialog}
+        {editItemNameDialog}
+
         <input
           ref={fileInputRef}
           type="file"
@@ -1552,13 +1782,8 @@ const WardrobeLibrary = ({
               const isSelected = selectedItemId === item.id;
 
               return (
-                <button
+                <div
                   key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedItemId(item.id);
-                    onAddToCanvas(item);
-                  }}
                   className={cn(
                     "group relative overflow-hidden rounded-[18px] border bg-background/56 p-3 text-left transition-all duration-200",
                     isSelected
@@ -1566,48 +1791,72 @@ const WardrobeLibrary = ({
                       : "border-white/8 hover:border-primary/30 hover:bg-background/68",
                   )}
                 >
-                  <div className="relative flex items-center gap-3">
-                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[14px] border border-white/8 bg-white/[0.03]">
-                      <img
-                        src={item.imageUrl}
-                        alt={item.category}
-                        className="h-full w-full object-contain"
-                      />
-                      <ItemCategoryBadge source="wardrobe" />
-                    </div>
-                    <div className="min-w-0 flex-1 pr-8">
-                      <div className="truncate text-[15px] font-medium text-foreground">
-                        {getWardrobeItemTitle(item.category)}
-                      </div>
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        {getWardrobeItemSubtitle(item.category)}
-                      </div>
-                      <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground/80">
-                        Tap to add to board
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button
+                  <button
                     type="button"
-                    variant="secondary"
-                    size="icon"
-                    className="absolute right-2 top-2 h-6 w-6 rounded-full border border-white/10 bg-background/78 opacity-0 transition-opacity group-hover:opacity-100"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(item.id);
+                    onClick={() => {
+                      setSelectedItemId(item.id);
+                      onAddToCanvas(item);
                     }}
-                    title="Delete wardrobe item"
+                    className="block w-full text-left"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                    <div className="relative flex items-center gap-3">
+                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[14px] border border-white/8 bg-white/[0.03]">
+                        <img
+                          src={item.imageUrl}
+                          alt={getWardrobeItemDisplayName(item)}
+                          className="h-full w-full object-contain"
+                        />
+                        <ItemCategoryBadge source="wardrobe" />
+                      </div>
+                      <div className="min-w-0 flex-1 pr-16">
+                        <div className="truncate text-[15px] font-medium text-foreground">
+                          {getWardrobeItemDisplayName(item)}
+                        </div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                          {getWardrobeItemSubtitle(item.category)}
+                        </div>
+                        <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground/80">
+                          Tap to add to board
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon"
+                      className="h-6 w-6 rounded-full border border-white/10 bg-background/78"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditItemNameDialog(item);
+                      }}
+                      title="Edit wardrobe item name"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon"
+                      className="h-6 w-6 rounded-full border border-white/10 bg-background/78"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(item.id);
+                      }}
+                      title="Delete wardrobe item"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
 
                   {isSelected && (
                     <div className="absolute right-3 bottom-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
                       <Check className="h-3 w-3" />
                     </div>
                   )}
-                </button>
+                </div>
               );
             })}
           </div>
@@ -1624,6 +1873,9 @@ const WardrobeLibrary = ({
           <ChevronRight className="h-4 w-4" />
         </Link>
       </Button>
+
+      {addItemNameDialog}
+      {editItemNameDialog}
 
       <input
         ref={fileInputRef}

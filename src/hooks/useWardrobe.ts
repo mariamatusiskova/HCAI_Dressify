@@ -7,6 +7,7 @@ import {
   createSupabaseWardrobeItem,
   deleteSupabaseWardrobeItem,
   listSupabaseWardrobeItems,
+  updateSupabaseWardrobeItemName,
   type WardrobeItemRecord,
 } from "@/services/wardrobeSupabase";
 
@@ -16,6 +17,7 @@ export interface WardrobeItem {
   imageUrl: string;
   createdAt: string;
   tags: string[];
+  name?: string | null;
 }
 
 export interface AddWardrobeResult {
@@ -30,7 +32,16 @@ const STORAGE_KEY = "dressify-wardrobe-items";
 function readLocalWardrobe(): WardrobeItem[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.map((item) => ({
+      ...item,
+      name: normalizeWardrobeItemName(item.name),
+      tags: Array.isArray(item.tags) ? item.tags : [],
+    }));
   } catch {
     return [];
   }
@@ -38,6 +49,11 @@ function readLocalWardrobe(): WardrobeItem[] {
 
 function writeLocalWardrobe(items: WardrobeItem[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+}
+
+function normalizeWardrobeItemName(name?: string | null) {
+  const trimmed = name?.trim();
+  return trimmed ? trimmed : null;
 }
 
 function findExistingWardrobeItem(items: WardrobeItem[], category: string, imageUrl: string) {
@@ -51,6 +67,7 @@ function fromSupabaseRecord(record: WardrobeItemRecord): WardrobeItem {
     imageUrl: record.image_path ?? record.thumb_path ?? "",
     createdAt: record.created_at,
     tags: record.tags ?? [],
+    name: normalizeWardrobeItemName(record.name),
   };
 }
 
@@ -129,7 +146,8 @@ export function useWardrobe() {
   }, []);
 
   const addItem = useCallback(
-    async (category: string, imageUrl: string): Promise<AddWardrobeResult> => {
+    async (category: string, imageUrl: string, name?: string | null): Promise<AddWardrobeResult> => {
+      const normalizedName = normalizeWardrobeItemName(name);
       const existingItem = findExistingWardrobeItem(items, category, imageUrl);
       if (existingItem) {
         return {
@@ -144,7 +162,7 @@ export function useWardrobe() {
 
         if (resolvedUserId) {
           try {
-            const created = await createSupabaseWardrobeItem(resolvedUserId, category, imageUrl);
+            const created = await createSupabaseWardrobeItem(resolvedUserId, category, imageUrl, normalizedName);
             const item = fromSupabaseRecord(created);
             setUserId(resolvedUserId);
             setIsCloudSyncEnabled(true);
@@ -161,6 +179,7 @@ export function useWardrobe() {
               imageUrl,
               createdAt: new Date().toISOString(),
               tags: [],
+              name: normalizedName,
             };
 
             setItems((prev) => {
@@ -185,6 +204,7 @@ export function useWardrobe() {
         imageUrl,
         createdAt: new Date().toISOString(),
         tags: [],
+        name: normalizedName,
       };
 
       setItems((prev) => {
@@ -215,10 +235,51 @@ export function useWardrobe() {
     [isCloudSyncEnabled, userId]
   );
 
+  const updateItemName = useCallback(
+    async (id: string, name: string | null) => {
+      const normalizedName = normalizeWardrobeItemName(name);
+
+      if (isCloudSyncEnabled && userId) {
+        try {
+          const updatedRecord = await updateSupabaseWardrobeItemName(userId, id, normalizedName);
+          const updatedItem = fromSupabaseRecord(updatedRecord);
+          setItems((prev) => prev.map((item) => (item.id === id ? updatedItem : item)));
+          setSyncError(null);
+          return updatedItem;
+        } catch (error) {
+          const message = describeUnknownError(error, "Unknown Supabase error");
+          setIsCloudSyncEnabled(false);
+          setSyncError(`Supabase wardrobe rename failed (${message}). Saved locally.`);
+        }
+      }
+
+      const updatedAt = new Date().toISOString();
+      let updatedItem: WardrobeItem | null = null;
+
+      setItems((prev) => {
+        const updated = prev.map((item) => {
+          if (item.id !== id) return item;
+          updatedItem = {
+            ...item,
+            name: normalizedName,
+            createdAt: item.createdAt || updatedAt,
+          };
+          return updatedItem;
+        });
+        writeLocalWardrobe(updated);
+        return updated;
+      });
+
+      return updatedItem;
+    },
+    [isCloudSyncEnabled, userId]
+  );
+
   return {
     items,
     addItem,
     deleteItem,
+    updateItemName,
     isLoading,
     isCloudSyncEnabled,
     syncError,

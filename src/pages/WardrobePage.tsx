@@ -12,6 +12,7 @@ const WardrobePage = () => {
           onAddToCanvas={studio.handleAddWardrobeToCanvas}
           onDelete={(id) => void studio.handleDeleteWardrobeItem(id)}
           onAddPhoto={studio.handleAddPhotoToWardrobe}
+          onUpdateName={studio.handleUpdateWardrobeItemName}
           isLoading={studio.wardrobeLoading}
         />
       </div>

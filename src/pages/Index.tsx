@@ -68,6 +68,7 @@ function useStudioInternal() {
     items: wardrobeItems,
     addItem: addWardrobeItem,
     deleteItem: deleteWardrobeItem,
+    updateItemName: updateWardrobeItemName,
     isLoading: wardrobeLoading,
     isCloudSyncEnabled: isWardrobeCloudSyncEnabled,
     syncError: wardrobeSyncError,
@@ -335,17 +336,22 @@ function useStudioInternal() {
   // delete wardrobe item
   const handleDeleteWardrobeItem = useCallback(
     async (id: string) => {
-      await deleteWardrobeItem(id);
-      toast.success("Wardrobe item deleted");
+      try {
+        await deleteWardrobeItem(id);
+        toast.success("Wardrobe item deleted");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to delete wardrobe item";
+        toast.error(message);
+      }
     },
     [deleteWardrobeItem],
   );
 
   // add photo directly to wardrobe
   const handleAddPhotoToWardrobe = useCallback(
-    async (imageUrl: string, category: string) => {
+    async (imageUrl: string, category: string, name?: string | null) => {
       try {
-        const result = await addWardrobeItem(category, imageUrl);
+        const result = await addWardrobeItem(category, imageUrl, name);
 
         if (result.alreadyExists) {
           toast.info("Photo is already in wardrobe");
@@ -370,6 +376,20 @@ function useStudioInternal() {
       }
     },
     [addWardrobeItem],
+  );
+
+  // rename wardrobe item
+  const handleUpdateWardrobeItemName = useCallback(
+    async (id: string, name: string) => {
+      try {
+        await updateWardrobeItemName(id, name);
+        toast.success(name.trim() ? "Wardrobe item renamed" : "Wardrobe item name cleared");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to rename wardrobe item";
+        toast.error(message);
+      }
+    },
+    [updateWardrobeItemName],
   );
 
   // return the shared studio object
@@ -406,6 +426,7 @@ function useStudioInternal() {
     handleAddGeneratedToWardrobe,
     handleDeleteWardrobeItem,
     handleAddPhotoToWardrobe,
+    handleUpdateWardrobeItemName,
   };
 }
 

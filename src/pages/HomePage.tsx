@@ -97,8 +97,9 @@ const HomePage = () => {
                     <WardrobeLibrary
                       items={studio.wardrobeItems}
                       onAddToCanvas={studio.handleAddWardrobeToCanvas}
-                      onDelete={studio.deleteWardrobeItem}
-                      onAddPhoto={studio.addWardrobeItem}
+                      onDelete={(id) => void studio.handleDeleteWardrobeItem(id)}
+                      onAddPhoto={studio.handleAddPhotoToWardrobe}
+                      onUpdateName={studio.handleUpdateWardrobeItemName}
                       isLoading={studio.wardrobeLoading}
                       variant="compact"
                     />
