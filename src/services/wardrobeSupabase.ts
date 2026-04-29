@@ -8,6 +8,7 @@ export interface WardrobeItemRecord {
   thumb_path: string | null;
   tags: string[] | null;
   created_at: string;
+  name?: string | null;
 }
 
 function requireSupabase() {
@@ -16,6 +17,13 @@ function requireSupabase() {
   }
   return supabase;
 }
+
+function normalizeName(name?: string | null) {
+  const trimmed = name?.trim();
+  return trimmed ? trimmed : null;
+}
+
+const WARDROBE_ITEM_SELECT = "id, user_id, category, image_path, thumb_path, tags, created_at, name";
 
 async function ensureWardrobe(userId: string): Promise<string> {
   const client = requireSupabase();
@@ -60,7 +68,7 @@ export async function listSupabaseWardrobeItems(userId: string): Promise<Wardrob
 
   const result = await client
     .from("wardrobe_items")
-    .select("id, user_id, category, image_path, thumb_path, tags, created_at")
+    .select(WARDROBE_ITEM_SELECT)
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
@@ -75,6 +83,7 @@ export async function createSupabaseWardrobeItem(
   userId: string,
   category: string,
   imagePath: string,
+  name?: string | null,
 ): Promise<WardrobeItemRecord> {
   const client = requireSupabase();
   const wardrobeId = await ensureWardrobe(userId);
@@ -88,10 +97,11 @@ export async function createSupabaseWardrobeItem(
       image_path: imagePath,
       thumb_path: imagePath,
       tags: [],
+      name: normalizeName(name),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .select("id, user_id, category, image_path, thumb_path, tags, created_at")
+    .select(WARDROBE_ITEM_SELECT)
     .single();
 
   if (inserted.error || !inserted.data) {
@@ -99,6 +109,31 @@ export async function createSupabaseWardrobeItem(
   }
 
   return inserted.data as WardrobeItemRecord;
+}
+
+export async function updateSupabaseWardrobeItemName(
+  userId: string,
+  itemId: string,
+  name: string | null,
+): Promise<WardrobeItemRecord> {
+  const client = requireSupabase();
+
+  const updated = await client
+    .from("wardrobe_items")
+    .update({
+      name: normalizeName(name),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", itemId)
+    .eq("user_id", userId)
+    .select(WARDROBE_ITEM_SELECT)
+    .single();
+
+  if (updated.error || !updated.data) {
+    throw updated.error ?? new Error("Failed to update wardrobe item name");
+  }
+
+  return updated.data as WardrobeItemRecord;
 }
 
 export async function deleteSupabaseWardrobeItem(userId: string, itemId: string): Promise<void> {
