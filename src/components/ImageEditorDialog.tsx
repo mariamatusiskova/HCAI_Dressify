@@ -109,10 +109,10 @@ const ImageEditorDialog = ({ open, item, onClose, onApply }: ImageEditorDialogPr
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}>
-      <DialogContent className="max-w-3xl" aria-describedby="image-editor-description">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Modify Generated Item</DialogTitle>
-          <DialogDescription id="image-editor-description">
+          <DialogDescription>
             Preview edits before applying. You can discard, replace the original, or save a copy.
           </DialogDescription>
         </DialogHeader>
