@@ -127,3 +127,54 @@ Enable RLS on each new table and add `auth.uid() = user_id` policies for
 `select / insert / update / delete`, matching the existing wardrobe folder
 policies. If Supabase is not configured (or the user is signed out), the app
 falls back to localStorage and shows a toast warning.
+
+## Replicate image-edit Edge Function (required for "Edit with prompt")
+
+The "edit with prompt" feature on a saved/AI item runs through a Supabase
+Edge Function that talks to Replicate, so it works on GitHub Pages without a
+local Python backend.
+
+### Deploy the function
+
+```bash
+# one-time: install Supabase CLI
+npm install -g supabase
+
+# from the project root, log in and link to your project
+supabase login
+supabase link --project-ref <your-project-ref>
+
+# deploy the function
+supabase functions deploy replicate-image-edit
+```
+
+### Set the Replicate API token
+
+In the Supabase Dashboard:
+
+1. Go to `Project Settings` → `Edge Functions` → `Secrets`
+2. Add a secret:
+   - Name: `REPLICATE_API_TOKEN`
+   - Value: your Replicate API token from <https://replicate.com/account/api-tokens>
+
+The token is read inside the function via `Deno.env.get("REPLICATE_API_TOKEN")`.
+
+### CORS / auth notes
+
+- The function emits `Access-Control-Allow-Origin: *`, so any origin can call it.
+- Supabase verifies the user's JWT by default; the frontend uses
+  `supabase.functions.invoke()` which forwards the logged-in user's session
+  token automatically. If you ever see a 401 from the function, sign out and
+  back in to refresh the token.
+
+## GitHub Pages deployment checklist
+
+For the live site to work, make sure these GitHub repository secrets exist
+under `Settings → Secrets and variables → Actions`:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+The deploy workflow (`.github/workflows/deploy-pages.yml`) injects them at
+build time. No backend URL is needed any more — background removal runs in
+the browser via `@imgly/background-removal`.
