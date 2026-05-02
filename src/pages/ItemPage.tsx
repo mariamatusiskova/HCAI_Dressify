@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import SavedItemsLibrary from "@/components/SavedItemsLibrary";
 import { useStudio } from "./Index";
 import type { GeneratedItem } from "@/hooks/useOutfits";
@@ -8,6 +9,7 @@ import type { SavedAiItem } from "@/hooks/useSavedItems";
 // flagged as saved instead of personal photos.
 const ItemPage = () => {
   const studio = useStudio();
+  const navigate = useNavigate();
 
   const handleAddSavedItemToCanvas = (item: SavedAiItem) => {
     // The board's add-to-canvas handler expects the GeneratedItem shape,
@@ -21,6 +23,9 @@ const ItemPage = () => {
       createdAt: item.savedAt,
     };
     studio.handleAddToCanvas(asGenerated);
+    // Send the user back to the board so they immediately see the piece
+    // they just added; otherwise nothing visibly happens on this page.
+    navigate("/");
   };
 
   // SavedPage already supplies horizontal + bottom padding for the whole
