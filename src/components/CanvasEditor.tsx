@@ -13,6 +13,7 @@ import {
   Eraser,
   Trash2,
   Upload,
+  Wand2,
   X,
   Shirt,
   ShoppingBag,
@@ -20,10 +21,11 @@ import {
   Footprints,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { CanvasItem } from "@/hooks/useOutfits";
+import type { CanvasItem, GeneratedItem } from "@/hooks/useOutfits";
 import { createId } from "@/lib/id";
 import { normalizeClothingCategory } from "@/lib/clothingCategory";
 import { removeBackgroundAdvanced } from "@/services/backgroundRemoval";
+import ImageEditorDialog from "@/components/ImageEditorDialog";
 
 // Custom MIME used by the wardrobe / saved-AI lists to advertise that the
 // drag carries a styleable piece (not a file or plain text). Listening for
@@ -93,6 +95,10 @@ const CanvasEditor = ({
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   const [hoveredToolbarId, setHoveredToolbarId] = useState<string | null>(null);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+  // The canvas item the user is currently editing with the AI prompt dialog.
+  // null = dialog closed. We keep the original CanvasItem (rather than just
+  // its ID) because we need its size/position when applying changes.
+  const [editingCanvasItem, setEditingCanvasItem] = useState<CanvasItem | null>(null);
   const interactionStart = useRef({
     x: 0,
     y: 0,
@@ -533,6 +539,7 @@ const CanvasEditor = ({
       : "Add pieces and arrange them on the photo.");
 
   return (
+    <>
     <div className={cn("space-y-3 flex flex-col h-auto", className)}>
       {!hideTitle && (
         <div className="flex items-center justify-between gap-3">
@@ -817,6 +824,21 @@ const CanvasEditor = ({
                       <ImageMinus className="h-3.5 w-3.5" />
                     )}
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={itemButtonClassName}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setEditingCanvasItem(item);
+                    }}
+                    disabled={isProcessing}
+                    title="Edit with AI"
+                    aria-label="Edit with AI"
+                  >
+                    <Wand2 className="h-3.5 w-3.5" />
+                  </Button>
                   <div className="mx-0.5 h-6 w-px bg-border/70" />
                   <Button
                     variant="ghost"
@@ -959,6 +981,68 @@ const CanvasEditor = ({
         </div>
       </div>
     </div>
+    {/* AI image-edit dialog. Only mounted while a canvas item is being
+        edited so the dialog's internal state (prompt, preview) resets
+        cleanly between items. The "replace" mode swaps the canvas item's
+        imageUrl/category in place (preserving size/position/rotation);
+        "copy" adds a new canvas item next to the original. */}
+    <ImageEditorDialog
+      open={editingCanvasItem !== null}
+      item={
+        editingCanvasItem
+          ? ({
+              id: editingCanvasItem.id,
+              category: normalizeClothingCategory(editingCanvasItem.category),
+              imageUrl: editingCanvasItem.imageUrl,
+              prompt: editingCanvasItem.prompt ?? "",
+              createdAt: new Date().toISOString(),
+            } as GeneratedItem)
+          : null
+      }
+      onClose={() => setEditingCanvasItem(null)}
+      onApply={(newItem, mode) => {
+        if (!editingCanvasItem) return;
+        // Look up the item again in case the user moved or resized it
+        // while the dialog was open.
+        const currentItem = items.find((i) => i.id === editingCanvasItem.id) ?? editingCanvasItem;
+        if (mode === "replace") {
+          onItemsChange(
+            items.map((i) =>
+              i.id === currentItem.id
+                ? {
+                    ...i,
+                    imageUrl: newItem.imageUrl,
+                    category: newItem.category,
+                    prompt: newItem.prompt,
+                  }
+                : i,
+            ),
+          );
+          toast.success("Item updated");
+        } else {
+          // Drop a copy next to the original, same size + rotation, and
+          // bring it to front so the user immediately sees the duplicate.
+          const offset = 24;
+          const maxZ = items.length > 0 ? Math.max(...items.map((i) => i.zIndex ?? 0)) : 0;
+          const copy: CanvasItem = {
+            id: createId(),
+            imageUrl: newItem.imageUrl,
+            category: newItem.category,
+            prompt: newItem.prompt,
+            source: currentItem.source,
+            x: currentItem.x + offset,
+            y: currentItem.y + offset,
+            width: currentItem.width,
+            height: currentItem.height,
+            rotation: currentItem.rotation,
+            zIndex: maxZ + 1,
+          };
+          onItemsChange([...items, copy]);
+          toast.success("Copy added to board");
+        }
+      }}
+    />
+    </>
   );
 };
 
