@@ -385,6 +385,19 @@ const CanvasEditor = ({
       e.stopPropagation();
       setProcessingIds((prev) => new Set(prev).add(item.id));
 
+      // Sticky toast so the user has a clear "still working" cue even when
+      // the WASM runtime briefly stalls the main thread (which can make the
+      // small button spinner appear frozen).
+      const toastId = `bg-remove-${item.id}`;
+      toast.loading("Removing background…", {
+        id: toastId,
+        description: "First run downloads ~50 MB; subsequent items are fast.",
+      });
+
+      // Yield once before kicking off heavy work so React paints the
+      // processing overlay before WASM init seizes the main thread.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
       try {
         const processedImageUrl = await removeBackgroundAdvanced(
           item.imageUrl,
@@ -395,13 +408,13 @@ const CanvasEditor = ({
           i.id === item.id ? { ...i, imageUrl: processedImageUrl } : i,
         );
         onItemsChange(updatedItems);
-        toast.success("Background removed");
+        toast.success("Background removed", { id: toastId, description: undefined });
       } catch (error) {
         const errorMessage =
           error instanceof Error
             ? error.message
             : "Failed to remove background";
-        toast.error(errorMessage);
+        toast.error(errorMessage, { id: toastId, description: undefined });
         console.error("Background removal error:", error);
       } finally {
         setProcessingIds((prev) => {
@@ -756,6 +769,18 @@ const CanvasEditor = ({
                     source={item.source}
                     className="pointer-events-none z-10"
                   />
+                ) : null}
+                {/* Big, obvious processing overlay. Uses both a CSS spin
+                    on the icon AND a CSS pulse on the backdrop so the user
+                    has visual feedback even if one of the animations is
+                    briefly throttled by WASM warmup on the main thread. */}
+                {isProcessing ? (
+                  <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 rounded-[16px] bg-background/70 backdrop-blur-sm animate-pulse">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-foreground">
+                      Removing…
+                    </span>
+                  </div>
                 ) : null}
               </div>
 
