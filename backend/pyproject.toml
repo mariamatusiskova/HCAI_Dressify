@@ -11,5 +11,9 @@ dependencies = [
     "pillow>=12.2.0",
     "python-multipart>=0.0.22",
     "rembg>=2.0.67",
+    "scikit-image>=0.26.0",
+    "torch>=2.11.0",
+    "torchvision>=0.26.0",
+    "transformers==4.39.1",
     "uvicorn[standard]>=0.42.0",
 ]
