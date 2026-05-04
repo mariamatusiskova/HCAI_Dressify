@@ -81,19 +81,19 @@ const HomePage = () => {
                   <Save className="h-4 w-4" />
                   Save outfit
                 </Button>
-                {/* Two compact links sit side-by-side so the panel stops dominating */}
-                {/* the sidebar and surfaces the new saved-AI-items page too. */}
+                {/* Two compact links sit side-by-side so the panel stops */}
+                {/* dominating the sidebar and surfaces the closet too. */}
                 <div className="grid grid-cols-2 gap-2">
                   <Button asChild variant="secondary" className="h-9 gap-1.5 rounded-xl px-2 text-xs">
-                    <Link to="/saved/outfits">
+                    <Link to="/outfits">
                       <Bookmark className="h-3.5 w-3.5" />
                       Outfits
                     </Link>
                   </Button>
                   <Button asChild variant="secondary" className="h-9 gap-1.5 rounded-xl px-2 text-xs">
-                    <Link to="/saved/items">
+                    <Link to="/closet">
                       <Sparkles className="h-3.5 w-3.5" />
-                      AI items
+                      Closet
                     </Link>
                   </Button>
                 </div>

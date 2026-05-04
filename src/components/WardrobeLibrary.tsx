@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import {
   Check,
   ChevronRight,
+  ArrowLeft,
   FolderPlus,
   ImageIcon,
   Loader2,
@@ -850,7 +851,15 @@ const WardrobeLibrary = ({
           </Button>
         </div>
 
-        {activeCollectionBoardTab === "collections" && (
+        {/* Drill-down model: only show the collection cards strip when no
+            specific collection is selected. Once the user clicks INTO a
+            collection, the strip hides so the items panel below becomes
+            the only thing on screen — and the breadcrumb in the panel
+            header is the way back out. This kills the "two separated
+            surfaces" confusion testers had with the previous flat layout. */}
+        {activeCollectionBoardTab === "collections" &&
+          (activeCollectionId === "__all__" ||
+            activeCollectionId === "__unsorted__") && (
           // Auto-fill keeps cards adjacent: the grid only opens a new column
           // when one will actually fit, so leftover horizontal space stops
           // ballooning into the gutter between cards.
@@ -1157,9 +1166,46 @@ const WardrobeLibrary = ({
 
         <div ref={itemsPanelRef} className="glass-panel rounded-[28px] border p-5 scroll-mt-4">
           <div className="flex flex-col gap-5">
+            {/* Breadcrumb. Only renders when the user has drilled into a
+                specific collection. Clicking it returns to the collections
+                grid above. This is the "way out" once we hide the cards
+                strip in collection view. */}
+            {activeCollectionId !== "__all__" &&
+              activeCollectionId !== "__unsorted__" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveCollectionId("__all__");
+                    setActiveCollectionBoardTab("collections");
+                  }}
+                  className="inline-flex items-center gap-1.5 self-start rounded-full border border-foreground/10 bg-background/56 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:border-foreground/25 hover:bg-background/75 hover:text-foreground"
+                >
+                  <ArrowLeft className="h-3 w-3" />
+                  All collections
+                </button>
+              )}
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-medium text-foreground">
+                <h3 className="flex items-center gap-2 text-2xl font-display font-medium text-foreground">
+                  {/* Color dot + name when inside a specific collection so the
+                      header itself reads "you're inside <Vacation>". */}
+                  {activeCollectionId !== "__all__" &&
+                    activeCollectionId !== "__unsorted__" &&
+                    (() => {
+                      const folder = folders.find((f) => f.id === activeCollectionId);
+                      if (!folder) return null;
+                      const palette = getCollectionAccentPalette(folder.color);
+                      return (
+                        <span
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{
+                            backgroundColor: palette.dot,
+                            boxShadow: `0 0 12px ${palette.dotGlow}`,
+                          }}
+                          aria-hidden="true"
+                        />
+                      );
+                    })()}
                   {activeCollectionSummary.title}
                 </h3>
                 <p className="max-w-2xl text-sm text-muted-foreground">
@@ -1931,8 +1977,8 @@ const WardrobeLibrary = ({
         variant="secondary"
         className="h-11 w-full justify-between rounded-xl border border-white/10 bg-background/56 px-4"
       >
-        <Link to="/wardrobe">
-          View all wardrobe
+        <Link to="/closet">
+          Open closet
           <ChevronRight className="h-4 w-4" />
         </Link>
       </Button>

@@ -6,8 +6,8 @@ import ItemCategoryBadge from "@/components/ItemCategoryBadge";
 import { getClothingCategoryLabel } from "@/lib/clothingCategory";
 import { useStudio } from "./Index";
 
-// Detail view for a single saved outfit. Reached from the /saved/outfits
-// list when the user taps a card; surfaces every item that was on the board
+// Detail view for a single saved outfit. Reached from the /outfits list
+// when the user taps a card; surfaces every item that was on the board
 // when the outfit was saved + a way to load the look back onto the canvas.
 const OutfitDetailPage = () => {
   const { outfitId = "" } = useParams<{ outfitId: string }>();
@@ -29,7 +29,7 @@ const OutfitDetailPage = () => {
           It may have been deleted, or your saved outfits are still loading.
         </p>
         <Button asChild variant="secondary" className="mt-4 rounded-xl">
-          <Link to="/saved/outfits">
+          <Link to="/outfits">
             <ArrowLeft className="mr-1 h-4 w-4" />
             Back to saved outfits
           </Link>
@@ -56,7 +56,7 @@ const OutfitDetailPage = () => {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <Link
-            to="/saved/outfits"
+            to="/outfits"
             className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.18em] text-muted-foreground/80 transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-3 w-3" />
@@ -87,7 +87,7 @@ const OutfitDetailPage = () => {
             className="h-10 gap-2 rounded-xl border border-destructive/30 px-4 text-destructive hover:bg-destructive/10"
             onClick={async () => {
               await studio.handleDeleteOutfit(outfit.id);
-              navigate("/saved/outfits");
+              navigate("/outfits");
             }}
           >
             <Trash2 className="h-4 w-4" />

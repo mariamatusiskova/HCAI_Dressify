@@ -8,18 +8,27 @@ const desktopActive =
 const mobileItem = "flex flex-col items-center justify-center gap-1 text-[11px] text-muted-foreground";
 const mobileActive = "text-primary";
 
+// Top-level destinations:
+//   Home    — the workspace canvas where the user creates outfits.
+//   Closet  — every piece they have to dress with (uploaded photos + saved AI items).
+//   Outfits — saved outfits, with a detail page per outfit.
+//   Profile — account / settings.
+//
+// We dropped the old "Saved" wrapper because user testing showed people
+// couldn't tell what it represented and had trouble finding their outfits
+// when both AI items and outfits were nested under it.
 const MenuNav = () => {
   return (
     <>
       <nav className="hidden md:flex items-center gap-1 lg:gap-3">
-        <NavLink to="/" className={desktopItem} activeClassName={desktopActive}>
+        <NavLink to="/" end className={desktopItem} activeClassName={desktopActive}>
           Home
         </NavLink>
-        <NavLink to="/wardrobe" className={desktopItem} activeClassName={desktopActive}>
-          Wardrobe
+        <NavLink to="/closet" className={desktopItem} activeClassName={desktopActive}>
+          Closet
         </NavLink>
-        <NavLink to="/saved" className={desktopItem} activeClassName={desktopActive}>
-          Saved
+        <NavLink to="/outfits" className={desktopItem} activeClassName={desktopActive}>
+          Outfits
         </NavLink>
         <NavLink to="/profile" className={desktopItem} activeClassName={desktopActive}>
           Profile
@@ -27,17 +36,17 @@ const MenuNav = () => {
       </nav>
 
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border/70 bg-background/80 backdrop-blur-xl h-14 grid grid-cols-4">
-        <NavLink to="/" className={mobileItem} activeClassName={mobileActive}>
+        <NavLink to="/" end className={mobileItem} activeClassName={mobileActive}>
           <Home className="h-4 w-4" />
           Home
         </NavLink>
-        <NavLink to="/wardrobe" className={mobileItem} activeClassName={mobileActive}>
+        <NavLink to="/closet" className={mobileItem} activeClassName={mobileActive}>
           <Shirt className="h-4 w-4" />
-          Wardrobe
+          Closet
         </NavLink>
-        <NavLink to="/saved" className={mobileItem} activeClassName={mobileActive}>
+        <NavLink to="/outfits" className={mobileItem} activeClassName={mobileActive}>
           <Bookmark className="h-4 w-4" />
-          Saved
+          Outfits
         </NavLink>
         <NavLink to="/profile" className={mobileItem} activeClassName={mobileActive}>
           <User className="h-4 w-4" />

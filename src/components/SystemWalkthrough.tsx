@@ -29,17 +29,17 @@ const baseSteps: WalkthroughStep[] = [
 ];
 
 function getRouteSpecificStep(pathname: string): WalkthroughStep {
-  if (pathname.startsWith("/wardrobe")) {
+  if (pathname.startsWith("/closet")) {
     return {
-      title: "You are in Wardrobe",
-      body: "Add your own clothing photos here, reuse them on the board, and keep a personal item library.",
+      title: "You are in Closet",
+      body: "Every piece you can dress with — your uploaded photos and the AI items you saved — lives here. Drag any of them onto the board.",
     };
   }
 
-  if (pathname.startsWith("/saved")) {
+  if (pathname.startsWith("/outfits")) {
     return {
-      title: "You are in Saved",
-      body: "Use Items for generated + wardrobe content and Outfits for complete saved looks you can reload.",
+      title: "You are in Outfits",
+      body: "All the outfits you've saved. Tap a card to see its pieces, then open it back on the board to keep editing.",
     };
   }
 
@@ -51,8 +51,8 @@ function getRouteSpecificStep(pathname: string): WalkthroughStep {
   }
 
   return {
-    title: "You are in Home",
-    body: "Home is the studio workspace: photo upload, generation panel, canvas editor, and quick outfit saving.",
+    title: "You are at Home",
+    body: "Home is your workspace: upload a photo, generate AI clothing, and arrange a complete outfit on the board.",
   };
 }
 

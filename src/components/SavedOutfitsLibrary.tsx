@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
+  ArrowLeft,
   FolderOpen,
   FolderPlus,
   ImageIcon,
@@ -116,7 +117,7 @@ const SavedOutfitsLibrary = ({
   // every piece + decide whether to load it onto the canvas). The dropdown
   // still exposes "Open on board" for the previous one-click flow.
   const handleOpenDetail = (outfitId: string) => {
-    navigate(`/saved/outfits/${outfitId}`);
+    navigate(`/outfits/${outfitId}`);
   };
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -472,7 +473,14 @@ const SavedOutfitsLibrary = ({
         </Button>
       </div>
 
-      {activeCollectionBoardTab === "collections" && (
+      {/* Drill-down model: only show the collection cards strip when no
+          specific collection is selected. Once the user clicks INTO a
+          collection, the strip hides so the items panel below becomes the
+          only thing on screen — and the breadcrumb in the panel header is
+          the way back out. Mirrors WardrobeLibrary / SavedItemsLibrary. */}
+      {activeCollectionBoardTab === "collections" &&
+        (activeCollectionId === "__all__" ||
+          activeCollectionId === "__unsorted__") && (
         // Auto-fill keeps cards adjacent: the grid only opens a new column
         // when one will actually fit, so leftover horizontal space stops
         // ballooning into the gutter between cards.
@@ -749,9 +757,42 @@ const SavedOutfitsLibrary = ({
 
       <div ref={itemsPanelRef} className="glass-panel rounded-[28px] border p-5 scroll-mt-4">
         <div className="flex flex-col gap-5">
+          {/* Breadcrumb back-out when drilled into a specific collection.
+              Mirrors WardrobeLibrary / SavedItemsLibrary. */}
+          {activeCollectionId !== "__all__" &&
+            activeCollectionId !== "__unsorted__" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveCollectionId("__all__");
+                  setActiveCollectionBoardTab("collections");
+                }}
+                className="inline-flex items-center gap-1.5 self-start rounded-full border border-foreground/10 bg-background/56 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:border-foreground/25 hover:bg-background/75 hover:text-foreground"
+              >
+                <ArrowLeft className="h-3 w-3" />
+                All collections
+              </button>
+            )}
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-1">
-              <h3 className="text-2xl font-display font-medium text-foreground">
+              <h3 className="flex items-center gap-2 text-2xl font-display font-medium text-foreground">
+                {activeCollectionId !== "__all__" &&
+                  activeCollectionId !== "__unsorted__" &&
+                  (() => {
+                    const folder = folders.find((f) => f.id === activeCollectionId);
+                    if (!folder) return null;
+                    const palette = getCollectionAccentPalette(folder.color);
+                    return (
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{
+                          backgroundColor: palette.dot,
+                          boxShadow: `0 0 12px ${palette.dotGlow}`,
+                        }}
+                        aria-hidden="true"
+                      />
+                    );
+                  })()}
                 {activeCollectionSummary.title}
               </h3>
               <p className="max-w-2xl text-sm text-muted-foreground">
