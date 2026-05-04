@@ -1,20 +1,17 @@
 /**
- * Background removal service.
+ * Background removal via the local FastAPI backend (`POST /remove-bg`).
  *
- * Runs entirely in the browser using @imgly/background-removal so the
- * production GitHub Pages build doesn't depend on a Python/FastAPI server.
+ * The model loads once in the Python process (lazy singleton); there is no
+ * per-request browser download. Start the API from `backend/`:
+ *   uv run python main.py
  *
- * The model weights (~50 MB) are downloaded the first time the user removes
- * a background and then served from the browser cache for the rest of the
- * session, so only the first call is slow. Inference happens in a Web Worker
- * via WASM/ONNX Runtime, so the main UI stays responsive.
- *
- * The function signature is unchanged from the previous FastAPI-based
- * implementation so existing callers (CanvasEditor, ImageEditorDialog, etc.)
- * keep working without edits.
+ * Set `VITE_API_URL` if the API is not at http://127.0.0.1:8000.
  */
 
-import { removeBackground as imglyRemoveBackground } from "@imgly/background-removal";
+function apiBase(): string {
+  const raw = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000";
+  return raw.replace(/\/$/, "");
+}
 
 async function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -33,29 +30,42 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
 
 export async function removeBackgroundAdvanced(
   imageUrl: string,
-  // The next two params are kept for API compatibility with the older
-  // FastAPI-backed signature; they are ignored by the in-browser model.
+  // Kept for API compatibility with CanvasEditor / GeneratedItemsList; the backend ignores these.
   _threshold: number = 240,
   _edgeSmoothing: boolean = true,
 ): Promise<string> {
-  // Convert the input (which is usually a data URL or a same-origin URL)
-  // into a Blob the imgly library can consume.
   const sourceResponse = await fetch(imageUrl);
   if (!sourceResponse.ok) {
     throw new Error(`Failed to load source image: ${sourceResponse.status}`);
   }
   const sourceBlob = await sourceResponse.blob();
 
-  // Use library defaults: ISNet model, output as PNG with transparency.
-  // Defaults are stable across recent versions and require no config tuning
-  // for our use case (clothing photos on a relatively clean background).
-  const outputBlob = await imglyRemoveBackground(sourceBlob);
-  return blobToDataUrl(outputBlob);
+  const formData = new FormData();
+  formData.append("file", sourceBlob, "image.png");
+
+  let apiResponse: Response;
+  try {
+    apiResponse = await fetch(`${apiBase()}/remove-bg`, {
+      method: "POST",
+      body: formData,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Network error";
+    throw new Error(
+      `${msg}. Is the backend running at ${apiBase()}? (cd backend && uv run python main.py)`,
+    );
+  }
+
+  if (!apiResponse.ok) {
+    throw new Error(
+      `Background removal API error: ${apiResponse.status} ${apiResponse.statusText}. Check ${apiBase()}/remove-bg and backend logs.`,
+    );
+  }
+
+  const resultBlob = await apiResponse.blob();
+  return blobToDataUrl(resultBlob);
 }
 
-/**
- * Basic background removal (kept for compatibility with remaining components).
- */
 export async function removeBackground(
   imageUrl: string,
   threshold: number = 25,

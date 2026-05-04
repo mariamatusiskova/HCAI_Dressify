@@ -61,9 +61,13 @@ Create a `.env` file in the project root with:
 ```sh
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+# Optional: FastAPI background-removal API (defaults to http://127.0.0.1:8000)
+VITE_API_URL=http://127.0.0.1:8000
 ```
 
 If these variables are missing, the app still runs, but Supabase-backed auth and cloud sync are disabled.
+
+Background removal in the canvas uses **`POST /remove-bg`** on that API. Run the backend from `backend/` (`uv run python main.py`) so the model loads once in Python instead of downloading weights in the browser.
 
 ## Auth and persistence behavior
 
@@ -81,6 +85,7 @@ The app is set up to work with GitHub Pages using a router basename. If you depl
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
+- `VITE_API_URL` (public URL of your FastAPI `remove-bg` service) if you rely on background removal on the deployed site
 
 For repository-based Pages deployments, the router already uses `import.meta.env.BASE_URL`, so route URLs work under the repository subpath.
 

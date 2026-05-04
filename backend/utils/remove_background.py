@@ -1,26 +1,13 @@
-import gc
-import torch
-from transformers import pipeline
+"""Background removal via rembg (ONNX). No HuggingFace / PyTorch — avoids RMBG-1.4 + transformers version conflicts."""
+
+import io
+
 from PIL import Image
+from rembg import remove
 
-pipe = None
-
-def get_pipe():
-    global pipe
-    if pipe is None:
-        # Use GPU if available, otherwise use all CPU cores
-        device = 0 if torch.cuda.is_available() else -1
-        
-        # Load the model lazily and assign to GPU/CPU
-        pipe = pipeline("image-segmentation", model="briaai/RMBG-1.4", trust_remote_code=True, device=device)
-    return pipe
 
 def remove_background(image: Image.Image) -> Image.Image:
-    p = get_pipe()
-    
-    with torch.no_grad():
-        result = p(image)
-        
-    gc.collect()
-    
-    return result
+    buf = io.BytesIO()
+    image.convert("RGBA").save(buf, format="PNG")
+    output_bytes = remove(buf.getvalue())
+    return Image.open(io.BytesIO(output_bytes)).convert("RGBA")

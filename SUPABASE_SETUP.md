@@ -176,5 +176,6 @@ under `Settings → Secrets and variables → Actions`:
 - `VITE_SUPABASE_ANON_KEY`
 
 The deploy workflow (`.github/workflows/deploy-pages.yml`) injects them at
-build time. No backend URL is needed any more — background removal runs in
-the browser via `@imgly/background-removal`.
+build time. Background removal calls **`VITE_API_URL`** (FastAPI `POST /remove-bg`).
+For static hosting, point that env var at a reachable backend, or background
+removal will fail until the API is available.
