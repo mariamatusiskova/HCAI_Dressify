@@ -140,6 +140,10 @@ const SavedItemsLibrary = ({
   const [isRenamingItem, setIsRenamingItem] = useState(false);
 
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+  // Drives the "+ Add items" picker shown when the user is drilled into a
+  // collection. Lists every saved AI piece not already in the active
+  // collection. Mirrors WardrobeLibrary.
+  const [isAddItemsPickerOpen, setIsAddItemsPickerOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderColor, setNewFolderColor] = useState<WardrobeFolderColor>(
     DEFAULT_WARDROBE_FOLDER_COLOR,
@@ -486,8 +490,12 @@ const SavedItemsLibrary = ({
               type="button"
               onClick={() => {
                 setActiveCollectionBoardTab(tab.value);
+                // Always sync activeCollectionId to the chosen tab so the
+                // items panel doesn't keep filtering by a leftover state
+                // from the previously-active tab. Mirrors WardrobeLibrary.
                 if (tab.value === "all") setActiveCollectionId("__all__");
-                if (tab.value === "unsorted") setActiveCollectionId("__unsorted__");
+                else if (tab.value === "unsorted") setActiveCollectionId("__unsorted__");
+                else setActiveCollectionId("__all__"); // "collections" → folder browser
               }}
               className={cn(
                 "h-11 rounded-xl border px-5 text-sm font-medium transition-colors",
@@ -503,14 +511,30 @@ const SavedItemsLibrary = ({
 
         <Button
           type="button"
-          variant="secondary"
-          className="h-11 gap-2 rounded-xl border border-white/10 bg-background/56 px-5 text-sm font-medium text-foreground transition-colors hover:border-white/20 hover:bg-background/70"
+          className="h-11 gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_8px_24px_hsl(var(--primary)/0.25)] transition-colors hover:bg-primary/90"
           onClick={() => setIsCreateFolderOpen(true)}
         >
           <FolderPlus className="h-4 w-4" />
           Create collection
         </Button>
       </div>
+
+      {/* Helper banner that explains the path for adding pieces to
+          collections. Mirrors WardrobeLibrary. */}
+      {activeCollectionBoardTab === "collections" &&
+        (activeCollectionId === "__all__" ||
+          activeCollectionId === "__unsorted__") && (
+          <div className="rounded-2xl border border-primary/25 bg-primary/8 p-4 text-sm text-foreground">
+            <p className="font-medium">How to fill a collection</p>
+            <p className="mt-1 text-muted-foreground">
+              Open any AI piece from the <span className="font-medium text-foreground">All</span> or
+              {" "}<span className="font-medium text-foreground">Unsorted</span> tab,
+              tap its <span className="font-medium text-foreground">⋯</span> menu, and pick
+              <span className="font-medium text-foreground"> Move to collection</span>.
+              You can also drag a piece from those tabs onto a collection card here.
+            </p>
+          </div>
+        )}
 
       {/* Drill-down model: only show the collection cards strip when no
           specific collection is selected. Once the user clicks INTO a
@@ -794,6 +818,9 @@ const SavedItemsLibrary = ({
         </div>
       )}
 
+      {/* On the Collections tab without a specific collection selected we
+          hide the items panel entirely. Mirrors WardrobeLibrary. */}
+      {!(activeCollectionBoardTab === "collections" && activeCollectionId === "__all__") && (
       <div ref={itemsPanelRef} className="glass-panel rounded-[28px] border p-5 scroll-mt-4">
         <div className="flex flex-col gap-5">
           {/* Breadcrumb back-out when drilled into a specific collection.
@@ -856,6 +883,20 @@ const SavedItemsLibrary = ({
                   </p>
                 )}
             </div>
+            {/* "+ Add items" — primary action when drilled into a
+                collection. Same UX as WardrobeLibrary so the closet feels
+                consistent across both surfaces. */}
+            {activeCollectionId !== "__all__" &&
+              activeCollectionId !== "__unsorted__" && (
+                <Button
+                  type="button"
+                  onClick={() => setIsAddItemsPickerOpen(true)}
+                  className="h-11 gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-[0_8px_24px_hsl(var(--primary)/0.25)] transition-colors hover:bg-primary/90"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add items
+                </Button>
+              )}
           </div>
 
           <div className="flex flex-col gap-3">
@@ -1010,7 +1051,7 @@ const SavedItemsLibrary = ({
                             type="button"
                             variant="secondary"
                             size="icon"
-                            className="h-7 w-7 rounded-full border border-white/10 bg-background/82 opacity-0 transition-opacity group-hover:opacity-100"
+                            className="h-7 w-7 rounded-full border border-white/10 bg-background/82 shadow-sm transition-colors hover:bg-background"
                           >
                             <MoreHorizontal className="h-3.5 w-3.5" />
                             <span className="sr-only">Open saved item actions</span>
@@ -1093,6 +1134,99 @@ const SavedItemsLibrary = ({
           )}
         </div>
       </div>
+      )}
+
+      {/* "+ Add items" picker. Mirrors WardrobeLibrary. */}
+      {activeCollectionId !== "__all__" &&
+        activeCollectionId !== "__unsorted__" && (() => {
+          const activeFolder = folders.find((f) => f.id === activeCollectionId);
+          const activeFolderId = activeFolder?.id;
+          const candidates = activeFolderId
+            ? items.filter((it) => assignments[it.id] !== activeFolderId)
+            : [];
+          const folderName = activeFolder?.name ?? "this collection";
+          return (
+            <Dialog open={isAddItemsPickerOpen} onOpenChange={setIsAddItemsPickerOpen}>
+              <DialogContent className="max-w-2xl border-border bg-card">
+                <DialogHeader>
+                  <DialogTitle>Add pieces to “{folderName}”</DialogTitle>
+                  <DialogDescription>
+                    Tap any AI piece to add it. Pieces already in another
+                    collection will be moved here.
+                  </DialogDescription>
+                </DialogHeader>
+                {candidates.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-foreground/15 bg-background/40 p-6 text-center text-sm text-muted-foreground">
+                    Every saved AI piece is already in this collection.
+                  </div>
+                ) : (
+                  <div
+                    className="grid max-h-[60vh] gap-3 overflow-y-auto pr-1"
+                    style={{
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(min(100%, 120px), 1fr))",
+                    }}
+                  >
+                    {candidates.map((item) => {
+                      const currentFolderId = assignments[item.id];
+                      const currentFolder = currentFolderId
+                        ? folders.find((f) => f.id === currentFolderId)
+                        : null;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={async () => {
+                            if (!activeFolderId) return;
+                            await assignItemToFolder(item.id, activeFolderId);
+                            toast.success(`Added to “${folderName}”`);
+                          }}
+                          className="group flex flex-col items-stretch gap-1 rounded-xl border border-foreground/10 bg-background/40 p-2 text-left transition-colors hover:border-primary/50 hover:bg-primary/8"
+                        >
+                          <div className="aspect-square overflow-hidden rounded-lg border border-foreground/10 bg-background/60">
+                            {item.imageUrl ? (
+                              <img
+                                src={item.imageUrl}
+                                alt={getSavedItemDisplayName(item)}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-muted-foreground/40">
+                                <ImageIcon className="h-6 w-6" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="truncate text-[12px] font-medium text-foreground">
+                            {getSavedItemDisplayName(item)}
+                          </div>
+                          {currentFolder ? (
+                            <div className="truncate text-[10px] uppercase tracking-[0.14em] text-muted-foreground/80">
+                              In: {currentFolder.name}
+                            </div>
+                          ) : (
+                            <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+                              Unsorted
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setIsAddItemsPickerOpen(false)}
+                    className="rounded-xl"
+                  >
+                    Done
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          );
+        })()}
 
       <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
         <DialogContent className="max-w-md border-border bg-card">

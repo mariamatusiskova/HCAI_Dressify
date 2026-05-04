@@ -126,6 +126,9 @@ const SavedOutfitsLibrary = ({
   const [isRenaming, setIsRenaming] = useState(false);
 
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+  // Drives the "+ Add outfits" picker shown when drilled into a collection.
+  // Mirrors WardrobeLibrary / SavedItemsLibrary.
+  const [isAddItemsPickerOpen, setIsAddItemsPickerOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderColor, setNewFolderColor] = useState<WardrobeFolderColor>(
     DEFAULT_WARDROBE_FOLDER_COLOR,
@@ -447,8 +450,12 @@ const SavedOutfitsLibrary = ({
               type="button"
               onClick={() => {
                 setActiveCollectionBoardTab(tab.value);
+                // Always sync activeCollectionId to the chosen tab so the
+                // items panel doesn't keep filtering by a leftover state
+                // from the previously-active tab. Mirrors WardrobeLibrary.
                 if (tab.value === "all") setActiveCollectionId("__all__");
-                if (tab.value === "unsorted") setActiveCollectionId("__unsorted__");
+                else if (tab.value === "unsorted") setActiveCollectionId("__unsorted__");
+                else setActiveCollectionId("__all__"); // "collections" → folder browser
               }}
               className={cn(
                 "h-11 rounded-xl border px-5 text-sm font-medium transition-colors",
@@ -464,14 +471,30 @@ const SavedOutfitsLibrary = ({
 
         <Button
           type="button"
-          variant="secondary"
-          className="h-11 gap-2 rounded-xl border border-white/10 bg-background/56 px-5 text-sm font-medium text-foreground transition-colors hover:border-white/20 hover:bg-background/70"
+          className="h-11 gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_8px_24px_hsl(var(--primary)/0.25)] transition-colors hover:bg-primary/90"
           onClick={() => setIsCreateFolderOpen(true)}
         >
           <FolderPlus className="h-4 w-4" />
           Create collection
         </Button>
       </div>
+
+      {/* Helper banner that explains the path for adding outfits to
+          collections. Mirrors WardrobeLibrary / SavedItemsLibrary. */}
+      {activeCollectionBoardTab === "collections" &&
+        (activeCollectionId === "__all__" ||
+          activeCollectionId === "__unsorted__") && (
+          <div className="rounded-2xl border border-primary/25 bg-primary/8 p-4 text-sm text-foreground">
+            <p className="font-medium">How to fill a collection</p>
+            <p className="mt-1 text-muted-foreground">
+              Open any outfit from the <span className="font-medium text-foreground">All</span> or
+              {" "}<span className="font-medium text-foreground">Unsorted</span> tab,
+              tap its <span className="font-medium text-foreground">⋯</span> menu, and pick
+              <span className="font-medium text-foreground"> Move to collection</span>.
+              You can also drag an outfit from those tabs onto a collection card here.
+            </p>
+          </div>
+        )}
 
       {/* Drill-down model: only show the collection cards strip when no
           specific collection is selected. Once the user clicks INTO a
@@ -755,6 +778,10 @@ const SavedOutfitsLibrary = ({
         </div>
       )}
 
+      {/* On the Collections tab without a specific collection selected we
+          hide the items panel entirely. Mirrors WardrobeLibrary /
+          SavedItemsLibrary so all three surfaces feel the same. */}
+      {!(activeCollectionBoardTab === "collections" && activeCollectionId === "__all__") && (
       <div ref={itemsPanelRef} className="glass-panel rounded-[28px] border p-5 scroll-mt-4">
         <div className="flex flex-col gap-5">
           {/* Breadcrumb back-out when drilled into a specific collection.
@@ -958,7 +985,7 @@ const SavedOutfitsLibrary = ({
                             type="button"
                             variant="secondary"
                             size="icon"
-                            className="h-7 w-7 rounded-full border border-white/10 bg-background/82 opacity-0 transition-opacity group-hover:opacity-100"
+                            className="h-7 w-7 rounded-full border border-white/10 bg-background/82 shadow-sm transition-colors hover:bg-background"
                           >
                             <MoreHorizontal className="h-3.5 w-3.5" />
                             <span className="sr-only">Open outfit actions</span>
@@ -1018,6 +1045,7 @@ const SavedOutfitsLibrary = ({
           )}
         </div>
       </div>
+      )}
 
       <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
         <DialogContent className="max-w-md border-border bg-card">
