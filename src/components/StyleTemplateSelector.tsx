@@ -256,8 +256,17 @@ const StyleTemplateSelector = ({
         value={selectedTemplate?.id || ""}
         onValueChange={handleTemplateSelect}
       >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select a style..." />
+        <SelectTrigger className="w-full [&>span]:flex-1 [&>span]:text-left">
+          <SelectValue placeholder="Select a style...">
+            {selectedTemplate ? (
+              <div className="flex flex-col text-left">
+                <span className="font-medium">{selectedTemplate.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {selectedTemplate.description}
+                </span>
+              </div>
+            ) : null}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {/* Two visual groups so the user understands the special
