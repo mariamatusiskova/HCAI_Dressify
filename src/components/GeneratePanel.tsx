@@ -22,6 +22,18 @@ interface GeneratePanelProps {
   buttonLabel?: string;
 }
 
+// Gender hint surfaced to the user as a small Any / Women / Men segmented
+// control. When set to "women" or "men" we tack a clause onto the prompt
+// the AI sees so the generated piece is sex-appropriate without the user
+// having to remember to type "men's…" / "women's…" themselves.
+type GenderHint = "any" | "women" | "men";
+
+const GENDER_OPTIONS: Array<{ value: GenderHint; label: string }> = [
+  { value: "any", label: "Any" },
+  { value: "women", label: "Women" },
+  { value: "men", label: "Men" },
+];
+
 const GeneratePanel = ({
   onItemGenerated,
   hideTitle = false,
@@ -31,6 +43,7 @@ const GeneratePanel = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [prompt, setPrompt] = useState<string>("");
   const [selectedTemplate, setSelectedTemplate] = useState<StyleTemplate | null>(DEFAULT_STYLE_TEMPLATES[0]);
+  const [gender, setGender] = useState<GenderHint>("any");
   const {
     prompt: systemPrompt,
     setPrompt: setSystemPrompt,
@@ -55,8 +68,32 @@ const GeneratePanel = ({
     setLoading(true);
     // Call the generation API
     try {
-      // Combine: user input + global system prompt + style descriptor
-      const fullPrompt = `${userPrompt}. ${systemPrompt}. ${selectedTemplate.styleDescriptor}`;
+      // Combine: user input + gender hint + global system prompt + style descriptor.
+      //
+      // The Sana Sprint endpoint has no "negative prompt" slot, so any
+      // fix has to live inside positive text. Trial and error log:
+      //   - "for women" / "men's cut"     → model adds a body wearing it.
+      //   - "ghost mannequin"             → model adds a literal mannequin.
+      //   - "women's fashion design"      → boutique scene, hangers.
+      //   - "no hanger, no rack"          → boomeranged: stable-diffusion-
+      //                                     style models often promote
+      //                                     mentioned nouns into the scene
+      //                                     even when prefixed with "no",
+      //                                     so explicitly listing rack
+      //                                     made the model add racks.
+      //
+      // Final strategy: stop naming anything we don't want. Describe the
+      // ONLY scene we want as vividly as possible — overhead flat lay
+      // photograph on a white surface — and let the model infer the rest.
+      // Gender is encoded via "women's fit" / "men's fit", which is a
+      // very specific garment-cut term that doesn't pull in body imagery.
+      const genderClause =
+        gender === "women"
+          ? ", overhead flat lay photograph, the garment is laid flat and centered on a clean white paper surface, viewed from directly above, only the fabric is in frame, soft even studio lighting, women's fit"
+          : gender === "men"
+            ? ", overhead flat lay photograph, the garment is laid flat and centered on a clean white paper surface, viewed from directly above, only the fabric is in frame, soft even studio lighting, men's fit"
+            : ", overhead flat lay photograph, the garment is laid flat and centered on a clean white paper surface, viewed from directly above, only the fabric is in frame, soft even studio lighting";
+      const fullPrompt = `${userPrompt}${genderClause}. ${systemPrompt}. ${selectedTemplate.styleDescriptor}`;
       const inferredCategory = detectClothingCategory(userPrompt, "top");
       const imageUrl = await generateClothingItem(fullPrompt, inferredCategory, selectedTemplate);
       const item: GeneratedItem = {
@@ -102,6 +139,36 @@ const GeneratePanel = ({
           isSystemPromptCloudEnabled={isSystemPromptCloudEnabled}
           systemPromptSyncError={systemPromptSyncError}
         />
+
+        {/* Gender selector — small segmented control. Default "Any" keeps
+            the previous behaviour for users who don't care about gender. */}
+        <div className="space-y-2">
+          <label className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            For
+          </label>
+          <div className="grid grid-cols-3 gap-1.5 rounded-xl border border-foreground/10 bg-background/40 p-1">
+            {GENDER_OPTIONS.map((option) => {
+              const isActive = gender === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setGender(option.value)}
+                  disabled={loading}
+                  className={cn(
+                    "h-9 rounded-lg text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-transparent text-muted-foreground hover:bg-background/60 hover:text-foreground",
+                  )}
+                  aria-pressed={isActive}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <div className="space-y-2">
           <label htmlFor="prompt-single" className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
