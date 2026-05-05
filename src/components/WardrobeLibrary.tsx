@@ -1303,13 +1303,14 @@ const WardrobeLibrary = ({
                   className="h-11 gap-2 rounded-xl border border-white/10 bg-background/56 px-4"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
+                  title="Upload a new photo from your device"
                 >
                   {isUploading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Upload className="h-4 w-4" />
                   )}
-                  Add item photo
+                  Upload photo
                 </Button>
               </div>
             </div>
