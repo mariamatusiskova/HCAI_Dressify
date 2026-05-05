@@ -687,9 +687,17 @@ const SavedItemsLibrary = ({
                             className="h-full w-full object-contain p-3"
                           />
                         ) : (
-                          <div className="flex h-full items-center justify-center text-muted-foreground/42">
-                            <ImageIcon className="h-9 w-9" />
-                          </div>
+                          // Empty slot: a soft accent glow using the
+                          // collection's own colour so the tile reads as
+                          // "intentionally decorative" rather than
+                          // "missing image". Mirrors WardrobeLibrary.
+                          <div
+                            className="h-full w-full"
+                            style={{
+                              background: `radial-gradient(circle at 50% 55%, ${accentPalette.cornerGlow} 0%, transparent 62%)`,
+                            }}
+                            aria-hidden="true"
+                          />
                         )}
                       </div>
 
@@ -730,9 +738,13 @@ const SavedItemsLibrary = ({
                                   className="h-full w-full object-contain p-2"
                                 />
                               ) : (
-                                <div className="flex h-full items-center justify-center text-muted-foreground/28">
-                                  <ImageIcon className="h-4 w-4" />
-                                </div>
+                                <div
+                                  className="h-full w-full"
+                                  style={{
+                                    background: `radial-gradient(circle at 50% 60%, ${accentPalette.cornerGlow} 0%, transparent 72%)`,
+                                  }}
+                                  aria-hidden="true"
+                                />
                               )}
                             </div>
                           );
@@ -1044,16 +1056,20 @@ const SavedItemsLibrary = ({
                       </div>
                     </button>
 
-                    <div className="absolute right-3 top-3 flex items-center gap-2">
+                    {/* Delete in TOP-RIGHT, ⋯ menu in BOTTOM-RIGHT.
+                        Hover-fade on desktop, always visible on touch
+                        (no hover concept). Mirrors WardrobeLibrary. */}
+                    <div className="absolute right-3 bottom-3 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             type="button"
                             variant="secondary"
                             size="icon"
-                            className="h-7 w-7 rounded-full border border-white/10 bg-background/82 shadow-sm transition-colors hover:bg-background"
+                            className="h-9 w-9 rounded-full border border-foreground/15 bg-background/95 shadow-md transition-colors hover:bg-background"
+                            title="More actions"
                           >
-                            <MoreHorizontal className="h-3.5 w-3.5" />
+                            <MoreHorizontal className="h-4 w-4" />
                             <span className="sr-only">Open saved item actions</span>
                           </Button>
                         </DropdownMenuTrigger>
@@ -1110,20 +1126,33 @@ const SavedItemsLibrary = ({
                               </DropdownMenuRadioGroup>
                             </DropdownMenuSubContent>
                           </DropdownMenuSub>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => onDelete(item.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete saved item
-                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
 
+                    {/* Dedicated Delete button in the TOP-RIGHT corner.
+                        Same hover-fade behaviour as the ⋯ menu. */}
+                    <div className="absolute right-3 top-3 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="icon"
+                        className="h-9 w-9 rounded-full border border-destructive/65 bg-destructive/45 text-destructive-foreground shadow-md backdrop-blur transition-colors hover:bg-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(item.id);
+                        }}
+                        title="Delete saved item"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete saved item</span>
+                      </Button>
+                    </div>
+
                     {isSelected && (
-                      <div className="absolute bottom-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
+                      // Moved to bottom-left so it doesn't collide with
+                      // the ⋯ menu now living in the bottom-right.
+                      <div className="absolute bottom-3 left-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
                         <Check className="h-3 w-3" />
                       </div>
                     )}
