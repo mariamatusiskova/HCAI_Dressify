@@ -1,7 +1,7 @@
 // Shared accent palette helpers for collection cards (wardrobe, saved items,
-// saved outfits). Extracted from WardrobeLibrary so the saved page can render
+// saved outfits). Extracted from ClosetLibrary so the saved page can render
 // matching artwork without duplicating the color definitions.
-import type { WardrobeFolderColor } from "@/lib/wardrobeFolders";
+import type { ClosetFolderColor } from "@/lib/closetFolders";
 
 export interface CollectionAccentPalette {
   edge: string;
@@ -14,7 +14,7 @@ export interface CollectionAccentPalette {
 }
 
 export function getCollectionAccentPalette(
-  color: WardrobeFolderColor | string | null | undefined,
+  color: ClosetFolderColor | string | null | undefined,
 ): CollectionAccentPalette {
   switch (color) {
     case "amber":

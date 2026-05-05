@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 
-export interface WardrobeItemRecord {
+export interface ClosetItemRecord {
   id: string;
   user_id: string;
   category: string | null;
@@ -68,7 +68,7 @@ async function ensureWardrobe(userId: string): Promise<string> {
   return inserted.data.id as string;
 }
 
-export async function listSupabaseWardrobeItems(userId: string): Promise<WardrobeItemRecord[]> {
+export async function listSupabaseClosetItems(userId: string): Promise<ClosetItemRecord[]> {
   const client = requireSupabase();
 
   // Filter to source='wardrobe' so AI canvas pieces persisted on outfit save
@@ -94,22 +94,22 @@ export async function listSupabaseWardrobeItems(userId: string): Promise<Wardrob
     if (fallback.error) {
       throw fallback.error;
     }
-    return (fallback.data ?? []) as WardrobeItemRecord[];
+    return (fallback.data ?? []) as ClosetItemRecord[];
   }
 
   if (result.error) {
     throw result.error;
   }
 
-  return (result.data ?? []) as WardrobeItemRecord[];
+  return (result.data ?? []) as ClosetItemRecord[];
 }
 
-export async function createSupabaseWardrobeItem(
+export async function createSupabaseClosetItem(
   userId: string,
   category: string,
   imagePath: string,
   name?: string | null,
-): Promise<WardrobeItemRecord> {
+): Promise<ClosetItemRecord> {
   const client = requireSupabase();
   const wardrobeId = await ensureWardrobe(userId);
 
@@ -135,14 +135,14 @@ export async function createSupabaseWardrobeItem(
     throw inserted.error ?? new Error("Failed to create wardrobe item");
   }
 
-  return inserted.data as WardrobeItemRecord;
+  return inserted.data as ClosetItemRecord;
 }
 
-export async function updateSupabaseWardrobeItemName(
+export async function updateSupabaseClosetItemName(
   userId: string,
   itemId: string,
   name: string | null,
-): Promise<WardrobeItemRecord> {
+): Promise<ClosetItemRecord> {
   const client = requireSupabase();
 
   const updated = await client
@@ -160,10 +160,10 @@ export async function updateSupabaseWardrobeItemName(
     throw updated.error ?? new Error("Failed to update wardrobe item name");
   }
 
-  return updated.data as WardrobeItemRecord;
+  return updated.data as ClosetItemRecord;
 }
 
-export async function deleteSupabaseWardrobeItem(userId: string, itemId: string): Promise<void> {
+export async function deleteSupabaseClosetItem(userId: string, itemId: string): Promise<void> {
   const client = requireSupabase();
 
   const assignmentDelete = await client

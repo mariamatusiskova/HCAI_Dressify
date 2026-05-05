@@ -1,4 +1,4 @@
-export type WardrobeFolderColor =
+export type ClosetFolderColor =
   | "rose"
   | "amber"
   | "emerald"
@@ -6,16 +6,16 @@ export type WardrobeFolderColor =
   | "violet"
   | "stone";
 
-export interface WardrobeFolderColorOption {
-  value: WardrobeFolderColor;
+export interface ClosetFolderColorOption {
+  value: ClosetFolderColor;
   label: string;
   toneClassName: string;
   chipClassName: string;
 }
 
-export const DEFAULT_WARDROBE_FOLDER_COLOR: WardrobeFolderColor = "rose";
+export const DEFAULT_CLOSET_FOLDER_COLOR: ClosetFolderColor = "rose";
 
-export const WARDROBE_FOLDER_COLORS: WardrobeFolderColorOption[] = [
+export const CLOSET_FOLDER_COLORS: ClosetFolderColorOption[] = [
   {
     value: "rose",
     label: "Wine",
@@ -60,14 +60,14 @@ export const WARDROBE_FOLDER_COLORS: WardrobeFolderColorOption[] = [
   },
 ];
 
-export function getWardrobeFolderColorOption(
+export function getClosetFolderColorOption(
   color: string | null | undefined,
-): WardrobeFolderColorOption {
+): ClosetFolderColorOption {
   return (
-    WARDROBE_FOLDER_COLORS.find((option) => option.value === color) ??
-    WARDROBE_FOLDER_COLORS.find(
-      (option) => option.value === DEFAULT_WARDROBE_FOLDER_COLOR,
+    CLOSET_FOLDER_COLORS.find((option) => option.value === color) ??
+    CLOSET_FOLDER_COLORS.find(
+      (option) => option.value === DEFAULT_CLOSET_FOLDER_COLOR,
     ) ??
-    WARDROBE_FOLDER_COLORS[0]
+    CLOSET_FOLDER_COLORS[0]
   );
 }

@@ -4,14 +4,14 @@ import { createId } from "@/lib/id";
 import { describeUnknownError } from "@/lib/error";
 import { getOrCreateSupabaseUserId } from "@/services/outfitsSupabase";
 import {
-  createSupabaseWardrobeItem,
-  deleteSupabaseWardrobeItem,
-  listSupabaseWardrobeItems,
-  updateSupabaseWardrobeItemName,
-  type WardrobeItemRecord,
-} from "@/services/wardrobeSupabase";
+  createSupabaseClosetItem,
+  deleteSupabaseClosetItem,
+  listSupabaseClosetItems,
+  updateSupabaseClosetItemName,
+  type ClosetItemRecord,
+} from "@/services/closetSupabase";
 
-export interface WardrobeItem {
+export interface ClosetItem {
   id: string;
   category: string;
   imageUrl: string;
@@ -20,8 +20,8 @@ export interface WardrobeItem {
   name?: string | null;
 }
 
-export interface AddWardrobeResult {
-  item: WardrobeItem;
+export interface AddClosetResult {
+  item: ClosetItem;
   savedToCloud: boolean;
   cloudError?: string;
   alreadyExists?: boolean;
@@ -29,7 +29,7 @@ export interface AddWardrobeResult {
 
 const STORAGE_KEY = "dressify-wardrobe-items";
 
-function readLocalWardrobe(): WardrobeItem[] {
+function readLocalCloset(): ClosetItem[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return [];
@@ -39,7 +39,7 @@ function readLocalWardrobe(): WardrobeItem[] {
 
     return parsed.map((item) => ({
       ...item,
-      name: normalizeWardrobeItemName(item.name),
+      name: normalizeClosetItemName(item.name),
       tags: Array.isArray(item.tags) ? item.tags : [],
     }));
   } catch {
@@ -47,32 +47,32 @@ function readLocalWardrobe(): WardrobeItem[] {
   }
 }
 
-function writeLocalWardrobe(items: WardrobeItem[]) {
+function writeLocalCloset(items: ClosetItem[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
-function normalizeWardrobeItemName(name?: string | null) {
+function normalizeClosetItemName(name?: string | null) {
   const trimmed = name?.trim();
   return trimmed ? trimmed : null;
 }
 
-function findExistingWardrobeItem(items: WardrobeItem[], category: string, imageUrl: string) {
+function findExistingClosetItem(items: ClosetItem[], category: string, imageUrl: string) {
   return items.find((item) => item.category === category && item.imageUrl === imageUrl) ?? null;
 }
 
-function fromSupabaseRecord(record: WardrobeItemRecord): WardrobeItem {
+function fromSupabaseRecord(record: ClosetItemRecord): ClosetItem {
   return {
     id: record.id,
     category: record.category ?? "unknown",
     imageUrl: record.image_path ?? record.thumb_path ?? "",
     createdAt: record.created_at,
     tags: record.tags ?? [],
-    name: normalizeWardrobeItemName(record.name),
+    name: normalizeClosetItemName(record.name),
   };
 }
 
-export function useWardrobe() {
-  const [items, setItems] = useState<WardrobeItem[]>(() => readLocalWardrobe());
+export function useCloset() {
+  const [items, setItems] = useState<ClosetItem[]>(() => readLocalCloset());
   const [isLoading, setIsLoading] = useState(true);
   const [isCloudSyncEnabled, setIsCloudSyncEnabled] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -104,13 +104,13 @@ export function useWardrobe() {
           setIsCloudSyncEnabled(false);
           setUserId(null);
           setSyncError(
-            "Supabase is configured but no auth session is available. Wardrobe is being saved locally only.",
+            "Supabase is configured but no auth session is available. Closet is being saved locally only.",
           );
           setIsLoading(false);
           return;
         }
 
-        const remoteItems = await listSupabaseWardrobeItems(resolvedUserId);
+        const remoteItems = await listSupabaseClosetItems(resolvedUserId);
         if (!mounted) return;
 
         setUserId(resolvedUserId);
@@ -122,7 +122,7 @@ export function useWardrobe() {
         const message = describeUnknownError(error, "Unknown Supabase error");
         setIsCloudSyncEnabled(false);
         setUserId(null);
-        setSyncError(`Supabase wardrobe sync failed (${message}). Using local mode.`);
+        setSyncError(`Supabase closet sync failed (${message}). Using local mode.`);
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -146,9 +146,9 @@ export function useWardrobe() {
   }, []);
 
   const addItem = useCallback(
-    async (category: string, imageUrl: string, name?: string | null): Promise<AddWardrobeResult> => {
-      const normalizedName = normalizeWardrobeItemName(name);
-      const existingItem = findExistingWardrobeItem(items, category, imageUrl);
+    async (category: string, imageUrl: string, name?: string | null): Promise<AddClosetResult> => {
+      const normalizedName = normalizeClosetItemName(name);
+      const existingItem = findExistingClosetItem(items, category, imageUrl);
       if (existingItem) {
         return {
           item: existingItem,
@@ -162,7 +162,7 @@ export function useWardrobe() {
 
         if (resolvedUserId) {
           try {
-            const created = await createSupabaseWardrobeItem(resolvedUserId, category, imageUrl, normalizedName);
+            const created = await createSupabaseClosetItem(resolvedUserId, category, imageUrl, normalizedName);
             const item = fromSupabaseRecord(created);
             setUserId(resolvedUserId);
             setIsCloudSyncEnabled(true);
@@ -172,8 +172,8 @@ export function useWardrobe() {
           } catch (error) {
             const message = describeUnknownError(error, "Unknown Supabase error");
             setIsCloudSyncEnabled(false);
-            setSyncError(`Supabase wardrobe insert failed (${message}). Saved locally.`);
-            const item: WardrobeItem = {
+            setSyncError(`Supabase closet insert failed (${message}). Saved locally.`);
+            const item: ClosetItem = {
               id: createId(),
               category,
               imageUrl,
@@ -184,7 +184,7 @@ export function useWardrobe() {
 
             setItems((prev) => {
               const updated = [item, ...prev];
-              writeLocalWardrobe(updated);
+              writeLocalCloset(updated);
               return updated;
             });
 
@@ -193,12 +193,12 @@ export function useWardrobe() {
         } else {
           setIsCloudSyncEnabled(false);
           setSyncError(
-            "Supabase is configured but no auth session is available. Wardrobe is being saved locally only.",
+            "Supabase is configured but no auth session is available. Closet is being saved locally only.",
           );
         }
       }
 
-      const item: WardrobeItem = {
+      const item: ClosetItem = {
         id: createId(),
         category,
         imageUrl,
@@ -209,7 +209,7 @@ export function useWardrobe() {
 
       setItems((prev) => {
         const updated = [item, ...prev];
-        writeLocalWardrobe(updated);
+        writeLocalCloset(updated);
         return updated;
       });
 
@@ -221,14 +221,14 @@ export function useWardrobe() {
   const deleteItem = useCallback(
     async (id: string) => {
       if (isCloudSyncEnabled && userId) {
-        await deleteSupabaseWardrobeItem(userId, id);
+        await deleteSupabaseClosetItem(userId, id);
         setItems((prev) => prev.filter((item) => item.id !== id));
         return;
       }
 
       setItems((prev) => {
         const updated = prev.filter((item) => item.id !== id);
-        writeLocalWardrobe(updated);
+        writeLocalCloset(updated);
         return updated;
       });
     },
@@ -237,11 +237,11 @@ export function useWardrobe() {
 
   const updateItemName = useCallback(
     async (id: string, name: string | null) => {
-      const normalizedName = normalizeWardrobeItemName(name);
+      const normalizedName = normalizeClosetItemName(name);
 
       if (isCloudSyncEnabled && userId) {
         try {
-          const updatedRecord = await updateSupabaseWardrobeItemName(userId, id, normalizedName);
+          const updatedRecord = await updateSupabaseClosetItemName(userId, id, normalizedName);
           const updatedItem = fromSupabaseRecord(updatedRecord);
           setItems((prev) => prev.map((item) => (item.id === id ? updatedItem : item)));
           setSyncError(null);
@@ -249,12 +249,12 @@ export function useWardrobe() {
         } catch (error) {
           const message = describeUnknownError(error, "Unknown Supabase error");
           setIsCloudSyncEnabled(false);
-          setSyncError(`Supabase wardrobe rename failed (${message}). Saved locally.`);
+          setSyncError(`Supabase closet rename failed (${message}). Saved locally.`);
         }
       }
 
       const updatedAt = new Date().toISOString();
-      let updatedItem: WardrobeItem | null = null;
+      let updatedItem: ClosetItem | null = null;
 
       setItems((prev) => {
         const updated = prev.map((item) => {
@@ -266,7 +266,7 @@ export function useWardrobe() {
           };
           return updatedItem;
         });
-        writeLocalWardrobe(updated);
+        writeLocalCloset(updated);
         return updated;
       });
 

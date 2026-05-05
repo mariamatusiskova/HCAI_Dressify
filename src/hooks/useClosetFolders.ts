@@ -3,43 +3,43 @@ import { createId } from "@/lib/id";
 import { describeUnknownError } from "@/lib/error";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import {
-  DEFAULT_WARDROBE_FOLDER_COLOR,
-  type WardrobeFolderColor,
-} from "@/lib/wardrobeFolders";
+  DEFAULT_CLOSET_FOLDER_COLOR,
+  type ClosetFolderColor,
+} from "@/lib/closetFolders";
 import { getOrCreateSupabaseUserId } from "@/services/outfitsSupabase";
 import {
-  createSupabaseWardrobeFolder,
-  deleteSupabaseWardrobeFolder,
-  deleteSupabaseWardrobeFolderAssignment,
-  listSupabaseWardrobeFolderAssignments,
-  listSupabaseWardrobeFolders,
-  updateSupabaseWardrobeFolder,
-  upsertSupabaseWardrobeFolderAssignment,
-  type WardrobeFolderAssignmentRecord,
-  type WardrobeFolderRecord,
-} from "@/services/wardrobeFoldersSupabase";
+  createSupabaseClosetFolder,
+  deleteSupabaseClosetFolder,
+  deleteSupabaseClosetFolderAssignment,
+  listSupabaseClosetFolderAssignments,
+  listSupabaseClosetFolders,
+  updateSupabaseClosetFolder,
+  upsertSupabaseClosetFolderAssignment,
+  type ClosetFolderAssignmentRecord,
+  type ClosetFolderRecord,
+} from "@/services/closetFoldersSupabase";
 
 interface ItemWithId {
   id: string;
 }
 
-export interface WardrobeFolder {
+export interface ClosetFolder {
   id: string;
   name: string;
-  color: WardrobeFolderColor;
+  color: ClosetFolderColor;
   coverImageUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export type WardrobeFolderPatch = Partial<
-  Pick<WardrobeFolder, "name" | "color" | "coverImageUrl">
+export type ClosetFolderPatch = Partial<
+  Pick<ClosetFolder, "name" | "color" | "coverImageUrl">
 >;
 
 const FOLDERS_STORAGE_KEY = "dressify-wardrobe-folders";
 const ASSIGNMENTS_STORAGE_KEY = "dressify-wardrobe-folder-assignments";
 
-function isWardrobeFolderColor(value: unknown): value is WardrobeFolderColor {
+function isClosetFolderColor(value: unknown): value is ClosetFolderColor {
   return ["rose", "amber", "emerald", "sky", "violet", "stone"].includes(
     String(value),
   );
@@ -47,9 +47,9 @@ function isWardrobeFolderColor(value: unknown): value is WardrobeFolderColor {
 
 function normalizeFolder(
   raw:
-    | (Partial<WardrobeFolder> & { created_at?: string; updated_at?: string })
+    | (Partial<ClosetFolder> & { created_at?: string; updated_at?: string })
     | null,
-): WardrobeFolder | null {
+): ClosetFolder | null {
   if (!raw?.id || !raw.name) return null;
 
   const createdAt = raw.createdAt ?? raw.created_at ?? new Date().toISOString();
@@ -58,29 +58,29 @@ function normalizeFolder(
   return {
     id: raw.id,
     name: raw.name,
-    color: isWardrobeFolderColor(raw.color)
+    color: isClosetFolderColor(raw.color)
       ? raw.color
-      : DEFAULT_WARDROBE_FOLDER_COLOR,
+      : DEFAULT_CLOSET_FOLDER_COLOR,
     coverImageUrl: raw.coverImageUrl ?? null,
     createdAt,
     updatedAt,
   };
 }
 
-function readFolders(): WardrobeFolder[] {
+function readFolders(): ClosetFolder[] {
   try {
     const stored = localStorage.getItem(FOLDERS_STORAGE_KEY);
     const parsed = stored ? JSON.parse(stored) : [];
     if (!Array.isArray(parsed)) return [];
     return parsed
       .map((folder) => normalizeFolder(folder))
-      .filter(Boolean) as WardrobeFolder[];
+      .filter(Boolean) as ClosetFolder[];
   } catch {
     return [];
   }
 }
 
-function writeFolders(folders: WardrobeFolder[]) {
+function writeFolders(folders: ClosetFolder[]) {
   localStorage.setItem(FOLDERS_STORAGE_KEY, JSON.stringify(folders));
 }
 
@@ -112,11 +112,11 @@ function sanitizeAssignments(
   );
 }
 
-function fromSupabaseFolder(record: WardrobeFolderRecord): WardrobeFolder {
+function fromSupabaseFolder(record: ClosetFolderRecord): ClosetFolder {
   return {
     id: record.id,
     name: record.name,
-    color: record.color ?? DEFAULT_WARDROBE_FOLDER_COLOR,
+    color: record.color ?? DEFAULT_CLOSET_FOLDER_COLOR,
     coverImageUrl: record.cover_image_url ?? null,
     createdAt: record.created_at,
     updatedAt: record.updated_at,
@@ -124,7 +124,7 @@ function fromSupabaseFolder(record: WardrobeFolderRecord): WardrobeFolder {
 }
 
 function fromSupabaseAssignments(
-  records: WardrobeFolderAssignmentRecord[],
+  records: ClosetFolderAssignmentRecord[],
   itemIds: Set<string>,
   folderIds: Set<string>,
 ): Record<string, string> {
@@ -137,12 +137,12 @@ function fromSupabaseAssignments(
   );
 }
 
-function sortFolders(folders: WardrobeFolder[]) {
+function sortFolders(folders: ClosetFolder[]) {
   return [...folders].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
-  const [folders, setFolders] = useState<WardrobeFolder[]>(() => readFolders());
+export function useClosetFolders<TItem extends ItemWithId>(items: TItem[]) {
+  const [folders, setFolders] = useState<ClosetFolder[]>(() => readFolders());
   const [assignments, setAssignments] = useState<Record<string, string>>(() =>
     readAssignments(),
   );
@@ -201,9 +201,9 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
         }
 
         let remoteFolderRecords =
-          await listSupabaseWardrobeFolders(resolvedUserId);
+          await listSupabaseClosetFolders(resolvedUserId);
         let remoteAssignmentRecords =
-          await listSupabaseWardrobeFolderAssignments(resolvedUserId);
+          await listSupabaseClosetFolderAssignments(resolvedUserId);
 
         // First-time cloud migration: when the cloud has no folders yet, lift existing
         // local boards into Supabase and preserve item assignments where item ids match.
@@ -211,7 +211,7 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
           const localToRemoteFolderId = new Map<string, string>();
 
           for (const localFolder of localFolders) {
-            const created = await createSupabaseWardrobeFolder(resolvedUserId, {
+            const created = await createSupabaseClosetFolder(resolvedUserId, {
               name: localFolder.name,
               color: localFolder.color,
               coverImageUrl: localFolder.coverImageUrl,
@@ -224,7 +224,7 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
           )) {
             const folderId = localToRemoteFolderId.get(localFolderId);
             if (!folderId || !itemIds.has(itemId)) continue;
-            await upsertSupabaseWardrobeFolderAssignment(
+            await upsertSupabaseClosetFolderAssignment(
               resolvedUserId,
               itemId,
               folderId,
@@ -232,9 +232,9 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
           }
 
           remoteFolderRecords =
-            await listSupabaseWardrobeFolders(resolvedUserId);
+            await listSupabaseClosetFolders(resolvedUserId);
           remoteAssignmentRecords =
-            await listSupabaseWardrobeFolderAssignments(resolvedUserId);
+            await listSupabaseClosetFolderAssignments(resolvedUserId);
         }
 
         const remoteFolders = sortFolders(
@@ -320,7 +320,7 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
   const createFolder = useCallback(
     async (
       name: string,
-      color: WardrobeFolderColor = DEFAULT_WARDROBE_FOLDER_COLOR,
+      color: ClosetFolderColor = DEFAULT_CLOSET_FOLDER_COLOR,
     ) => {
       const trimmedName = name.trim();
       if (!trimmedName) return null;
@@ -333,7 +333,7 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
       }
 
       const now = new Date().toISOString();
-      let nextFolder: WardrobeFolder = {
+      let nextFolder: ClosetFolder = {
         id: createId(),
         name: trimmedName,
         color,
@@ -345,7 +345,7 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
       if (isCloudSyncEnabled && userId) {
         try {
           nextFolder = fromSupabaseFolder(
-            await createSupabaseWardrobeFolder(userId, {
+            await createSupabaseClosetFolder(userId, {
               name: trimmedName,
               color,
               coverImageUrl: null,
@@ -372,8 +372,8 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
   );
 
   const updateFolder = useCallback(
-    async (folderId: string, patch: WardrobeFolderPatch) => {
-      const nextPatch: WardrobeFolderPatch = {
+    async (folderId: string, patch: ClosetFolderPatch) => {
+      const nextPatch: ClosetFolderPatch = {
         ...patch,
         name: patch.name?.trim() || undefined,
       };
@@ -397,7 +397,7 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
 
       if (isCloudSyncEnabled && userId) {
         try {
-          await updateSupabaseWardrobeFolder(userId, folderId, {
+          await updateSupabaseClosetFolder(userId, folderId, {
             ...(nextPatch.name ? { name: nextPatch.name } : {}),
             ...(nextPatch.color ? { color: nextPatch.color } : {}),
             ...("coverImageUrl" in nextPatch
@@ -434,7 +434,7 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
 
       if (isCloudSyncEnabled && userId) {
         try {
-          await deleteSupabaseWardrobeFolder(userId, folderId);
+          await deleteSupabaseClosetFolder(userId, folderId);
           setSyncError(null);
         } catch (error) {
           const message = describeUnknownError(error, "Unknown Supabase error");
@@ -461,13 +461,13 @@ export function useWardrobeFolders<TItem extends ItemWithId>(items: TItem[]) {
       if (isCloudSyncEnabled && userId) {
         try {
           if (folderId) {
-            await upsertSupabaseWardrobeFolderAssignment(
+            await upsertSupabaseClosetFolderAssignment(
               userId,
               itemId,
               folderId,
             );
           } else {
-            await deleteSupabaseWardrobeFolderAssignment(userId, itemId);
+            await deleteSupabaseClosetFolderAssignment(userId, itemId);
           }
           setSyncError(null);
         } catch (error) {

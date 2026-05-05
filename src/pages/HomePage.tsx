@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sheet";
 import GeneratePanel from "@/components/GeneratePanel";
 import CanvasEditor from "@/components/CanvasEditor";
-import WardrobeLibrary from "@/components/WardrobeLibrary";
+import ClosetLibrary from "@/components/ClosetLibrary";
 import SavedItemsLibrary from "@/components/SavedItemsLibrary";
 import SavePieceToClosetDialog from "@/components/SavePieceToClosetDialog";
 import { cn } from "@/lib/utils";
@@ -91,7 +91,7 @@ const HomePage = () => {
 
   // Adding from closet keeps the drawer open so the user can drop multiple
   // pieces in a row. We only close it when they're done (X / click-out).
-  const wardrobeCount = studio.wardrobeItems.length;
+  const closetCount = studio.closetItems.length;
   const aiCount = studio.savedGeneratedItems.length;
 
   return (
@@ -224,7 +224,7 @@ const HomePage = () => {
                     : "bg-foreground/8 text-foreground/70",
                 )}
               >
-                {wardrobeCount}
+                {closetCount}
               </span>
             </button>
             <button
@@ -260,19 +260,19 @@ const HomePage = () => {
             </Button>
           </div>
 
-          {/* Active library. Compact variant of WardrobeLibrary keeps the
+          {/* Active library. Compact variant of ClosetLibrary keeps the
               drawer focused on quick add. SavedItemsLibrary uses its
               default render — drilldown collections still work. */}
           {closetTab === "clothes" ? (
-            <WardrobeLibrary
-              items={studio.wardrobeItems}
+            <ClosetLibrary
+              items={studio.closetItems}
               onAddToCanvas={(item) => {
-                studio.handleAddWardrobeToCanvas(item);
+                studio.handleAddClosetToCanvas(item);
               }}
-              onDelete={(id) => void studio.handleDeleteWardrobeItem(id)}
-              onAddPhoto={studio.handleAddPhotoToWardrobe}
-              onUpdateName={studio.handleUpdateWardrobeItemName}
-              isLoading={studio.wardrobeLoading}
+              onDelete={(id) => void studio.handleDeleteClosetItem(id)}
+              onAddPhoto={studio.handleAddPhotoToCloset}
+              onUpdateName={studio.handleUpdateClosetItemName}
+              isLoading={studio.closetLoading}
               variant="compact"
             />
           ) : (

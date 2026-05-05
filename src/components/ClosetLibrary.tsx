@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import {
   Check,
   ChevronRight,
+  ArrowLeft,
   FolderPlus,
   ImageIcon,
   Loader2,
@@ -47,32 +48,32 @@ import {
   Upload,
 } from "lucide-react";
 import {
-  useWardrobeFolders,
-  type WardrobeFolder,
-} from "@/hooks/useWardrobeFolders";
-import type { AddWardrobeResult, WardrobeItem } from "@/hooks/useWardrobe";
+  useClosetFolders,
+  type ClosetFolder,
+} from "@/hooks/useClosetFolders";
+import type { AddClosetResult, ClosetItem } from "@/hooks/useCloset";
 import ItemCategoryBadge from "@/components/ItemCategoryBadge";
 import {
   getClothingCategoryLabel,
   normalizeClothingCategory,
 } from "@/lib/clothingCategory";
 import {
-  DEFAULT_WARDROBE_FOLDER_COLOR,
-  WARDROBE_FOLDER_COLORS,
-  getWardrobeFolderColorOption,
-  type WardrobeFolderColor,
-} from "@/lib/wardrobeFolders";
+  DEFAULT_CLOSET_FOLDER_COLOR,
+  CLOSET_FOLDER_COLORS,
+  getClosetFolderColorOption,
+  type ClosetFolderColor,
+} from "@/lib/closetFolders";
 import { CANVAS_PIECE_MIME, type CanvasPiecePayload } from "@/components/CanvasEditor";
 
-type WardrobeCategory = "top" | "trousers" | "shoes";
-type WardrobeFilter = "all" | WardrobeCategory;
-type WardrobeCollectionId = "__all__" | "__unsorted__" | string;
+type ClosetCategory = "top" | "trousers" | "shoes";
+type ClosetFilter = "all" | ClosetCategory;
+type ClosetCollectionId = "__all__" | "__unsorted__" | string;
 type CollectionBoardTab = "all" | "collections" | "unsorted";
-type AddPhotoResult = WardrobeItem | AddWardrobeResult | null | void;
+type AddPhotoResult = ClosetItem | AddClosetResult | null | void;
 
-interface WardrobeLibraryProps {
-  items: WardrobeItem[];
-  onAddToCanvas: (item: WardrobeItem) => void;
+interface ClosetLibraryProps {
+  items: ClosetItem[];
+  onAddToCanvas: (item: ClosetItem) => void;
   onDelete: (id: string) => void;
   onAddPhoto: (
     imageUrl: string,
@@ -85,15 +86,15 @@ interface WardrobeLibraryProps {
 }
 
 interface CollectionCard {
-  id: WardrobeCollectionId;
+  id: ClosetCollectionId;
   title: string;
   description: string;
   count: number;
   isUserFolder: boolean;
-  folder?: WardrobeFolder;
+  folder?: ClosetFolder;
 }
 
-const compactTabs: Array<{ value: WardrobeFilter; label: string }> = [
+const compactTabs: Array<{ value: ClosetFilter; label: string }> = [
   { value: "all", label: "All" },
   { value: "top", label: "Tops" },
   { value: "trousers", label: "Bottoms" },
@@ -107,34 +108,34 @@ const collectionBoardTabs: Array<{ value: CollectionBoardTab; label: string }> =
     { value: "unsorted", label: "Unsorted" },
   ];
 
-function getWardrobeItemTitle(category: string) {
+function getClosetItemTitle(category: string) {
   const normalized = normalizeClothingCategory(category);
   if (normalized === "trousers") return "Bottom piece";
   if (normalized === "shoes") return "Shoe pair";
   return "Top piece";
 }
 
-function getWardrobeItemSubtitle(category: string) {
+function getClosetItemSubtitle(category: string) {
   const normalized = normalizeClothingCategory(category);
   if (normalized === "trousers") return "Bottoms";
   if (normalized === "shoes") return "Shoes";
   return "Tops";
 }
 
-function getWardrobeItemDisplayName(item: WardrobeItem) {
+function getClosetItemDisplayName(item: ClosetItem) {
   const trimmedName = item.name?.trim();
-  return trimmedName || getWardrobeItemTitle(item.category);
+  return trimmedName || getClosetItemTitle(item.category);
 }
 
-function getWardrobeItemNamePlaceholder(category: string) {
+function getClosetItemNamePlaceholder(category: string) {
   const normalized = normalizeClothingCategory(category);
   if (normalized === "trousers") return "Dark straight-leg trousers";
   if (normalized === "shoes") return "Black leather loafers";
   return "White Marco Polo t-shirt";
 }
 
-function getWardrobeCollectionSummary(
-  collectionId: WardrobeCollectionId,
+function getClosetCollectionSummary(
+  collectionId: ClosetCollectionId,
   folderName?: string,
 ) {
   if (collectionId === "__all__") {
@@ -157,7 +158,7 @@ function getWardrobeCollectionSummary(
   };
 }
 
-function getAddedWardrobeItem(result: AddPhotoResult): WardrobeItem | null {
+function getAddedClosetItem(result: AddPhotoResult): ClosetItem | null {
   if (!result) return null;
   if ("item" in result) return result.item;
   return result;
@@ -182,7 +183,7 @@ interface CollectionAccentPalette {
 }
 
 function getCollectionAccentPalette(
-  color: WardrobeFolderColor | string | null | undefined,
+  color: ClosetFolderColor | string | null | undefined,
 ): CollectionAccentPalette {
   switch (color) {
     case "amber":
@@ -249,7 +250,7 @@ function getCollectionAccentPalette(
   }
 }
 
-const WardrobeLibrary = ({
+const ClosetLibrary = ({
   items,
   onAddToCanvas,
   onDelete,
@@ -257,14 +258,14 @@ const WardrobeLibrary = ({
   onUpdateName,
   isLoading = false,
   variant = "default",
-}: WardrobeLibraryProps) => {
+}: ClosetLibraryProps) => {
   const { resolvedTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   // The items panel ref + helper let a collection click smooth-scroll the
   // section into view, so the user immediately sees what's inside the board
   // they tapped instead of having to scroll manually.
   const itemsPanelRef = useRef<HTMLDivElement>(null);
-  const focusItemsPanel = (collectionId: WardrobeCollectionId) => {
+  const focusItemsPanel = (collectionId: ClosetCollectionId) => {
     setActiveCollectionId(collectionId);
     // Defer the scroll so the panel has time to update its content first.
     requestAnimationFrame(() => {
@@ -275,39 +276,43 @@ const WardrobeLibrary = ({
     });
   };
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadCategory, setUploadCategory] = useState<WardrobeCategory>("top");
+  const [uploadCategory, setUploadCategory] = useState<ClosetCategory>("top");
   const [pendingUpload, setPendingUpload] = useState<{
     imageUrl: string;
-    category: WardrobeCategory;
+    category: ClosetCategory;
   } | null>(null);
   const [newItemName, setNewItemName] = useState("");
-  const [editingItem, setEditingItem] = useState<WardrobeItem | null>(null);
+  const [editingItem, setEditingItem] = useState<ClosetItem | null>(null);
   const [editItemName, setEditItemName] = useState("");
   const [isRenamingItem, setIsRenamingItem] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<WardrobeFilter>("all");
+  const [activeFilter, setActiveFilter] = useState<ClosetFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+  // Drives the "+ Add items" picker shown when the user is drilled into a
+  // collection. Picker lists every wardrobe item not already in the active
+  // collection and lets the user assign them with a single tap.
+  const [isAddItemsPickerOpen, setIsAddItemsPickerOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const [newFolderColor, setNewFolderColor] = useState<WardrobeFolderColor>(
-    DEFAULT_WARDROBE_FOLDER_COLOR,
+  const [newFolderColor, setNewFolderColor] = useState<ClosetFolderColor>(
+    DEFAULT_CLOSET_FOLDER_COLOR,
   );
-  const [editingFolder, setEditingFolder] = useState<WardrobeFolder | null>(
+  const [editingFolder, setEditingFolder] = useState<ClosetFolder | null>(
     null,
   );
   const [editFolderName, setEditFolderName] = useState("");
-  const [editFolderColor, setEditFolderColor] = useState<WardrobeFolderColor>(
-    DEFAULT_WARDROBE_FOLDER_COLOR,
+  const [editFolderColor, setEditFolderColor] = useState<ClosetFolderColor>(
+    DEFAULT_CLOSET_FOLDER_COLOR,
   );
   const [activeCollectionId, setActiveCollectionId] =
-    useState<WardrobeCollectionId>("__all__");
+    useState<ClosetCollectionId>("__all__");
   const [activeCollectionBoardTab, setActiveCollectionBoardTab] =
     useState<CollectionBoardTab>(
       variant === "compact" ? "all" : "collections",
     );
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dragOverCollectionId, setDragOverCollectionId] =
-    useState<WardrobeCollectionId | null>(null);
+    useState<ClosetCollectionId | null>(null);
 
   const isCompact = variant === "compact";
   const isDarkTheme = resolvedTheme !== "light";
@@ -324,7 +329,7 @@ const WardrobeLibrary = ({
     getAssignedFolderId,
     isLoading: isFolderSyncLoading,
     syncError: folderSyncError,
-  } = useWardrobeFolders(items);
+  } = useClosetFolders(items);
 
   const uncategorizedCount = useMemo(
     () => items.filter((item) => !assignments[item.id]).length,
@@ -379,7 +384,7 @@ const WardrobeLibrary = ({
       {
         id: "__all__",
         title: "All pieces",
-        description: "Everything in your wardrobe",
+        description: "Everything in your closet",
         count: items.length,
         isUserFolder: false,
       },
@@ -442,8 +447,8 @@ const WardrobeLibrary = ({
       const assignedFolderName =
         folders.find((folder) => folder.id === assignedFolderId)?.name ?? "";
       const haystack = [
-        getWardrobeItemDisplayName(item),
-        getWardrobeItemSubtitle(item.category),
+        getClosetItemDisplayName(item),
+        getClosetItemSubtitle(item.category),
         getClothingCategoryLabel(item.category),
         assignedFolderName,
       ]
@@ -464,7 +469,7 @@ const WardrobeLibrary = ({
   const activeFolderName = folders.find(
     (folder) => folder.id === activeCollectionId,
   )?.name;
-  const activeCollectionSummary = getWardrobeCollectionSummary(
+  const activeCollectionSummary = getClosetCollectionSummary(
     activeCollectionId,
     activeFolderName,
   );
@@ -475,7 +480,7 @@ const WardrobeLibrary = ({
     setSearchQuery("");
   };
 
-  const openEditFolderDialog = (folder: WardrobeFolder) => {
+  const openEditFolderDialog = (folder: ClosetFolder) => {
     setEditingFolder(folder);
     setEditFolderName(folder.name);
     setEditFolderColor(folder.color);
@@ -508,7 +513,7 @@ const WardrobeLibrary = ({
 
     setIsUploading(true);
     try {
-      const addedItem = getAddedWardrobeItem(
+      const addedItem = getAddedClosetItem(
         await onAddPhoto(pendingUpload.imageUrl, pendingUpload.category, newItemName),
       );
 
@@ -522,7 +527,7 @@ const WardrobeLibrary = ({
 
       clearPendingUpload();
     } catch (error) {
-      console.error("Wardrobe photo upload failed:", error);
+      console.error("Closet photo upload failed:", error);
     } finally {
       setIsUploading(false);
     }
@@ -537,7 +542,7 @@ const WardrobeLibrary = ({
     try {
       await handleUpload(file);
     } catch (error) {
-      console.error("Wardrobe photo upload failed:", error);
+      console.error("Closet photo upload failed:", error);
     } finally {
       setIsUploading(false);
     }
@@ -550,7 +555,7 @@ const WardrobeLibrary = ({
     setActiveCollectionId(nextFolder.id);
     setActiveCollectionBoardTab("collections");
     setNewFolderName("");
-    setNewFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
+    setNewFolderColor(DEFAULT_CLOSET_FOLDER_COLOR);
     setIsCreateFolderOpen(false);
   };
 
@@ -564,10 +569,10 @@ const WardrobeLibrary = ({
 
     setEditingFolder(null);
     setEditFolderName("");
-    setEditFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
+    setEditFolderColor(DEFAULT_CLOSET_FOLDER_COLOR);
   };
 
-  const openEditItemNameDialog = (item: WardrobeItem) => {
+  const openEditItemNameDialog = (item: ClosetItem) => {
     setEditingItem(item);
     setEditItemName(item.name ?? "");
   };
@@ -591,7 +596,7 @@ const WardrobeLibrary = ({
 
   const handleItemDragStart = (
     event: DragEvent<HTMLElement>,
-    item: WardrobeItem,
+    item: ClosetItem,
   ) => {
     setDraggedItemId(item.id);
     // "move" drives the collection assignment drag; the canvas accepts a
@@ -611,7 +616,7 @@ const WardrobeLibrary = ({
 
   const handleCollectionDragOver = (
     event: DragEvent<HTMLElement>,
-    collectionId: WardrobeCollectionId,
+    collectionId: ClosetCollectionId,
   ) => {
     if (collectionId === "__all__") return;
     event.preventDefault();
@@ -621,7 +626,7 @@ const WardrobeLibrary = ({
 
   const handleCollectionDrop = async (
     event: DragEvent<HTMLElement>,
-    collectionId: WardrobeCollectionId,
+    collectionId: ClosetCollectionId,
   ) => {
     event.preventDefault();
     const itemId = event.dataTransfer.getData("text/plain") || draggedItemId;
@@ -640,9 +645,9 @@ const WardrobeLibrary = ({
 
   const pendingUploadCategory = pendingUpload?.category ?? uploadCategory;
   const pendingUploadLabel = getClothingCategoryLabel(pendingUploadCategory);
-  const pendingUploadPlaceholder = getWardrobeItemNamePlaceholder(pendingUploadCategory);
+  const pendingUploadPlaceholder = getClosetItemNamePlaceholder(pendingUploadCategory);
   const editingItemPlaceholder = editingItem
-    ? getWardrobeItemNamePlaceholder(editingItem.category)
+    ? getClosetItemNamePlaceholder(editingItem.category)
     : "White Marco Polo t-shirt";
 
   const addItemNameDialog = (
@@ -656,7 +661,7 @@ const WardrobeLibrary = ({
     >
       <DialogContent className="max-w-md border-border bg-card">
         <DialogHeader>
-          <DialogTitle>Name this wardrobe piece</DialogTitle>
+          <DialogTitle>Name this piece</DialogTitle>
           <DialogDescription>
             Add a searchable name now. You can edit it later from the item actions.
           </DialogDescription>
@@ -668,7 +673,7 @@ const WardrobeLibrary = ({
               <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
                 <img
                   src={pendingUpload.imageUrl}
-                  alt="Selected wardrobe piece preview"
+                  alt="Selected piece preview"
                   className="h-full w-full object-contain"
                 />
               </div>
@@ -680,11 +685,11 @@ const WardrobeLibrary = ({
           )}
 
           <div className="space-y-2">
-            <label htmlFor="wardrobe-item-name" className="text-sm font-medium text-foreground">
+            <label htmlFor="closet-item-name" className="text-sm font-medium text-foreground">
               Piece name
             </label>
             <Input
-              id="wardrobe-item-name"
+              id="closet-item-name"
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
               placeholder={pendingUploadPlaceholder}
@@ -731,7 +736,7 @@ const WardrobeLibrary = ({
         <DialogHeader>
           <DialogTitle>Edit piece name</DialogTitle>
           <DialogDescription>
-            Rename this wardrobe piece. Leave it blank to show the default category name.
+            Rename this piece. Leave it blank to show the default category name.
           </DialogDescription>
         </DialogHeader>
 
@@ -741,7 +746,7 @@ const WardrobeLibrary = ({
               <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
                 <img
                   src={editingItem.imageUrl}
-                  alt={getWardrobeItemDisplayName(editingItem)}
+                  alt={getClosetItemDisplayName(editingItem)}
                   className="h-full w-full object-contain"
                 />
               </div>
@@ -749,17 +754,17 @@ const WardrobeLibrary = ({
                 <div className="font-medium text-foreground">
                   {getClothingCategoryLabel(editingItem.category)}
                 </div>
-                <div>{getWardrobeItemDisplayName(editingItem)}</div>
+                <div>{getClosetItemDisplayName(editingItem)}</div>
               </div>
             </div>
           )}
 
           <div className="space-y-2">
-            <label htmlFor="wardrobe-item-edit-name" className="text-sm font-medium text-foreground">
+            <label htmlFor="closet-item-edit-name" className="text-sm font-medium text-foreground">
               Piece name
             </label>
             <Input
-              id="wardrobe-item-edit-name"
+              id="closet-item-edit-name"
               value={editItemName}
               onChange={(e) => setEditItemName(e.target.value)}
               placeholder={editingItemPlaceholder}
@@ -796,7 +801,7 @@ const WardrobeLibrary = ({
   if (isLoading || isFolderSyncLoading) {
     return (
       <div className="py-4 text-center text-xs text-muted-foreground">
-        Loading wardrobe...
+        Loading closet...
       </div>
     );
   }
@@ -805,12 +810,6 @@ const WardrobeLibrary = ({
     return (
       <div className="space-y-6">
         <div className="space-y-1">
-          <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground/70">
-            Collection
-          </div>
-          <h2 className="text-2xl font-display font-medium text-foreground">
-            Saved boards
-          </h2>
           {folderSyncError && (
             <p className="text-xs text-destructive/90">{folderSyncError}</p>
           )}
@@ -825,12 +824,19 @@ const WardrobeLibrary = ({
                 onClick={() => {
                   setActiveCollectionBoardTab(tab.value);
 
+                  // Always sync activeCollectionId to the chosen tab so the
+                  // items panel doesn't keep filtering by a leftover state
+                  // from the previously-active tab. (Switching from Unsorted
+                  // → Collections used to leave id="__unsorted__" stuck and
+                  // the user kept seeing Unsorted under the Collections tab.)
                   if (tab.value === "all") {
                     setActiveCollectionId("__all__");
-                  }
-
-                  if (tab.value === "unsorted") {
+                  } else if (tab.value === "unsorted") {
                     setActiveCollectionId("__unsorted__");
+                  } else {
+                    // tab.value === "collections" — reset to the folder
+                    // browser default so the cards strip is shown.
+                    setActiveCollectionId("__all__");
                   }
                 }}
                 className={cn(
@@ -847,8 +853,7 @@ const WardrobeLibrary = ({
 
           <Button
             type="button"
-            variant="secondary"
-            className="h-11 gap-2 rounded-xl border border-white/10 bg-background/56 px-5 text-sm font-medium text-foreground transition-colors hover:border-white/20 hover:bg-background/70"
+            className="h-11 gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_8px_24px_hsl(var(--primary)/0.25)] transition-colors hover:bg-primary/90"
             onClick={() => setIsCreateFolderOpen(true)}
           >
             <FolderPlus className="h-4 w-4" />
@@ -856,7 +861,34 @@ const WardrobeLibrary = ({
           </Button>
         </div>
 
-        {activeCollectionBoardTab === "collections" && (
+        {/* Helper banner that explains the path for adding items to
+            collections. Only shown on the Collections tab top-level (when
+            no specific folder is drilled into) — the moment the user is
+            most likely to wonder "ok, how do I put things in here?" */}
+        {activeCollectionBoardTab === "collections" &&
+          (activeCollectionId === "__all__" ||
+            activeCollectionId === "__unsorted__") && (
+            <div className="rounded-2xl border border-primary/25 bg-primary/8 p-4 text-sm text-foreground">
+              <p className="font-medium">How to fill a collection</p>
+              <p className="mt-1 text-muted-foreground">
+                Open any item from the <span className="font-medium text-foreground">All</span> or
+                {" "}<span className="font-medium text-foreground">Unsorted</span> tab,
+                tap its <span className="font-medium text-foreground">⋯</span> menu, and pick
+                <span className="font-medium text-foreground"> Move to collection</span>.
+                You can also drag a piece from those tabs straight onto a collection card here.
+              </p>
+            </div>
+          )}
+
+        {/* Drill-down model: only show the collection cards strip when no
+            specific collection is selected. Once the user clicks INTO a
+            collection, the strip hides so the items panel below becomes
+            the only thing on screen — and the breadcrumb in the panel
+            header is the way back out. This kills the "two separated
+            surfaces" confusion testers had with the previous flat layout. */}
+        {activeCollectionBoardTab === "collections" &&
+          (activeCollectionId === "__all__" ||
+            activeCollectionId === "__unsorted__") && (
           // Auto-fill keeps cards adjacent: the grid only opens a new column
           // when one will actually fit, so leftover horizontal space stops
           // ballooning into the gutter between cards.
@@ -981,7 +1013,7 @@ const WardrobeLibrary = ({
 
                     <button
                       type="button"
-                      onClick={() => setActiveCollectionId(collection.id)}
+                      onClick={() => focusItemsPanel(collection.id)}
                       className="relative z-10 block w-full text-left"
                     >
                       <div className="grid aspect-[0.84/1] grid-cols-[minmax(0,1.85fr)_minmax(0,0.88fr)] gap-2.5">
@@ -1017,9 +1049,17 @@ const WardrobeLibrary = ({
                               className="h-full w-full object-contain p-3"
                             />
                           ) : (
-                            <div className="flex h-full items-center justify-center text-muted-foreground/42">
-                              <ImageIcon className="h-9 w-9" />
-                            </div>
+                            // Empty slot: a soft accent glow using the
+                            // collection's own colour so the tile reads as
+                            // "intentionally decorative" rather than
+                            // "missing image".
+                            <div
+                              className="h-full w-full"
+                              style={{
+                                background: `radial-gradient(circle at 50% 55%, ${accentPalette.cornerGlow} 0%, transparent 62%)`,
+                              }}
+                              aria-hidden="true"
+                            />
                           )}
                         </div>
 
@@ -1061,9 +1101,17 @@ const WardrobeLibrary = ({
                                     className="h-full w-full object-contain p-2.25"
                                   />
                                 ) : (
-                                  <div className="flex h-full items-center justify-center text-muted-foreground/28">
-                                    <ImageIcon className="h-4 w-4" />
-                                  </div>
+                                  // Same accent-coloured glow as the hero
+                                  // tile so all the empty preview tiles in
+                                  // a collection feel like one cohesive
+                                  // decorative surface.
+                                  <div
+                                    className="h-full w-full"
+                                    style={{
+                                      background: `radial-gradient(circle at 50% 55%, ${accentPalette.cornerGlow} 0%, transparent 72%)`,
+                                    }}
+                                    aria-hidden="true"
+                                  />
                                 )}
                               </div>
                             );
@@ -1136,7 +1184,7 @@ const WardrobeLibrary = ({
 
                   <button
                     type="button"
-                    onClick={() => setActiveCollectionId(collection.id)}
+                    onClick={() => focusItemsPanel(collection.id)}
                     className="block px-1 text-left"
                   >
                       <div className="flex items-center gap-2.5 text-[14px] font-medium text-foreground md:text-[15px]">
@@ -1161,11 +1209,54 @@ const WardrobeLibrary = ({
           </div>
         )}
 
+        {/* On the Collections tab without a specific collection selected
+            we hide the items panel entirely. The view is now a pure
+            "pick a collection" surface — no second list of items below.
+            Once the user clicks a card, drill-down kicks in: the cards
+            hide, the items panel appears with the breadcrumb back-out. */}
+        {!(activeCollectionBoardTab === "collections" && activeCollectionId === "__all__") && (
         <div ref={itemsPanelRef} className="glass-panel rounded-[28px] border p-5 scroll-mt-4">
           <div className="flex flex-col gap-5">
+            {/* Breadcrumb. Only renders when the user has drilled into a
+                specific collection. Clicking it returns to the collections
+                grid above. This is the "way out" once we hide the cards
+                strip in collection view. */}
+            {activeCollectionId !== "__all__" &&
+              activeCollectionId !== "__unsorted__" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveCollectionId("__all__");
+                    setActiveCollectionBoardTab("collections");
+                  }}
+                  className="inline-flex items-center gap-1.5 self-start rounded-full border border-foreground/10 bg-background/56 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:border-foreground/25 hover:bg-background/75 hover:text-foreground"
+                >
+                  <ArrowLeft className="h-3 w-3" />
+                  All collections
+                </button>
+              )}
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div className="space-y-1">
-                <h3 className="text-2xl font-display font-medium text-foreground">
+                <h3 className="flex items-center gap-2 text-2xl font-display font-medium text-foreground">
+                  {/* Color dot + name when inside a specific collection so the
+                      header itself reads "you're inside <Vacation>". */}
+                  {activeCollectionId !== "__all__" &&
+                    activeCollectionId !== "__unsorted__" &&
+                    (() => {
+                      const folder = folders.find((f) => f.id === activeCollectionId);
+                      if (!folder) return null;
+                      const palette = getCollectionAccentPalette(folder.color);
+                      return (
+                        <span
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{
+                            backgroundColor: palette.dot,
+                            boxShadow: `0 0 12px ${palette.dotGlow}`,
+                          }}
+                          aria-hidden="true"
+                        />
+                      );
+                    })()}
                   {activeCollectionSummary.title}
                 </h3>
                 <p className="max-w-2xl text-sm text-muted-foreground">
@@ -1179,17 +1270,44 @@ const WardrobeLibrary = ({
                       them.
                     </p>
                   )}
+                {/* Always-on hint so the drag affordances are discoverable */}
+                {/* even on the "All pieces" / "Unsorted" views, where the */}
+                {/* collection-specific message above does not show. */}
+                {(activeCollectionId === "__all__" ||
+                  activeCollectionId === "__unsorted__") &&
+                  folders.length > 0 && (
+                    <p className="text-xs uppercase tracking-[0.16em] text-primary/80">
+                      You can also drag and drop the item into collection.
+                    </p>
+                  )}
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
+                {/* "+ Add items" — primary action when drilled into a
+                    collection. Opens a picker dialog listing every item
+                    that isn't already in this collection. The user taps
+                    items to add many at once, which is the missing
+                    "from-the-collection's-side" flow. */}
+                {activeCollectionId !== "__all__" &&
+                  activeCollectionId !== "__unsorted__" && (
+                    <Button
+                      type="button"
+                      onClick={() => setIsAddItemsPickerOpen(true)}
+                      className="h-11 gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-[0_8px_24px_hsl(var(--primary)/0.25)] transition-colors hover:bg-primary/90"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add items
+                    </Button>
+                  )}
+
                 <select
                   value={uploadCategory}
                   onChange={(e) =>
-                    setUploadCategory(e.target.value as WardrobeCategory)
+                    setUploadCategory(e.target.value as ClosetCategory)
                   }
                   className="h-11 rounded-xl border border-white/10 bg-background/56 px-3 text-sm text-foreground"
                   disabled={isUploading}
-                  aria-label="Wardrobe photo category"
+                  aria-label="Closet photo category"
                 >
                   <option value="top">Top</option>
                   <option value="trousers">Trousers</option>
@@ -1201,13 +1319,14 @@ const WardrobeLibrary = ({
                   className="h-11 gap-2 rounded-xl border border-white/10 bg-background/56 px-4"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
+                  title="Upload a new photo from your device"
                 >
                   {isUploading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Upload className="h-4 w-4" />
                   )}
-                  Add item photo
+                  Upload photo
                 </Button>
               </div>
             </div>
@@ -1265,7 +1384,7 @@ const WardrobeLibrary = ({
               <div className="glass-panel-soft rounded-[22px] border px-4 py-10 text-center">
                 <p className="text-sm text-foreground">
                   {items.length === 0
-                    ? "No wardrobe pieces yet"
+                    ? "No pieces yet"
                     : activeCollectionId === "__all__"
                       ? "No pieces match this filter"
                       : `No pieces in ${activeCollectionSummary.title.toLowerCase()} yet`}
@@ -1273,7 +1392,7 @@ const WardrobeLibrary = ({
                 <p className="mt-1 text-xs text-muted-foreground">
                   {items.length === 0
                     ? "Start by adding a few photos of the pieces you actually own."
-                    : "Try another collection, another category, or add a new wardrobe photo."}
+                    : "Try another collection, another category, or add a new photo."}
                 </p>
               </div>
             ) : (
@@ -1312,18 +1431,20 @@ const WardrobeLibrary = ({
                           "opacity-60 ring-1 ring-primary/40",
                       )}
                     >
+                      {/* Card click no longer adds to the board — the */}
+                      {/* dropdown menu's "Add to board" item handles that */}
+                      {/* explicitly. Tapping the card just selects it for */}
+                      {/* visual feedback so the user knows which piece is */}
+                      {/* highlighted; drag-to-board still works. */}
                       <button
                         type="button"
-                        onClick={() => {
-                          setSelectedItemId(item.id);
-                          onAddToCanvas(item);
-                        }}
+                        onClick={() => setSelectedItemId(item.id)}
                         className="w-full text-left"
                       >
                         <div className="relative aspect-[4/5] overflow-hidden rounded-[16px] border border-white/8 bg-white/[0.03]">
                           <img
                             src={item.imageUrl}
-                            alt={getWardrobeItemDisplayName(item)}
+                            alt={getClosetItemDisplayName(item)}
                             className="h-full w-full object-contain"
                           />
                           <ItemCategoryBadge source="wardrobe" />
@@ -1332,7 +1453,7 @@ const WardrobeLibrary = ({
                         <div className="space-y-2 px-1 pb-1 pt-2.5">
                           <div className="space-y-1">
                             <div className="truncate text-sm font-medium text-foreground">
-                              {getWardrobeItemDisplayName(item)}
+                              {getClosetItemDisplayName(item)}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               {getClothingCategoryLabel(item.category)}
@@ -1361,31 +1482,34 @@ const WardrobeLibrary = ({
                                 <span className="truncate">Unsorted</span>
                               )}
                             </div>
-                            <div className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-primary/80">
-                              Drag or tap
-                            </div>
                           </div>
                         </div>
                       </button>
 
-                      <div className="absolute right-3 top-3 flex items-center gap-2">
+                      {/* Delete in TOP-RIGHT, ⋯ menu in BOTTOM-RIGHT.
+                          Both fade in on hover for a cleaner card while
+                          the user is just browsing; on touch screens
+                          (which can't hover) they stay visible so they
+                          can still be reached. */}
+                      <div className="absolute right-3 bottom-3 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
                               type="button"
                               variant="secondary"
                               size="icon"
-                              className="h-7 w-7 rounded-full border border-white/10 bg-background/82 opacity-0 transition-opacity group-hover:opacity-100"
+                              className="h-9 w-9 rounded-full border border-foreground/15 bg-background/95 shadow-md transition-colors hover:bg-background"
+                              title="More actions"
                             >
-                              <MoreHorizontal className="h-3.5 w-3.5" />
+                              <MoreHorizontal className="h-4 w-4" />
                               <span className="sr-only">
-                                Open wardrobe item actions
+                                Open item actions
                               </span>
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuLabel className="truncate">
-                              {getWardrobeItemDisplayName(item)}
+                              {getClosetItemDisplayName(item)}
                             </DropdownMenuLabel>
                             <DropdownMenuItem
                               onClick={() => {
@@ -1443,20 +1567,33 @@ const WardrobeLibrary = ({
                                 </DropdownMenuRadioGroup>
                               </DropdownMenuSubContent>
                             </DropdownMenuSub>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => onDelete(item.id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete item
-                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
 
+                      {/* Dedicated Delete button in the TOP-RIGHT corner.
+                          Same hover-fade behaviour as the ⋯ menu. */}
+                      <div className="absolute right-3 top-3 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="icon"
+                          className="h-9 w-9 rounded-full border border-destructive/65 bg-destructive/45 text-destructive-foreground shadow-md backdrop-blur transition-colors hover:bg-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(item.id);
+                          }}
+                          title="Delete item"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete item</span>
+                        </Button>
+                      </div>
+
                       {isSelected && (
-                        <div className="absolute bottom-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
+                        // Moved to bottom-left so it doesn't collide with
+                        // the ⋯ menu now living in the bottom-right.
+                        <div className="absolute bottom-3 left-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
                           <Check className="h-3 w-3" />
                         </div>
                       )}
@@ -1467,11 +1604,112 @@ const WardrobeLibrary = ({
             )}
           </div>
         </div>
+        )}
+
+        {/* "+ Add items" picker. Surfaced only when drilled into a
+            specific collection (the dialog gets opened from the matching
+            button in the items panel header). Lists every wardrobe item
+            that isn't already in this collection; one tap assigns the
+            item, no Save step. The dialog stays open so the user can
+            add several pieces in a row before clicking Done. */}
+        {activeCollectionId !== "__all__" &&
+          activeCollectionId !== "__unsorted__" && (() => {
+            const activeFolder = folders.find((f) => f.id === activeCollectionId);
+            const activeFolderId = activeFolder?.id;
+            // Show items not already filed in this folder. Items from
+            // OTHER folders are still candidates — assigning here will
+            // move them, matching the per-item "Move to collection" UX.
+            const candidates = activeFolderId
+              ? items.filter((it) => assignments[it.id] !== activeFolderId)
+              : [];
+            const folderName = activeFolder?.name ?? "this collection";
+            return (
+              <Dialog open={isAddItemsPickerOpen} onOpenChange={setIsAddItemsPickerOpen}>
+                <DialogContent className="max-w-2xl border-border bg-card">
+                  <DialogHeader>
+                    <DialogTitle>Add items to “{folderName}”</DialogTitle>
+                    <DialogDescription>
+                      Tap any item to add it. Items already in another
+                      collection will be moved here.
+                    </DialogDescription>
+                  </DialogHeader>
+                  {candidates.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-foreground/15 bg-background/40 p-6 text-center text-sm text-muted-foreground">
+                      Every item is already in this collection.
+                    </div>
+                  ) : (
+                    <div
+                      className="grid max-h-[60vh] gap-3 overflow-y-auto pr-1"
+                      style={{
+                        gridTemplateColumns:
+                          "repeat(auto-fill, minmax(min(100%, 120px), 1fr))",
+                      }}
+                    >
+                      {candidates.map((item) => {
+                        const currentFolderId = assignments[item.id];
+                        const currentFolder = currentFolderId
+                          ? folders.find((f) => f.id === currentFolderId)
+                          : null;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={async () => {
+                              if (!activeFolderId) return;
+                              await assignItemToFolder(item.id, activeFolderId);
+                              toast.success(`Added to “${folderName}”`);
+                            }}
+                            className="group flex flex-col items-stretch gap-1 rounded-xl border border-foreground/10 bg-background/40 p-2 text-left transition-colors hover:border-primary/50 hover:bg-primary/8"
+                          >
+                            <div className="aspect-square overflow-hidden rounded-lg border border-foreground/10 bg-background/60">
+                              {item.imageUrl ? (
+                                <img
+                                  src={item.imageUrl}
+                                  alt={getClosetItemDisplayName(item)}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full items-center justify-center text-muted-foreground/40">
+                                  <ImageIcon className="h-6 w-6" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="truncate text-[12px] font-medium text-foreground">
+                              {getClosetItemDisplayName(item)}
+                            </div>
+                            {currentFolder ? (
+                              <div className="truncate text-[10px] uppercase tracking-[0.14em] text-muted-foreground/80">
+                                In: {currentFolder.name}
+                              </div>
+                            ) : (
+                              <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60">
+                                Unsorted
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setIsAddItemsPickerOpen(false)}
+                      className="rounded-xl"
+                    >
+                      Done
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            );
+          })()}
 
         <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
           <DialogContent className="max-w-md border-border bg-card">
             <DialogHeader>
-              <DialogTitle>Create wardrobe collection</DialogTitle>
+              <DialogTitle>Create collection</DialogTitle>
               <DialogDescription>
                 Group pieces into saved boards. Pick a color now, then set a
                 cover from any item inside the collection.
@@ -1481,13 +1719,13 @@ const WardrobeLibrary = ({
             <div className="space-y-4">
               <div className="space-y-2">
                 <label
-                  htmlFor="wardrobe-folder-name"
+                  htmlFor="closet-folder-name"
                   className="text-sm font-medium text-foreground"
                 >
                   Collection name
                 </label>
                 <Input
-                  id="wardrobe-folder-name"
+                  id="closet-folder-name"
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
                   placeholder="Weekend outfits"
@@ -1506,7 +1744,7 @@ const WardrobeLibrary = ({
                   Collection color
                 </div>
                 <div className="grid grid-cols-3 gap-2">
-                  {WARDROBE_FOLDER_COLORS.map((option) => (
+                  {CLOSET_FOLDER_COLORS.map((option) => (
                     <button
                       key={option.value}
                       type="button"
@@ -1538,7 +1776,7 @@ const WardrobeLibrary = ({
                 onClick={() => {
                   setIsCreateFolderOpen(false);
                   setNewFolderName("");
-                  setNewFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
+                  setNewFolderColor(DEFAULT_CLOSET_FOLDER_COLOR);
                 }}
               >
                 Cancel
@@ -1560,13 +1798,13 @@ const WardrobeLibrary = ({
             if (!open) {
               setEditingFolder(null);
               setEditFolderName("");
-              setEditFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
+              setEditFolderColor(DEFAULT_CLOSET_FOLDER_COLOR);
             }
           }}
         >
           <DialogContent className="max-w-md border-border bg-card">
             <DialogHeader>
-              <DialogTitle>Edit wardrobe collection</DialogTitle>
+              <DialogTitle>Edit collection</DialogTitle>
               <DialogDescription>
                 Rename your collection or change its accent color.
               </DialogDescription>
@@ -1575,13 +1813,13 @@ const WardrobeLibrary = ({
             <div className="space-y-4">
               <div className="space-y-2">
                 <label
-                  htmlFor="wardrobe-folder-edit-name"
+                  htmlFor="closet-folder-edit-name"
                   className="text-sm font-medium text-foreground"
                 >
                   Collection name
                 </label>
                 <Input
-                  id="wardrobe-folder-edit-name"
+                  id="closet-folder-edit-name"
                   value={editFolderName}
                   onChange={(e) => setEditFolderName(e.target.value)}
                   placeholder="Weekend outfits"
@@ -1600,7 +1838,7 @@ const WardrobeLibrary = ({
                   Collection color
                 </div>
                 <div className="grid grid-cols-3 gap-2">
-                  {WARDROBE_FOLDER_COLORS.map((option) => (
+                  {CLOSET_FOLDER_COLORS.map((option) => (
                     <button
                       key={option.value}
                       type="button"
@@ -1632,7 +1870,7 @@ const WardrobeLibrary = ({
                 onClick={() => {
                   setEditingFolder(null);
                   setEditFolderName("");
-                  setEditFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
+                  setEditFolderColor(DEFAULT_CLOSET_FOLDER_COLOR);
                 }}
               >
                 Cancel
@@ -1682,7 +1920,7 @@ const WardrobeLibrary = ({
               <button
                 key={collection.id}
                 type="button"
-                onClick={() => setActiveCollectionId(collection.id)}
+                onClick={() => focusItemsPanel(collection.id)}
                 className={cn(
                   "group relative min-w-[132px] overflow-hidden rounded-[18px] border p-2.5 text-left transition-all duration-200",
                   isDarkTheme
@@ -1730,9 +1968,13 @@ const WardrobeLibrary = ({
                       className="h-full w-full object-contain p-3"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-muted-foreground/30">
-                      <ImageIcon className="h-5 w-5" />
-                    </div>
+                    <div
+                      className="h-full w-full"
+                      style={{
+                        background: `radial-gradient(circle at 50% 60%, ${accentPalette.cornerGlow} 0%, transparent 70%)`,
+                      }}
+                      aria-hidden="true"
+                    />
                   )}
                 </div>
 
@@ -1788,7 +2030,7 @@ const WardrobeLibrary = ({
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search wardrobe..."
+            placeholder="Search closet..."
             className="h-11 w-full rounded-xl border border-white/8 bg-background/56 pl-10 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/35"
           />
         </div>
@@ -1798,7 +2040,7 @@ const WardrobeLibrary = ({
           className="h-11 gap-2 rounded-xl border border-white/8 bg-background/56 px-3.5"
           onClick={resetFilters}
           disabled={!canResetFilters}
-          title="Clear wardrobe search and category filters"
+          title="Clear search and category filters"
         >
           <RotateCcw className="h-4 w-4" />
           <span className="text-sm">Clear filters</span>
@@ -1827,12 +2069,12 @@ const WardrobeLibrary = ({
           <div className="glass-panel-soft rounded-[22px] border px-4 py-8 text-center">
             <p className="text-sm text-foreground">
               {items.length === 0
-                ? "No wardrobe items yet"
+                ? "No items yet"
                 : "No items match this filter"}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {items.length === 0
-                ? "Add a few photos to start building your wardrobe."
+                ? "Add a few photos to start building your closet."
                 : "Try another category or search."}
             </p>
           </div>
@@ -1863,17 +2105,17 @@ const WardrobeLibrary = ({
                       <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[14px] border border-white/8 bg-white/[0.03]">
                         <img
                           src={item.imageUrl}
-                          alt={getWardrobeItemDisplayName(item)}
+                          alt={getClosetItemDisplayName(item)}
                           className="h-full w-full object-contain"
                         />
                         <ItemCategoryBadge source="wardrobe" />
                       </div>
                       <div className="min-w-0 flex-1 pr-16">
                         <div className="truncate text-[15px] font-medium text-foreground">
-                          {getWardrobeItemDisplayName(item)}
+                          {getClosetItemDisplayName(item)}
                         </div>
                         <div className="mt-1 text-sm text-muted-foreground">
-                          {getWardrobeItemSubtitle(item.category)}
+                          {getClosetItemSubtitle(item.category)}
                         </div>
                         <div className="mt-2 text-xs uppercase tracking-[0.18em] text-muted-foreground/80">
                           Tap to add to board
@@ -1892,7 +2134,7 @@ const WardrobeLibrary = ({
                         e.stopPropagation();
                         openEditItemNameDialog(item);
                       }}
-                      title="Edit wardrobe item name"
+                      title="Edit item name"
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
@@ -1905,7 +2147,7 @@ const WardrobeLibrary = ({
                         e.stopPropagation();
                         onDelete(item.id);
                       }}
-                      title="Delete wardrobe item"
+                      title="Delete item"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -1928,8 +2170,8 @@ const WardrobeLibrary = ({
         variant="secondary"
         className="h-11 w-full justify-between rounded-xl border border-white/10 bg-background/56 px-4"
       >
-        <Link to="/wardrobe">
-          View all wardrobe
+        <Link to="/closet">
+          Open closet
           <ChevronRight className="h-4 w-4" />
         </Link>
       </Button>
@@ -1948,4 +2190,4 @@ const WardrobeLibrary = ({
   );
 };
 
-export default WardrobeLibrary;
+export default ClosetLibrary;

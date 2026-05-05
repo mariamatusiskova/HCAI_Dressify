@@ -20,11 +20,11 @@ const baseSteps: WalkthroughStep[] = [
   },
   {
     title: "What gets saved where",
-    body: "Generated items can be saved, wardrobe items are reusable, and full board layouts can be saved as outfits.",
+    body: "Generated items can be saved, closet items are reusable, and full board layouts can be saved as outfits.",
   },
   {
     title: "Sync behavior",
-    body: "If signed in, outfits and wardrobe sync with Supabase. If not, the app still works in local-only mode.",
+    body: "If signed in, outfits and the closet sync with Supabase. If not, the app still works in local-only mode.",
   },
 ];
 

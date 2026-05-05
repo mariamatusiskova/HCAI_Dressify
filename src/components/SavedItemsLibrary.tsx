@@ -49,10 +49,10 @@ import {
   normalizeClothingCategory,
 } from "@/lib/clothingCategory";
 import {
-  DEFAULT_WARDROBE_FOLDER_COLOR,
-  WARDROBE_FOLDER_COLORS,
-  type WardrobeFolderColor,
-} from "@/lib/wardrobeFolders";
+  DEFAULT_CLOSET_FOLDER_COLOR,
+  CLOSET_FOLDER_COLORS,
+  type ClosetFolderColor,
+} from "@/lib/closetFolders";
 import { CANVAS_PIECE_MIME, type CanvasPiecePayload } from "@/components/CanvasEditor";
 import { getCollectionAccentPalette } from "@/lib/collectionAccents";
 import {
@@ -142,17 +142,17 @@ const SavedItemsLibrary = ({
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
   // Drives the "+ Add items" picker shown when the user is drilled into a
   // collection. Lists every saved AI piece not already in the active
-  // collection. Mirrors WardrobeLibrary.
+  // collection. Mirrors ClosetLibrary.
   const [isAddItemsPickerOpen, setIsAddItemsPickerOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const [newFolderColor, setNewFolderColor] = useState<WardrobeFolderColor>(
-    DEFAULT_WARDROBE_FOLDER_COLOR,
+  const [newFolderColor, setNewFolderColor] = useState<ClosetFolderColor>(
+    DEFAULT_CLOSET_FOLDER_COLOR,
   );
 
   const [editingFolder, setEditingFolder] = useState<SavedItemFolder | null>(null);
   const [editFolderName, setEditFolderName] = useState("");
-  const [editFolderColor, setEditFolderColor] = useState<WardrobeFolderColor>(
-    DEFAULT_WARDROBE_FOLDER_COLOR,
+  const [editFolderColor, setEditFolderColor] = useState<ClosetFolderColor>(
+    DEFAULT_CLOSET_FOLDER_COLOR,
   );
 
   const [activeCollectionId, setActiveCollectionId] =
@@ -303,7 +303,7 @@ const SavedItemsLibrary = ({
     setActiveCollectionId(folder.id);
     setActiveCollectionBoardTab("collections");
     setNewFolderName("");
-    setNewFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
+    setNewFolderColor(DEFAULT_CLOSET_FOLDER_COLOR);
     setIsCreateFolderOpen(false);
   };
 
@@ -315,7 +315,7 @@ const SavedItemsLibrary = ({
     });
     setEditingFolder(null);
     setEditFolderName("");
-    setEditFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
+    setEditFolderColor(DEFAULT_CLOSET_FOLDER_COLOR);
   };
 
   const openEditItemNameDialog = (item: SavedAiItem) => {
@@ -492,7 +492,7 @@ const SavedItemsLibrary = ({
                 setActiveCollectionBoardTab(tab.value);
                 // Always sync activeCollectionId to the chosen tab so the
                 // items panel doesn't keep filtering by a leftover state
-                // from the previously-active tab. Mirrors WardrobeLibrary.
+                // from the previously-active tab. Mirrors ClosetLibrary.
                 if (tab.value === "all") setActiveCollectionId("__all__");
                 else if (tab.value === "unsorted") setActiveCollectionId("__unsorted__");
                 else setActiveCollectionId("__all__"); // "collections" → folder browser
@@ -520,7 +520,7 @@ const SavedItemsLibrary = ({
       </div>
 
       {/* Helper banner that explains the path for adding pieces to
-          collections. Mirrors WardrobeLibrary. */}
+          collections. Mirrors ClosetLibrary. */}
       {activeCollectionBoardTab === "collections" &&
         (activeCollectionId === "__all__" ||
           activeCollectionId === "__unsorted__") && (
@@ -540,7 +540,7 @@ const SavedItemsLibrary = ({
           specific collection is selected. Once the user clicks INTO a
           collection, the strip hides so the items panel below becomes the
           only thing on screen — and the breadcrumb in the panel header is
-          the way back out. Mirrors WardrobeLibrary. */}
+          the way back out. Mirrors ClosetLibrary. */}
       {activeCollectionBoardTab === "collections" &&
         (activeCollectionId === "__all__" ||
           activeCollectionId === "__unsorted__") && (
@@ -690,7 +690,7 @@ const SavedItemsLibrary = ({
                           // Empty slot: a soft accent glow using the
                           // collection's own colour so the tile reads as
                           // "intentionally decorative" rather than
-                          // "missing image". Mirrors WardrobeLibrary.
+                          // "missing image". Mirrors ClosetLibrary.
                           <div
                             className="h-full w-full"
                             style={{
@@ -831,12 +831,12 @@ const SavedItemsLibrary = ({
       )}
 
       {/* On the Collections tab without a specific collection selected we
-          hide the items panel entirely. Mirrors WardrobeLibrary. */}
+          hide the items panel entirely. Mirrors ClosetLibrary. */}
       {!(activeCollectionBoardTab === "collections" && activeCollectionId === "__all__") && (
       <div ref={itemsPanelRef} className="glass-panel rounded-[28px] border p-5 scroll-mt-4">
         <div className="flex flex-col gap-5">
           {/* Breadcrumb back-out when drilled into a specific collection.
-              Mirrors WardrobeLibrary so both surfaces of /closet behave
+              Mirrors ClosetLibrary so both surfaces of /closet behave
               identically. */}
           {activeCollectionId !== "__all__" &&
             activeCollectionId !== "__unsorted__" && (
@@ -896,7 +896,7 @@ const SavedItemsLibrary = ({
                 )}
             </div>
             {/* "+ Add items" — primary action when drilled into a
-                collection. Same UX as WardrobeLibrary so the closet feels
+                collection. Same UX as ClosetLibrary so the closet feels
                 consistent across both surfaces. */}
             {activeCollectionId !== "__all__" &&
               activeCollectionId !== "__unsorted__" && (
@@ -1058,7 +1058,7 @@ const SavedItemsLibrary = ({
 
                     {/* Delete in TOP-RIGHT, ⋯ menu in BOTTOM-RIGHT.
                         Hover-fade on desktop, always visible on touch
-                        (no hover concept). Mirrors WardrobeLibrary. */}
+                        (no hover concept). Mirrors ClosetLibrary. */}
                     <div className="absolute right-3 bottom-3 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -1165,7 +1165,7 @@ const SavedItemsLibrary = ({
       </div>
       )}
 
-      {/* "+ Add items" picker. Mirrors WardrobeLibrary. */}
+      {/* "+ Add items" picker. Mirrors ClosetLibrary. */}
       {activeCollectionId !== "__all__" &&
         activeCollectionId !== "__unsorted__" && (() => {
           const activeFolder = folders.find((f) => f.id === activeCollectionId);
@@ -1290,7 +1290,7 @@ const SavedItemsLibrary = ({
             <div className="space-y-2">
               <div className="text-sm font-medium text-foreground">Collection color</div>
               <div className="grid grid-cols-3 gap-2">
-                {WARDROBE_FOLDER_COLORS.map((option) => (
+                {CLOSET_FOLDER_COLORS.map((option) => (
                   <button
                     key={option.value}
                     type="button"
@@ -1317,7 +1317,7 @@ const SavedItemsLibrary = ({
               onClick={() => {
                 setIsCreateFolderOpen(false);
                 setNewFolderName("");
-                setNewFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
+                setNewFolderColor(DEFAULT_CLOSET_FOLDER_COLOR);
               }}
             >
               Cancel
@@ -1339,7 +1339,7 @@ const SavedItemsLibrary = ({
           if (!open) {
             setEditingFolder(null);
             setEditFolderName("");
-            setEditFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
+            setEditFolderColor(DEFAULT_CLOSET_FOLDER_COLOR);
           }
         }}
       >
@@ -1377,7 +1377,7 @@ const SavedItemsLibrary = ({
             <div className="space-y-2">
               <div className="text-sm font-medium text-foreground">Collection color</div>
               <div className="grid grid-cols-3 gap-2">
-                {WARDROBE_FOLDER_COLORS.map((option) => (
+                {CLOSET_FOLDER_COLORS.map((option) => (
                   <button
                     key={option.value}
                     type="button"
@@ -1404,7 +1404,7 @@ const SavedItemsLibrary = ({
               onClick={() => {
                 setEditingFolder(null);
                 setEditFolderName("");
-                setEditFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
+                setEditFolderColor(DEFAULT_CLOSET_FOLDER_COLOR);
               }}
             >
               Cancel

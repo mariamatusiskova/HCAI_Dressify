@@ -3,9 +3,9 @@ import { createId } from "@/lib/id";
 import { describeUnknownError } from "@/lib/error";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import {
-  DEFAULT_WARDROBE_FOLDER_COLOR,
-  type WardrobeFolderColor,
-} from "@/lib/wardrobeFolders";
+  DEFAULT_CLOSET_FOLDER_COLOR,
+  type ClosetFolderColor,
+} from "@/lib/closetFolders";
 import { getOrCreateSupabaseUserId } from "@/services/outfitsSupabase";
 import {
   createSupabaseSavedItemFolder,
@@ -19,7 +19,7 @@ import {
   type SavedItemFolderRecord,
 } from "@/services/savedItemFoldersSupabase";
 
-// Collection folders for saved AI items. Mirrors useWardrobeFolders but
+// Collection folders for saved AI items. Mirrors useClosetFolders but
 // targets the saved_item_folders / saved_item_folder_items tables. A thin
 // shared abstraction would be tidier, but cloning keeps each board's data
 // model independent and easy to evolve.
@@ -31,7 +31,7 @@ interface ItemWithId {
 export interface SavedItemFolder {
   id: string;
   name: string;
-  color: WardrobeFolderColor;
+  color: ClosetFolderColor;
   coverImageUrl: string | null;
   createdAt: string;
   updatedAt: string;
@@ -44,7 +44,7 @@ export type SavedItemFolderPatch = Partial<
 const FOLDERS_STORAGE_KEY = "dressify-saved-item-folders";
 const ASSIGNMENTS_STORAGE_KEY = "dressify-saved-item-folder-assignments";
 
-function isFolderColor(value: unknown): value is WardrobeFolderColor {
+function isFolderColor(value: unknown): value is ClosetFolderColor {
   return ["rose", "amber", "emerald", "sky", "violet", "stone"].includes(String(value));
 }
 
@@ -61,7 +61,7 @@ function normalizeFolder(
   return {
     id: raw.id,
     name: raw.name,
-    color: isFolderColor(raw.color) ? raw.color : DEFAULT_WARDROBE_FOLDER_COLOR,
+    color: isFolderColor(raw.color) ? raw.color : DEFAULT_CLOSET_FOLDER_COLOR,
     coverImageUrl: raw.coverImageUrl ?? null,
     createdAt,
     updatedAt,
@@ -115,7 +115,7 @@ function fromSupabaseFolder(record: SavedItemFolderRecord): SavedItemFolder {
   return {
     id: record.id,
     name: record.name,
-    color: record.color ?? DEFAULT_WARDROBE_FOLDER_COLOR,
+    color: record.color ?? DEFAULT_CLOSET_FOLDER_COLOR,
     coverImageUrl: record.cover_image_url ?? null,
     createdAt: record.created_at,
     updatedAt: record.updated_at,
@@ -284,7 +284,7 @@ export function useSavedItemFolders<TItem extends ItemWithId>(items: TItem[]) {
   const createFolder = useCallback(
     async (
       name: string,
-      color: WardrobeFolderColor = DEFAULT_WARDROBE_FOLDER_COLOR,
+      color: ClosetFolderColor = DEFAULT_CLOSET_FOLDER_COLOR,
     ) => {
       const trimmedName = name.trim();
       if (!trimmedName) return null;

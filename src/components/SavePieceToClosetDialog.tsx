@@ -13,13 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useStudio } from "@/pages/Index";
-import { useWardrobeFolders } from "@/hooks/useWardrobeFolders";
+import { useClosetFolders } from "@/hooks/useClosetFolders";
 import { useSavedItemFolders } from "@/hooks/useSavedItemFolders";
 import {
-  DEFAULT_WARDROBE_FOLDER_COLOR,
-  WARDROBE_FOLDER_COLORS,
-  type WardrobeFolderColor,
-} from "@/lib/wardrobeFolders";
+  DEFAULT_CLOSET_FOLDER_COLOR,
+  CLOSET_FOLDER_COLORS,
+  type ClosetFolderColor,
+} from "@/lib/closetFolders";
 import { getCollectionAccentPalette } from "@/lib/collectionAccents";
 import type { CanvasItem } from "@/hooks/useOutfits";
 import type { GeneratedItem } from "@/hooks/useOutfits";
@@ -62,7 +62,7 @@ const SavePieceToClosetDialog = ({
           isAi ? (
             <SaveAiPieceContent piece={piece} onClose={() => onOpenChange(false)} />
           ) : (
-            <SaveWardrobePieceContent piece={piece} onClose={() => onOpenChange(false)} />
+            <SaveClosetPieceContent piece={piece} onClose={() => onOpenChange(false)} />
           )
         ) : null}
       </DialogContent>
@@ -85,8 +85,8 @@ const SaveAiPieceContent = ({
   const [selectedFolderId, setSelectedFolderId] = useState<string | "__none__">("__none__");
   const [isCreating, setIsCreating] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const [newFolderColor, setNewFolderColor] = useState<WardrobeFolderColor>(
-    DEFAULT_WARDROBE_FOLDER_COLOR,
+  const [newFolderColor, setNewFolderColor] = useState<ClosetFolderColor>(
+    DEFAULT_CLOSET_FOLDER_COLOR,
   );
   const [isWorking, setIsWorking] = useState(false);
 
@@ -191,8 +191,8 @@ const SaveAiPieceContent = ({
   );
 };
 
-// ----- Wardrobe piece flow -------------------------------------------------
-const SaveWardrobePieceContent = ({
+// ----- Closet (wardrobe) piece flow -------------------------------------------------
+const SaveClosetPieceContent = ({
   piece,
   onClose,
 }: {
@@ -201,29 +201,29 @@ const SaveWardrobePieceContent = ({
 }) => {
   const studio = useStudio();
   const { folders, createFolder, assignItemToFolder } =
-    useWardrobeFolders(studio.wardrobeItems);
+    useClosetFolders(studio.closetItems);
 
   const [selectedFolderId, setSelectedFolderId] = useState<string | "__none__">("__none__");
   const [isCreating, setIsCreating] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const [newFolderColor, setNewFolderColor] = useState<WardrobeFolderColor>(
-    DEFAULT_WARDROBE_FOLDER_COLOR,
+  const [newFolderColor, setNewFolderColor] = useState<ClosetFolderColor>(
+    DEFAULT_CLOSET_FOLDER_COLOR,
   );
   const [isWorking, setIsWorking] = useState(false);
 
   // Look up the original wardrobe item by imageUrl since canvas items use
   // their own ids (not the wardrobe id) once dropped on the board.
-  const originalWardrobeItem = useMemo(
+  const originalClosetItem = useMemo(
     () =>
-      studio.wardrobeItems.find(
+      studio.closetItems.find(
         (w) =>
           w.imageUrl === piece.imageUrl && w.category === piece.category,
       ),
-    [piece, studio.wardrobeItems],
+    [piece, studio.closetItems],
   );
 
   const handleSubmit = async () => {
-    if (!originalWardrobeItem) {
+    if (!originalClosetItem) {
       toast.error("Couldn't find the matching wardrobe item");
       return;
     }
@@ -237,11 +237,11 @@ const SaveWardrobePieceContent = ({
         }
         const folder = await createFolder(trimmed, newFolderColor);
         if (folder?.id) {
-          await assignItemToFolder(originalWardrobeItem.id, folder.id);
+          await assignItemToFolder(originalClosetItem.id, folder.id);
           toast.success(`Added to new collection “${folder.name}”`);
         }
       } else if (selectedFolderId !== "__none__") {
-        await assignItemToFolder(originalWardrobeItem.id, selectedFolderId);
+        await assignItemToFolder(originalClosetItem.id, selectedFolderId);
         const folder = folders.find((f) => f.id === selectedFolderId);
         toast.success(`Added to “${folder?.name ?? "collection"}”`);
       } else {
@@ -295,7 +295,7 @@ const SaveWardrobePieceContent = ({
 interface FolderLike {
   id: string;
   name: string;
-  color: WardrobeFolderColor;
+  color: ClosetFolderColor;
 }
 
 const CollectionPicker = ({
@@ -317,8 +317,8 @@ const CollectionPicker = ({
   onToggleCreating: (next: boolean) => void;
   newFolderName: string;
   onNewFolderNameChange: (value: string) => void;
-  newFolderColor: WardrobeFolderColor;
-  onNewFolderColorChange: (color: WardrobeFolderColor) => void;
+  newFolderColor: ClosetFolderColor;
+  onNewFolderColorChange: (color: ClosetFolderColor) => void;
   hideNoneOption?: boolean;
 }) => {
   // Toggle creating mode resets the selection so the two states can't both
@@ -402,7 +402,7 @@ const CollectionPicker = ({
             autoFocus
           />
           <div className="flex flex-wrap gap-1.5">
-            {WARDROBE_FOLDER_COLORS.map((option) => (
+            {CLOSET_FOLDER_COLORS.map((option) => (
               <button
                 key={option.value}
                 type="button"

@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shirt, Sparkles } from "lucide-react";
-import WardrobeLibrary from "@/components/WardrobeLibrary";
+import ClosetLibrary from "@/components/ClosetLibrary";
 import SavedItemsLibrary from "@/components/SavedItemsLibrary";
 import { cn } from "@/lib/utils";
 import { useStudio } from "./Index";
 import type { GeneratedItem } from "@/hooks/useOutfits";
 import type { SavedAiItem } from "@/hooks/useSavedItems";
-import type { WardrobeItem } from "@/hooks/useWardrobe";
+import type { ClosetItem } from "@/hooks/useCloset";
 
 // /closet — every piece the user can dress with.
 //
@@ -65,8 +65,8 @@ const ClosetPage = () => {
   // Drag/click → board flows redirect to / so the user immediately sees
   // the piece they just added on the canvas. Same pattern we use on the
   // outfits page.
-  const handleAddWardrobeAndOpenBoard = (item: WardrobeItem) => {
-    studio.handleAddWardrobeToCanvas(item);
+  const handleAddClosetAndOpenBoard = (item: ClosetItem) => {
+    studio.handleAddClosetToCanvas(item);
     navigate("/");
   };
 
@@ -83,7 +83,7 @@ const ClosetPage = () => {
   };
 
   const counts: Record<ClosetTab, number> = {
-    clothes: studio.wardrobeItems.length,
+    clothes: studio.closetItems.length,
     ai: studio.savedGeneratedItems.length,
   };
 
@@ -186,13 +186,13 @@ const ClosetPage = () => {
         {/* Render only the active library so the unused one doesn't quietly
             run filtering / state logic in the background. */}
         {activeTab === "clothes" ? (
-          <WardrobeLibrary
-            items={studio.wardrobeItems}
-            onAddToCanvas={handleAddWardrobeAndOpenBoard}
-            onDelete={(id) => void studio.handleDeleteWardrobeItem(id)}
-            onAddPhoto={studio.handleAddPhotoToWardrobe}
-            onUpdateName={studio.handleUpdateWardrobeItemName}
-            isLoading={studio.wardrobeLoading}
+          <ClosetLibrary
+            items={studio.closetItems}
+            onAddToCanvas={handleAddClosetAndOpenBoard}
+            onDelete={(id) => void studio.handleDeleteClosetItem(id)}
+            onAddPhoto={studio.handleAddPhotoToCloset}
+            onUpdateName={studio.handleUpdateClosetItemName}
+            isLoading={studio.closetLoading}
           />
         ) : (
           <SavedItemsLibrary

@@ -541,7 +541,7 @@ const CanvasEditor = ({
   const helperMessage =
     emptyStateMessage ??
     (preUploadState
-      ? "Start with a full-body photo. Then generate pieces or add them from wardrobe."
+      ? "Start with a full-body photo. Then generate pieces or add them from your closet."
       : "Add pieces and arrange them on the photo.");
 
   return (
