@@ -17,7 +17,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import GeneratePanel from "@/components/GeneratePanel";
-import GeneratedItemsList from "@/components/GeneratedItemsList";
 import CanvasEditor from "@/components/CanvasEditor";
 import WardrobeLibrary from "@/components/WardrobeLibrary";
 import SavedItemsLibrary from "@/components/SavedItemsLibrary";
@@ -25,15 +24,14 @@ import { cn } from "@/lib/utils";
 import { useStudio } from "./Index";
 
 // Home page is now a tool-palette workspace:
-//   - The canvas (board) takes the entire main area, becoming the obvious
-//     focus of the page.
-//   - A small top toolbar exposes three actions: Generate, Add from closet,
-//     and Save outfit. Each opens a side drawer that slides in only when
-//     the user asks for it. Nothing is permanently visible competing for
-//     attention.
+//   - The canvas (board) takes the main area at the top.
+//   - The Generate panel sits inline UNDER the canvas — the most common
+//     creative action stays one scroll away, no extra click needed.
+//   - "Add from closet" and "Save outfit" are slide-in drawers triggered
+//     from a small top toolbar; they only appear on demand.
 //   - This replaces the older multi-panel sidebar that testers said was
-//     "too much at once" and confusing on first visit.
-type DrawerKey = "generate" | "closet" | "save";
+//     "too much at once" on first visit.
+type DrawerKey = "closet" | "save";
 type ClosetTab = "clothes" | "ai";
 
 const exampleCanvasCards = [
@@ -70,13 +68,12 @@ const HomePage = () => {
   const hasCanvasContent = studio.canvasItems.length > 0;
   const canSaveOutfit = hasCanvasContent && !studio.isLoading;
 
-  // Generation auto-adds the new piece to the canvas (existing behaviour)
-  // and we close the drawer so the user immediately sees what just landed
-  // on the board.
+  // Generation auto-adds the new piece to the canvas (existing behaviour).
+  // The user can scroll up to see what landed on the board, or keep
+  // generating more pieces from the inline panel below.
   const handleGenerateToBoard = (item: Parameters<typeof studio.handleItemGenerated>[0]) => {
     studio.handleItemGenerated(item);
     studio.handleAddToCanvas(item);
-    setOpenDrawer(null);
   };
 
   // After a successful save we close the drawer and clear the field. The
@@ -116,15 +113,6 @@ const HomePage = () => {
               type="button"
               variant="secondary"
               className="h-10 gap-2 rounded-xl border border-foreground/12 bg-background/56 px-4 text-sm font-medium hover:border-foreground/25 hover:bg-background/75"
-              onClick={() => setOpenDrawer("generate")}
-            >
-              <Sparkles className="h-4 w-4" />
-              Generate
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              className="h-10 gap-2 rounded-xl border border-foreground/12 bg-background/56 px-4 text-sm font-medium hover:border-foreground/25 hover:bg-background/75"
               onClick={() => setOpenDrawer("closet")}
             >
               <ImagePlus className="h-4 w-4" />
@@ -147,9 +135,11 @@ const HomePage = () => {
         </div>
       </header>
 
-      {/* Canvas — the dominant element. Takes the full remaining height. */}
+      {/* Canvas + inline Generate. Both scroll together inside <main> so
+          a user with a tall screen sees the canvas first; on a shorter
+          screen they scroll down to reach the Generate panel. */}
       <main className="flex-1 min-h-0 overflow-y-auto px-4 pb-24 md:px-6 lg:px-10 lg:pb-6">
-        <div className="mx-auto max-w-[1500px]">
+        <div className="mx-auto flex max-w-[1500px] flex-col gap-6">
           <CanvasEditor
             userPhoto={studio.userPhoto}
             onPhotoChange={studio.setUserPhoto}
@@ -159,71 +149,35 @@ const HomePage = () => {
             exampleCards={exampleCanvasCards}
             emptyStateMessage={
               hasPhoto
-                ? "Open Generate or Add from closet to start arranging your outfit."
+                ? "Generate a piece below or use Add from closet to start arranging your outfit."
                 : "Drop a photo of yourself, then build your look on the board."
             }
             hideTitle
             className="space-y-0"
           />
+
+          {/* Inline Generate panel — kept always visible below the canvas
+              so creating a new AI piece is one scroll away, never a
+              drawer/modal click. */}
+          <section className="glass-panel rounded-[28px] border p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <h2 className="text-lg font-display font-medium text-foreground">
+                Generate AI piece
+              </h2>
+              <p className="hidden text-xs text-muted-foreground md:block">
+                Describe what you want. We'll add it straight to the board.
+              </p>
+            </div>
+
+            <GeneratePanel
+              onItemGenerated={handleGenerateToBoard}
+              hideTitle
+              buttonLabel="Generate piece"
+            />
+          </section>
         </div>
       </main>
-
-      {/* Generate drawer — prompt + style template + the list of AI pieces
-          generated this session. */}
-      <Sheet
-        open={openDrawer === "generate"}
-        onOpenChange={(open) => setOpenDrawer(open ? "generate" : null)}
-      >
-        <SheetContent className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              Generate AI piece
-            </SheetTitle>
-            <SheetDescription>
-              Describe the piece you want. We'll add it straight onto the board.
-            </SheetDescription>
-          </SheetHeader>
-
-          <GeneratePanel
-            onItemGenerated={handleGenerateToBoard}
-            hideTitle
-            buttonLabel="Generate piece"
-          />
-
-          {studio.generatedItems.length > 0 && (
-            <div className="space-y-2 border-t border-foreground/10 pt-4">
-              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                This session
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Click any piece to add it to the board.
-              </p>
-              <GeneratedItemsList
-                items={studio.generatedItems}
-                onAddToCanvas={(item) => {
-                  studio.handleAddToCanvas(item);
-                  setOpenDrawer(null);
-                }}
-                onItemUpdate={studio.handleItemUpdate}
-                onItemDelete={studio.handleDeleteGeneratedItem}
-                onItemAdd={studio.handleItemGenerated}
-                onSaveItem={studio.handleSaveGeneratedItem}
-                isSaved={(item) =>
-                  studio.savedGeneratedItems.some(
-                    (savedItem) =>
-                      savedItem.category === item.category &&
-                      savedItem.imageUrl === item.imageUrl &&
-                      savedItem.prompt === item.prompt,
-                  )
-                }
-                hideTitle
-                gridClassName="grid-cols-2"
-              />
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
 
       {/* Closet drawer — tabs for My clothes / AI pieces. Wider than the
           others because it has to fit a piece grid. */}
