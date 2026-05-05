@@ -117,7 +117,12 @@ const GeneratePanel = ({
       })();
       const fitSuffix = fitDescriptor ? `, ${fitDescriptor}` : "";
       const audienceClause = `, overhead flat lay photograph, the garment is laid flat and centered on a clean white background surface, viewed from directly above, only the fabric is in frame, soft even studio lighting${fitSuffix}`;
-      const fullPrompt = `${userPrompt}${audienceClause}. ${systemPrompt}. ${selectedTemplate.styleDescriptor}`;
+      // Style descriptor is omitted when blank — happens when the user
+      // picks the "None" template or picks "Custom" but leaves the text
+      // empty. Stops a trailing ". ." from showing up in the prompt.
+      const styleDescriptor = selectedTemplate.styleDescriptor.trim();
+      const styleSuffix = styleDescriptor ? `. ${styleDescriptor}` : "";
+      const fullPrompt = `${userPrompt}${audienceClause}. ${systemPrompt}${styleSuffix}`;
       const inferredCategory = detectClothingCategory(userPrompt, "top");
       const imageUrl = await generateClothingItem(fullPrompt, inferredCategory, selectedTemplate);
       const item: GeneratedItem = {
