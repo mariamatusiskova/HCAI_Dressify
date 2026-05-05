@@ -20,8 +20,10 @@ import GeneratePanel from "@/components/GeneratePanel";
 import CanvasEditor from "@/components/CanvasEditor";
 import WardrobeLibrary from "@/components/WardrobeLibrary";
 import SavedItemsLibrary from "@/components/SavedItemsLibrary";
+import SavePieceToClosetDialog from "@/components/SavePieceToClosetDialog";
 import { cn } from "@/lib/utils";
 import { useStudio } from "./Index";
+import type { CanvasItem } from "@/hooks/useOutfits";
 
 // Home page is now a tool-palette workspace:
 //   - The canvas (board) takes the main area at the top.
@@ -63,6 +65,9 @@ const HomePage = () => {
   const studio = useStudio();
   const [openDrawer, setOpenDrawer] = useState<DrawerKey | null>(null);
   const [closetTab, setClosetTab] = useState<ClosetTab>("clothes");
+  // The canvas item the user clicked "Save to closet" on. While non-null
+  // the SavePieceToClosetDialog is shown.
+  const [pieceToSave, setPieceToSave] = useState<CanvasItem | null>(null);
 
   const hasPhoto = Boolean(studio.userPhoto);
   const hasCanvasContent = studio.canvasItems.length > 0;
@@ -146,6 +151,7 @@ const HomePage = () => {
             items={studio.canvasItems}
             onItemsChange={studio.setCanvasItems}
             onDeleteItem={studio.handleDeleteItem}
+            onSavePieceToCloset={(item) => setPieceToSave(item)}
             exampleCards={exampleCanvasCards}
             emptyStateMessage={
               hasPhoto
@@ -356,6 +362,16 @@ const HomePage = () => {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* "Save piece to closet / collection" dialog opened from the canvas
+          item toolbar (the BookmarkPlus icon next to Edit with AI). */}
+      <SavePieceToClosetDialog
+        open={pieceToSave !== null}
+        onOpenChange={(open) => {
+          if (!open) setPieceToSave(null);
+        }}
+        piece={pieceToSave}
+      />
     </div>
   );
 };

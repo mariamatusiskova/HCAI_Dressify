@@ -198,7 +198,9 @@ function useStudioInternal() {
 
       if (result.alreadyExists) {
         toast.info("Item already saved");
-        return;
+        // Return the existing saved item so callers (e.g. SavePieceToClosetDialog)
+        // can still assign it to a collection without re-saving.
+        return result.item;
       }
 
       if (result.savedToCloud) {
@@ -210,6 +212,7 @@ function useStudioInternal() {
             : "Saved locally only (no active Supabase session).",
         );
       }
+      return result.item;
     },
     [addSavedItem],
   );
