@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { WardrobeFolderColor } from "@/lib/wardrobeFolders";
+import type { ClosetFolderColor } from "@/lib/closetFolders";
 
 // Folders for the "Saved AI items" page. The schema mirrors
 // wardrobe_folders / wardrobe_folder_items so the same color palette and
@@ -8,7 +8,7 @@ export interface SavedItemFolderRecord {
   id: string;
   user_id: string;
   name: string;
-  color: WardrobeFolderColor | null;
+  color: ClosetFolderColor | null;
   cover_image_url: string | null;
   created_at: string;
   updated_at: string;
@@ -67,7 +67,7 @@ export async function createSupabaseSavedItemFolder(
   userId: string,
   input: {
     name: string;
-    color: WardrobeFolderColor;
+    color: ClosetFolderColor;
     coverImageUrl?: string | null;
   },
 ): Promise<SavedItemFolderRecord> {

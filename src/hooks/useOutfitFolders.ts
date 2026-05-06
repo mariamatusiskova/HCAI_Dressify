@@ -3,9 +3,9 @@ import { createId } from "@/lib/id";
 import { describeUnknownError } from "@/lib/error";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import {
-  DEFAULT_WARDROBE_FOLDER_COLOR,
-  type WardrobeFolderColor,
-} from "@/lib/wardrobeFolders";
+  DEFAULT_CLOSET_FOLDER_COLOR,
+  type ClosetFolderColor,
+} from "@/lib/closetFolders";
 import { getOrCreateSupabaseUserId } from "@/services/outfitsSupabase";
 import {
   createSupabaseOutfitFolder,
@@ -19,7 +19,7 @@ import {
   type OutfitFolderRecord,
 } from "@/services/outfitFoldersSupabase";
 
-// Mirrors useWardrobeFolders but groups saved outfits instead of pieces.
+// Mirrors useClosetFolders but groups saved outfits instead of pieces.
 
 interface ItemWithId {
   id: string;
@@ -28,7 +28,7 @@ interface ItemWithId {
 export interface OutfitFolder {
   id: string;
   name: string;
-  color: WardrobeFolderColor;
+  color: ClosetFolderColor;
   coverImageUrl: string | null;
   createdAt: string;
   updatedAt: string;
@@ -41,7 +41,7 @@ export type OutfitFolderPatch = Partial<
 const FOLDERS_STORAGE_KEY = "dressify-outfit-folders";
 const ASSIGNMENTS_STORAGE_KEY = "dressify-outfit-folder-assignments";
 
-function isFolderColor(value: unknown): value is WardrobeFolderColor {
+function isFolderColor(value: unknown): value is ClosetFolderColor {
   return ["rose", "amber", "emerald", "sky", "violet", "stone"].includes(String(value));
 }
 
@@ -56,7 +56,7 @@ function normalizeFolder(
   return {
     id: raw.id,
     name: raw.name,
-    color: isFolderColor(raw.color) ? raw.color : DEFAULT_WARDROBE_FOLDER_COLOR,
+    color: isFolderColor(raw.color) ? raw.color : DEFAULT_CLOSET_FOLDER_COLOR,
     coverImageUrl: raw.coverImageUrl ?? null,
     createdAt,
     updatedAt,
@@ -108,7 +108,7 @@ function fromSupabaseFolder(record: OutfitFolderRecord): OutfitFolder {
   return {
     id: record.id,
     name: record.name,
-    color: record.color ?? DEFAULT_WARDROBE_FOLDER_COLOR,
+    color: record.color ?? DEFAULT_CLOSET_FOLDER_COLOR,
     coverImageUrl: record.cover_image_url ?? null,
     createdAt: record.created_at,
     updatedAt: record.updated_at,
@@ -272,7 +272,7 @@ export function useOutfitFolders<TItem extends ItemWithId>(items: TItem[]) {
   }, [folders, itemIds]);
 
   const createFolder = useCallback(
-    async (name: string, color: WardrobeFolderColor = DEFAULT_WARDROBE_FOLDER_COLOR) => {
+    async (name: string, color: ClosetFolderColor = DEFAULT_CLOSET_FOLDER_COLOR) => {
       const trimmedName = name.trim();
       if (!trimmedName) return null;
 

@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
+  ArrowLeft,
   FolderOpen,
   FolderPlus,
   ImageIcon,
@@ -43,10 +44,10 @@ import {
   Trash2,
 } from "lucide-react";
 import {
-  DEFAULT_WARDROBE_FOLDER_COLOR,
-  WARDROBE_FOLDER_COLORS,
-  type WardrobeFolderColor,
-} from "@/lib/wardrobeFolders";
+  DEFAULT_CLOSET_FOLDER_COLOR,
+  CLOSET_FOLDER_COLORS,
+  type ClosetFolderColor,
+} from "@/lib/closetFolders";
 import { getCollectionAccentPalette } from "@/lib/collectionAccents";
 import { useOutfitFolders, type OutfitFolder } from "@/hooks/useOutfitFolders";
 import type { Outfit } from "@/hooks/useOutfits";
@@ -116,7 +117,7 @@ const SavedOutfitsLibrary = ({
   // every piece + decide whether to load it onto the canvas). The dropdown
   // still exposes "Open on board" for the previous one-click flow.
   const handleOpenDetail = (outfitId: string) => {
-    navigate(`/saved/outfits/${outfitId}`);
+    navigate(`/outfits/${outfitId}`);
   };
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -125,15 +126,18 @@ const SavedOutfitsLibrary = ({
   const [isRenaming, setIsRenaming] = useState(false);
 
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+  // Drives the "+ Add outfits" picker shown when drilled into a collection.
+  // Mirrors ClosetLibrary / SavedItemsLibrary.
+  const [isAddItemsPickerOpen, setIsAddItemsPickerOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const [newFolderColor, setNewFolderColor] = useState<WardrobeFolderColor>(
-    DEFAULT_WARDROBE_FOLDER_COLOR,
+  const [newFolderColor, setNewFolderColor] = useState<ClosetFolderColor>(
+    DEFAULT_CLOSET_FOLDER_COLOR,
   );
 
   const [editingFolder, setEditingFolder] = useState<OutfitFolder | null>(null);
   const [editFolderName, setEditFolderName] = useState("");
-  const [editFolderColor, setEditFolderColor] = useState<WardrobeFolderColor>(
-    DEFAULT_WARDROBE_FOLDER_COLOR,
+  const [editFolderColor, setEditFolderColor] = useState<ClosetFolderColor>(
+    DEFAULT_CLOSET_FOLDER_COLOR,
   );
 
   const [activeCollectionId, setActiveCollectionId] =
@@ -261,7 +265,7 @@ const SavedOutfitsLibrary = ({
     setActiveCollectionId(folder.id);
     setActiveCollectionBoardTab("collections");
     setNewFolderName("");
-    setNewFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
+    setNewFolderColor(DEFAULT_CLOSET_FOLDER_COLOR);
     setIsCreateFolderOpen(false);
   };
 
@@ -273,7 +277,7 @@ const SavedOutfitsLibrary = ({
     });
     setEditingFolder(null);
     setEditFolderName("");
-    setEditFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
+    setEditFolderColor(DEFAULT_CLOSET_FOLDER_COLOR);
   };
 
   const openEditOutfitNameDialog = (outfit: Outfit) => {
@@ -446,8 +450,12 @@ const SavedOutfitsLibrary = ({
               type="button"
               onClick={() => {
                 setActiveCollectionBoardTab(tab.value);
+                // Always sync activeCollectionId to the chosen tab so the
+                // items panel doesn't keep filtering by a leftover state
+                // from the previously-active tab. Mirrors ClosetLibrary.
                 if (tab.value === "all") setActiveCollectionId("__all__");
-                if (tab.value === "unsorted") setActiveCollectionId("__unsorted__");
+                else if (tab.value === "unsorted") setActiveCollectionId("__unsorted__");
+                else setActiveCollectionId("__all__"); // "collections" → folder browser
               }}
               className={cn(
                 "h-11 rounded-xl border px-5 text-sm font-medium transition-colors",
@@ -463,8 +471,7 @@ const SavedOutfitsLibrary = ({
 
         <Button
           type="button"
-          variant="secondary"
-          className="h-11 gap-2 rounded-xl border border-white/10 bg-background/56 px-5 text-sm font-medium text-foreground transition-colors hover:border-white/20 hover:bg-background/70"
+          className="h-11 gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_8px_24px_hsl(var(--primary)/0.25)] transition-colors hover:bg-primary/90"
           onClick={() => setIsCreateFolderOpen(true)}
         >
           <FolderPlus className="h-4 w-4" />
@@ -472,7 +479,31 @@ const SavedOutfitsLibrary = ({
         </Button>
       </div>
 
-      {activeCollectionBoardTab === "collections" && (
+      {/* Helper banner that explains the path for adding outfits to
+          collections. Mirrors ClosetLibrary / SavedItemsLibrary. */}
+      {activeCollectionBoardTab === "collections" &&
+        (activeCollectionId === "__all__" ||
+          activeCollectionId === "__unsorted__") && (
+          <div className="rounded-2xl border border-primary/25 bg-primary/8 p-4 text-sm text-foreground">
+            <p className="font-medium">How to fill a collection</p>
+            <p className="mt-1 text-muted-foreground">
+              Open any outfit from the <span className="font-medium text-foreground">All</span> or
+              {" "}<span className="font-medium text-foreground">Unsorted</span> tab,
+              tap its <span className="font-medium text-foreground">⋯</span> menu, and pick
+              <span className="font-medium text-foreground"> Move to collection</span>.
+              You can also drag an outfit from those tabs onto a collection card here.
+            </p>
+          </div>
+        )}
+
+      {/* Drill-down model: only show the collection cards strip when no
+          specific collection is selected. Once the user clicks INTO a
+          collection, the strip hides so the items panel below becomes the
+          only thing on screen — and the breadcrumb in the panel header is
+          the way back out. Mirrors ClosetLibrary / SavedItemsLibrary. */}
+      {activeCollectionBoardTab === "collections" &&
+        (activeCollectionId === "__all__" ||
+          activeCollectionId === "__unsorted__") && (
         // Auto-fill keeps cards adjacent: the grid only opens a new column
         // when one will actually fit, so leftover horizontal space stops
         // ballooning into the gutter between cards.
@@ -616,9 +647,16 @@ const SavedOutfitsLibrary = ({
                             className="h-full w-full object-contain p-3"
                           />
                         ) : (
-                          <div className="flex h-full items-center justify-center text-muted-foreground/42">
-                            <ImageIcon className="h-9 w-9" />
-                          </div>
+                          // Empty slot uses the collection's accent glow
+                          // instead of a broken-image icon. Mirrors
+                          // ClosetLibrary / SavedItemsLibrary.
+                          <div
+                            className="h-full w-full"
+                            style={{
+                              background: `radial-gradient(circle at 50% 55%, ${accentPalette.cornerGlow} 0%, transparent 62%)`,
+                            }}
+                            aria-hidden="true"
+                          />
                         )}
                       </div>
 
@@ -659,9 +697,13 @@ const SavedOutfitsLibrary = ({
                                   className="h-full w-full object-contain p-2"
                                 />
                               ) : (
-                                <div className="flex h-full items-center justify-center text-muted-foreground/28">
-                                  <ImageIcon className="h-4 w-4" />
-                                </div>
+                                <div
+                                  className="h-full w-full"
+                                  style={{
+                                    background: `radial-gradient(circle at 50% 60%, ${accentPalette.cornerGlow} 0%, transparent 72%)`,
+                                  }}
+                                  aria-hidden="true"
+                                />
                               )}
                             </div>
                           );
@@ -747,11 +789,48 @@ const SavedOutfitsLibrary = ({
         </div>
       )}
 
+      {/* On the Collections tab without a specific collection selected we
+          hide the items panel entirely. Mirrors ClosetLibrary /
+          SavedItemsLibrary so all three surfaces feel the same. */}
+      {!(activeCollectionBoardTab === "collections" && activeCollectionId === "__all__") && (
       <div ref={itemsPanelRef} className="glass-panel rounded-[28px] border p-5 scroll-mt-4">
         <div className="flex flex-col gap-5">
+          {/* Breadcrumb back-out when drilled into a specific collection.
+              Mirrors ClosetLibrary / SavedItemsLibrary. */}
+          {activeCollectionId !== "__all__" &&
+            activeCollectionId !== "__unsorted__" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveCollectionId("__all__");
+                  setActiveCollectionBoardTab("collections");
+                }}
+                className="inline-flex items-center gap-1.5 self-start rounded-full border border-foreground/10 bg-background/56 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:border-foreground/25 hover:bg-background/75 hover:text-foreground"
+              >
+                <ArrowLeft className="h-3 w-3" />
+                All collections
+              </button>
+            )}
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-1">
-              <h3 className="text-2xl font-display font-medium text-foreground">
+              <h3 className="flex items-center gap-2 text-2xl font-display font-medium text-foreground">
+                {activeCollectionId !== "__all__" &&
+                  activeCollectionId !== "__unsorted__" &&
+                  (() => {
+                    const folder = folders.find((f) => f.id === activeCollectionId);
+                    if (!folder) return null;
+                    const palette = getCollectionAccentPalette(folder.color);
+                    return (
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{
+                          backgroundColor: palette.dot,
+                          boxShadow: `0 0 12px ${palette.dotGlow}`,
+                        }}
+                        aria-hidden="true"
+                      />
+                    );
+                  })()}
                 {activeCollectionSummary.title}
               </h3>
               <p className="max-w-2xl text-sm text-muted-foreground">
@@ -910,16 +989,20 @@ const SavedOutfitsLibrary = ({
                       </div>
                     </button>
 
-                    <div className="absolute right-3 top-3 flex items-center gap-2">
+                    {/* Delete in TOP-RIGHT, ⋯ menu in BOTTOM-RIGHT.
+                        Hover-fade on desktop, always visible on touch.
+                        Mirrors ClosetLibrary / SavedItemsLibrary. */}
+                    <div className="absolute right-3 bottom-3 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             type="button"
                             variant="secondary"
                             size="icon"
-                            className="h-7 w-7 rounded-full border border-white/10 bg-background/82 opacity-0 transition-opacity group-hover:opacity-100"
+                            className="h-9 w-9 rounded-full border border-foreground/15 bg-background/95 shadow-md transition-colors hover:bg-background"
+                            title="More actions"
                           >
-                            <MoreHorizontal className="h-3.5 w-3.5" />
+                            <MoreHorizontal className="h-4 w-4" />
                             <span className="sr-only">Open outfit actions</span>
                           </Button>
                         </DropdownMenuTrigger>
@@ -959,16 +1042,27 @@ const SavedOutfitsLibrary = ({
                               </DropdownMenuRadioGroup>
                             </DropdownMenuSubContent>
                           </DropdownMenuSub>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => onDelete(outfit.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete outfit
-                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                    </div>
+
+                    {/* Dedicated Delete button in the TOP-RIGHT corner.
+                        Same hover-fade behaviour as the ⋯ menu. */}
+                    <div className="absolute right-3 top-3 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="icon"
+                        className="h-9 w-9 rounded-full border border-destructive/65 bg-destructive/45 text-destructive-foreground shadow-md backdrop-blur transition-colors hover:bg-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(outfit.id);
+                        }}
+                        title="Delete outfit"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete outfit</span>
+                      </Button>
                     </div>
                   </div>
                 );
@@ -977,6 +1071,7 @@ const SavedOutfitsLibrary = ({
           )}
         </div>
       </div>
+      )}
 
       <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
         <DialogContent className="max-w-md border-border bg-card">
@@ -1011,7 +1106,7 @@ const SavedOutfitsLibrary = ({
             <div className="space-y-2">
               <div className="text-sm font-medium text-foreground">Collection color</div>
               <div className="grid grid-cols-3 gap-2">
-                {WARDROBE_FOLDER_COLORS.map((option) => (
+                {CLOSET_FOLDER_COLORS.map((option) => (
                   <button
                     key={option.value}
                     type="button"
@@ -1038,7 +1133,7 @@ const SavedOutfitsLibrary = ({
               onClick={() => {
                 setIsCreateFolderOpen(false);
                 setNewFolderName("");
-                setNewFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
+                setNewFolderColor(DEFAULT_CLOSET_FOLDER_COLOR);
               }}
             >
               Cancel
@@ -1060,7 +1155,7 @@ const SavedOutfitsLibrary = ({
           if (!open) {
             setEditingFolder(null);
             setEditFolderName("");
-            setEditFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
+            setEditFolderColor(DEFAULT_CLOSET_FOLDER_COLOR);
           }
         }}
       >
@@ -1098,7 +1193,7 @@ const SavedOutfitsLibrary = ({
             <div className="space-y-2">
               <div className="text-sm font-medium text-foreground">Collection color</div>
               <div className="grid grid-cols-3 gap-2">
-                {WARDROBE_FOLDER_COLORS.map((option) => (
+                {CLOSET_FOLDER_COLORS.map((option) => (
                   <button
                     key={option.value}
                     type="button"
@@ -1125,7 +1220,7 @@ const SavedOutfitsLibrary = ({
               onClick={() => {
                 setEditingFolder(null);
                 setEditFolderName("");
-                setEditFolderColor(DEFAULT_WARDROBE_FOLDER_COLOR);
+                setEditFolderColor(DEFAULT_CLOSET_FOLDER_COLOR);
               }}
             >
               Cancel

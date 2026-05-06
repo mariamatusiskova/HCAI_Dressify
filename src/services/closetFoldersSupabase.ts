@@ -1,17 +1,17 @@
 import { supabase } from "@/lib/supabase";
-import type { WardrobeFolderColor } from "@/lib/wardrobeFolders";
+import type { ClosetFolderColor } from "@/lib/closetFolders";
 
-export interface WardrobeFolderRecord {
+export interface ClosetFolderRecord {
   id: string;
   user_id: string;
   name: string;
-  color: WardrobeFolderColor | null;
+  color: ClosetFolderColor | null;
   cover_image_url: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export interface WardrobeFolderAssignmentRecord {
+export interface ClosetFolderAssignmentRecord {
   folder_id: string;
   wardrobe_item_id: string;
   user_id: string;
@@ -25,9 +25,9 @@ function requireSupabase() {
   return supabase;
 }
 
-export async function listSupabaseWardrobeFolders(
+export async function listSupabaseClosetFolders(
   userId: string,
-): Promise<WardrobeFolderRecord[]> {
+): Promise<ClosetFolderRecord[]> {
   const client = requireSupabase();
 
   const result = await client
@@ -40,12 +40,12 @@ export async function listSupabaseWardrobeFolders(
     throw result.error;
   }
 
-  return (result.data ?? []) as WardrobeFolderRecord[];
+  return (result.data ?? []) as ClosetFolderRecord[];
 }
 
-export async function listSupabaseWardrobeFolderAssignments(
+export async function listSupabaseClosetFolderAssignments(
   userId: string,
-): Promise<WardrobeFolderAssignmentRecord[]> {
+): Promise<ClosetFolderAssignmentRecord[]> {
   const client = requireSupabase();
 
   const result = await client
@@ -57,17 +57,17 @@ export async function listSupabaseWardrobeFolderAssignments(
     throw result.error;
   }
 
-  return (result.data ?? []) as WardrobeFolderAssignmentRecord[];
+  return (result.data ?? []) as ClosetFolderAssignmentRecord[];
 }
 
-export async function createSupabaseWardrobeFolder(
+export async function createSupabaseClosetFolder(
   userId: string,
   input: {
     name: string;
-    color: WardrobeFolderColor;
+    color: ClosetFolderColor;
     coverImageUrl?: string | null;
   },
-): Promise<WardrobeFolderRecord> {
+): Promise<ClosetFolderRecord> {
   const client = requireSupabase();
 
   const inserted = await client
@@ -87,14 +87,14 @@ export async function createSupabaseWardrobeFolder(
     throw inserted.error ?? new Error("Failed to create wardrobe collection");
   }
 
-  return inserted.data as WardrobeFolderRecord;
+  return inserted.data as ClosetFolderRecord;
 }
 
-export async function updateSupabaseWardrobeFolder(
+export async function updateSupabaseClosetFolder(
   userId: string,
   folderId: string,
   patch: Partial<
-    Pick<WardrobeFolderRecord, "name" | "color" | "cover_image_url">
+    Pick<ClosetFolderRecord, "name" | "color" | "cover_image_url">
   >,
 ): Promise<void> {
   const client = requireSupabase();
@@ -113,7 +113,7 @@ export async function updateSupabaseWardrobeFolder(
   }
 }
 
-export async function deleteSupabaseWardrobeFolder(
+export async function deleteSupabaseClosetFolder(
   userId: string,
   folderId: string,
 ): Promise<void> {
@@ -130,7 +130,7 @@ export async function deleteSupabaseWardrobeFolder(
   }
 }
 
-export async function upsertSupabaseWardrobeFolderAssignment(
+export async function upsertSupabaseClosetFolderAssignment(
   userId: string,
   wardrobeItemId: string,
   folderId: string,
@@ -154,7 +154,7 @@ export async function upsertSupabaseWardrobeFolderAssignment(
   }
 }
 
-export async function deleteSupabaseWardrobeFolderAssignment(
+export async function deleteSupabaseClosetFolderAssignment(
   userId: string,
   wardrobeItemId: string,
 ): Promise<void> {

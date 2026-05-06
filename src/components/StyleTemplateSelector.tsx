@@ -1,13 +1,26 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Settings, Edit2, Save } from "lucide-react";
 import { toast } from "sonner";
 import type { StyleTemplate } from "@/types/styleTemplates";
-import { DEFAULT_STYLE_TEMPLATES } from "@/types/styleTemplates";
+import {
+  CUSTOM_STYLE_ID,
+  DEFAULT_STYLE_TEMPLATES,
+  NONE_STYLE_ID,
+} from "@/types/styleTemplates";
 
 interface StyleTemplateSelectorProps {
   category: "top" | "trousers" | "shoes";
@@ -243,20 +256,108 @@ const StyleTemplateSelector = ({
         value={selectedTemplate?.id || ""}
         onValueChange={handleTemplateSelect}
       >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select a style..." />
+        <SelectTrigger className="w-full [&>span]:flex-1 [&>span]:text-left">
+          <SelectValue placeholder="Select a style...">
+            {selectedTemplate ? (
+              <div className="flex flex-col text-left">
+                <span className="font-medium">{selectedTemplate.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {selectedTemplate.description}
+                </span>
+              </div>
+            ) : null}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {availableTemplates.map((template) => (
-            <SelectItem key={template.id} value={template.id}>
-              <div className="flex flex-col">
-                <span className="font-medium">{template.name}</span>
-                <span className="text-xs text-muted-foreground">{template.description}</span>
-              </div>
-            </SelectItem>
-          ))}
+          {/* Two visual groups so the user understands the special
+              "None" / "Custom" entries aren't just more presets. The
+              labels and the separator are skipped if either group is
+              empty (defensive — the templates list should always have
+              both sections, but this keeps the dropdown sensible if it
+              ever doesn't). */}
+          {(() => {
+            const specialIds = [NONE_STYLE_ID, CUSTOM_STYLE_ID];
+            const specialTemplates = availableTemplates.filter((t) =>
+              specialIds.includes(t.id),
+            );
+            const presetTemplates = availableTemplates.filter(
+              (t) => !specialIds.includes(t.id),
+            );
+            return (
+              <>
+                {specialTemplates.length > 0 && (
+                  <SelectGroup>
+                    <SelectLabel className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
+                      No preset
+                    </SelectLabel>
+                    {specialTemplates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{template.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {template.description}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
+                {specialTemplates.length > 0 && presetTemplates.length > 0 && (
+                  <SelectSeparator />
+                )}
+                {presetTemplates.length > 0 && (
+                  <SelectGroup>
+                    <SelectLabel className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
+                      Style presets
+                    </SelectLabel>
+                    {presetTemplates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{template.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {template.description}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
+              </>
+            );
+          })()}
         </SelectContent>
       </Select>
+
+      {/* Custom-style text input. Visible only when the user picks
+          "Custom" from the dropdown above. The typed words become the
+          template's styleDescriptor (we mutate the template via
+          onTemplateChange so GeneratePanel always reads the latest
+          value off selectedTemplate.styleDescriptor). */}
+      {selectedTemplate?.id === CUSTOM_STYLE_ID && (
+        <div className="space-y-1.5 rounded-lg border border-foreground/10 bg-background/40 p-2">
+          <Label className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+            Your style words
+          </Label>
+          <Textarea
+            value={selectedTemplate.styleDescriptor}
+            onChange={(e) =>
+              onTemplateChange({
+                ...selectedTemplate,
+                styleDescriptor: e.target.value,
+              })
+            }
+            placeholder="e.g., dark academia, autumn palette, soft tailoring"
+            className="min-h-[60px] resize-none"
+          />
+          <p className="text-[11px] text-muted-foreground">
+            We'll add these words to the AI prompt alongside your description.
+          </p>
+        </div>
+      )}
+
+      {/* "None" gets no extra helper text — the dropdown trigger
+          already shows "No style modifier — just my description" so a
+          repeat below would just be filler that creates an awkward gap. */}
     </div>
   );
 };

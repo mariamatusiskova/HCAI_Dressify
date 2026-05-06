@@ -18,7 +18,7 @@ interface OutfitItemRow {
   z_index: number | null;
 }
 
-interface WardrobeItemRow {
+interface ClosetItemRow {
   id: string;
   category: string | null;
   image_path: string | null;
@@ -136,34 +136,34 @@ export async function listSupabaseOutfits(userId: string): Promise<Outfit[]> {
   }
 
   const outfitItemRows = (outfitItemsResult.data ?? []) as OutfitItemRow[];
-  const wardrobeItemIds = [...new Set(outfitItemRows.map((row) => row.wardrobe_item_id))];
+  const closetItemIds = [...new Set(outfitItemRows.map((row) => row.wardrobe_item_id))];
 
-  let wardrobeItemsById = new Map<string, WardrobeItemRow>();
-  if (wardrobeItemIds.length > 0) {
-    const wardrobeItemsResult = await client
+  let closetItemsById = new Map<string, ClosetItemRow>();
+  if (closetItemIds.length > 0) {
+    const closetItemsResult = await client
       .from("wardrobe_items")
       .select("id, category, image_path")
-      .in("id", wardrobeItemIds);
+      .in("id", closetItemIds);
 
-    if (wardrobeItemsResult.error) {
-      throw wardrobeItemsResult.error;
+    if (closetItemsResult.error) {
+      throw closetItemsResult.error;
     }
 
-    wardrobeItemsById = new Map(
-      ((wardrobeItemsResult.data ?? []) as WardrobeItemRow[]).map((item) => [item.id, item]),
+    closetItemsById = new Map(
+      ((closetItemsResult.data ?? []) as ClosetItemRow[]).map((item) => [item.id, item]),
     );
   }
 
   const itemsByOutfit = new Map<string, CanvasItem[]>();
 
   for (const row of outfitItemRows) {
-    const wardrobeItem = wardrobeItemsById.get(row.wardrobe_item_id);
-    if (!wardrobeItem) continue;
+    const closetItem = closetItemsById.get(row.wardrobe_item_id);
+    if (!closetItem) continue;
 
     const canvasItem: CanvasItem = {
       id: row.wardrobe_item_id,
-      imageUrl: wardrobeItem.image_path ?? "",
-      category: wardrobeItem.category ?? "unknown",
+      imageUrl: closetItem.image_path ?? "",
+      category: closetItem.category ?? "unknown",
       x: toNumber(row.x, 40),
       y: toNumber(row.y, 40),
       width: toNumber(row.width, 80),
@@ -213,7 +213,7 @@ export async function createSupabaseOutfit(
   let savedCanvasItems: CanvasItem[] = [];
 
   if (canvasItems.length > 0) {
-    const wardrobeInsertPayload = canvasItems.map((item) => ({
+    const closetInsertPayload = canvasItems.map((item) => ({
       user_id: userId,
       wardrobe_id: wardrobeId,
       category: item.category,
@@ -222,32 +222,32 @@ export async function createSupabaseOutfit(
       tags: [],
       // Wardrobe pieces dragged from the user's wardrobe stay marked as
       // 'wardrobe'; everything else (AI generations, freshly saved items)
-      // is tagged 'ai' so listSupabaseWardrobeItems skips it. This stops
+      // is tagged 'ai' so listSupabaseClosetItems skips it. This stops
       // canvas-only pieces from leaking into the wardrobe page.
       source: item.source === "wardrobe" ? "wardrobe" : "ai",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }));
 
-    const wardrobeItemsInsert = await client
+    const closetItemsInsert = await client
       .from("wardrobe_items")
-      .insert(wardrobeInsertPayload)
+      .insert(closetInsertPayload)
       .select("id, category, image_path");
 
-    if (wardrobeItemsInsert.error) {
-      throw wardrobeItemsInsert.error;
+    if (closetItemsInsert.error) {
+      throw closetItemsInsert.error;
     }
 
-    const insertedWardrobeItems = (wardrobeItemsInsert.data ?? []) as WardrobeItemRow[];
-    if (insertedWardrobeItems.length !== canvasItems.length) {
+    const insertedClosetItems = (closetItemsInsert.data ?? []) as ClosetItemRow[];
+    if (insertedClosetItems.length !== canvasItems.length) {
       throw new Error("Failed to persist all wardrobe items");
     }
 
-    const outfitItemsPayload = insertedWardrobeItems.map((wardrobeItem, index) => {
+    const outfitItemsPayload = insertedClosetItems.map((closetItem, index) => {
       const source = canvasItems[index];
       return {
         outfit_id: outfitInsert.data.id,
-        wardrobe_item_id: wardrobeItem.id,
+        wardrobe_item_id: closetItem.id,
         x: source.x,
         y: source.y,
         width: source.width,
@@ -262,13 +262,13 @@ export async function createSupabaseOutfit(
       throw outfitItemsInsert.error;
     }
 
-    savedCanvasItems = insertedWardrobeItems.map((wardrobeItem, index) => {
+    savedCanvasItems = insertedClosetItems.map((closetItem, index) => {
       const source = canvasItems[index];
       return {
         ...source,
-        id: wardrobeItem.id,
-        category: wardrobeItem.category ?? source.category,
-        imageUrl: wardrobeItem.image_path ?? source.imageUrl,
+        id: closetItem.id,
+        category: closetItem.category ?? source.category,
+        imageUrl: closetItem.image_path ?? source.imageUrl,
       };
     });
   }
@@ -307,15 +307,15 @@ export async function deleteSupabaseOutfit(userId: string, outfitId: string): Pr
   }
 
   if (linkedWardrobeIds.length > 0) {
-    const deleteWardrobeItems = await client
+    const deleteClosetItems = await client
       .from("wardrobe_items")
       .delete()
       .eq("user_id", userId)
       .in("id", linkedWardrobeIds);
 
     // Keep delete resilient if items are reused elsewhere.
-    if (deleteWardrobeItems.error) {
-      console.warn("Could not delete some wardrobe items:", deleteWardrobeItems.error.message);
+    if (deleteClosetItems.error) {
+      console.warn("Could not delete some wardrobe items:", deleteClosetItems.error.message);
     }
   }
 }

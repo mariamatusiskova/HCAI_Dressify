@@ -15,7 +15,7 @@ import {
   type ClothingCategory,
 } from "@/lib/clothingCategory";
 
-// Mirrors useWardrobe but for AI-generated pieces the user marked as "saved".
+// Mirrors useCloset but for AI-generated pieces the user marked as "saved".
 // Each saved item carries the original prompt + category in addition to a
 // custom display name so the saved page can support edit/rename + filtering.
 export interface SavedAiItem {

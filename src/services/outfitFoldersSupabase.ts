@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { WardrobeFolderColor } from "@/lib/wardrobeFolders";
+import type { ClosetFolderColor } from "@/lib/closetFolders";
 
 // Folders for saved outfits. Same shape as wardrobe_folders /
 // wardrobe_folder_items so the UI can reuse the collection palette and
@@ -8,7 +8,7 @@ export interface OutfitFolderRecord {
   id: string;
   user_id: string;
   name: string;
-  color: WardrobeFolderColor | null;
+  color: ClosetFolderColor | null;
   cover_image_url: string | null;
   created_at: string;
   updated_at: string;
@@ -67,7 +67,7 @@ export async function createSupabaseOutfitFolder(
   userId: string,
   input: {
     name: string;
-    color: WardrobeFolderColor;
+    color: ClosetFolderColor;
     coverImageUrl?: string | null;
   },
 ): Promise<OutfitFolderRecord> {

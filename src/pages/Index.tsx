@@ -16,12 +16,12 @@ import SystemWalkthrough from "@/components/SystemWalkthrough";
 // to make unique IDs
 import { createId } from "@/lib/id";
 import { useOutfits, type CanvasItem, type GeneratedItem } from "@/hooks/useOutfits";
-import { useWardrobe } from "@/hooks/useWardrobe";
+import { useCloset } from "@/hooks/useCloset";
 import { useSavedItems, type SavedAiItem } from "@/hooks/useSavedItems";
 import { normalizeClothingCategory } from "@/lib/clothingCategory";
 import MenuNav from "./MenuNav";
 
-// components logic (saved outfits, wardrobe, etc.)
+// components logic (saved outfits, closet, etc.)
 function useStudioInternal() {
   // if the user agreed or not (data policy)
   const [consented, setConsented] = useState(false);
@@ -49,16 +49,16 @@ function useStudioInternal() {
     syncError,
   } = useOutfits();
 
-  // wardrobe actions
+  // closet actions (uploaded photos)
   const {
-    items: wardrobeItems,
-    addItem: addWardrobeItem,
-    deleteItem: deleteWardrobeItem,
-    updateItemName: updateWardrobeItemName,
-    isLoading: wardrobeLoading,
-    isCloudSyncEnabled: isWardrobeCloudSyncEnabled,
-    syncError: wardrobeSyncError,
-  } = useWardrobe();
+    items: closetItems,
+    addItem: addClosetItem,
+    deleteItem: deleteClosetItem,
+    updateItemName: updateClosetItemName,
+    isLoading: closetLoading,
+    isCloudSyncEnabled: isClosetCloudSyncEnabled,
+    syncError: closetSyncError,
+  } = useCloset();
 
   // saved AI items actions
   const {
@@ -78,12 +78,12 @@ function useStudioInternal() {
     }
   }, [syncError]);
 
-  // wardrobe sync problem popup
+  // closet sync problem popup
   useEffect(() => {
-    if (wardrobeSyncError) {
-      toast.warning(wardrobeSyncError);
+    if (closetSyncError) {
+      toast.warning(closetSyncError);
     }
-  }, [wardrobeSyncError]);
+  }, [closetSyncError]);
 
   // saved AI item sync problem popup
   useEffect(() => {
@@ -198,7 +198,9 @@ function useStudioInternal() {
 
       if (result.alreadyExists) {
         toast.info("Item already saved");
-        return;
+        // Return the existing saved item so callers (e.g. SavePieceToClosetDialog)
+        // can still assign it to a collection without re-saving.
+        return result.item;
       }
 
       if (result.savedToCloud) {
@@ -210,6 +212,7 @@ function useStudioInternal() {
             : "Saved locally only (no active Supabase session).",
         );
       }
+      return result.item;
     },
     [addSavedItem],
   );
@@ -280,8 +283,8 @@ function useStudioInternal() {
     });
   }, []);
 
-  // add wardrobe items to canvas
-  const handleAddWardrobeToCanvas = useCallback((item: { imageUrl: string; category: string }) => {
+  // add closet items to canvas
+  const handleAddClosetToCanvas = useCallback((item: { imageUrl: string; category: string }) => {
     setCanvasItems((prev) => {
       const maxZIndex = prev.length > 0 ? Math.max(...prev.map((i) => i.zIndex ?? 0)) : -1;
       const canvasItem: CanvasItem = {
@@ -349,18 +352,18 @@ function useStudioInternal() {
     [deleteOutfit],
   );
 
-  // add generated item to wardrobe
-  const handleAddGeneratedToWardrobe = useCallback(
+  // add generated item to closet
+  const handleAddGeneratedToCloset = useCallback(
     async (item: GeneratedItem) => {
-      const result = await addWardrobeItem(item.category, item.imageUrl);
+      const result = await addClosetItem(item.category, item.imageUrl);
 
       if (result.alreadyExists) {
-        toast.info("Already in wardrobe");
+        toast.info("Already in closet");
         return;
       }
 
       if (result.savedToCloud) {
-        toast.success("Added to wardrobe");
+        toast.success("Added to closet");
       } else {
         toast.warning(
           result.cloudError
@@ -369,36 +372,36 @@ function useStudioInternal() {
         );
       }
     },
-    [addWardrobeItem],
+    [addClosetItem],
   );
 
-  // delete wardrobe item
-  const handleDeleteWardrobeItem = useCallback(
+  // delete closet item
+  const handleDeleteClosetItem = useCallback(
     async (id: string) => {
       try {
-        await deleteWardrobeItem(id);
-        toast.success("Wardrobe item deleted");
+        await deleteClosetItem(id);
+        toast.success("Item deleted");
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to delete wardrobe item";
+        const message = error instanceof Error ? error.message : "Failed to delete item";
         toast.error(message);
       }
     },
-    [deleteWardrobeItem],
+    [deleteClosetItem],
   );
 
-  // add photo directly to wardrobe
-  const handleAddPhotoToWardrobe = useCallback(
+  // add photo directly to closet
+  const handleAddPhotoToCloset = useCallback(
     async (imageUrl: string, category: string, name?: string | null) => {
       try {
-        const result = await addWardrobeItem(category, imageUrl, name);
+        const result = await addClosetItem(category, imageUrl, name);
 
         if (result.alreadyExists) {
-          toast.info("Photo is already in wardrobe");
+          toast.info("Photo is already in closet");
           return result.item;
         }
 
         if (result.savedToCloud) {
-          toast.success("Photo added to wardrobe");
+          toast.success("Photo added to closet");
         } else {
           toast.warning(
             result.cloudError
@@ -409,26 +412,26 @@ function useStudioInternal() {
 
         return result.item;
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to add photo to wardrobe";
+        const message = error instanceof Error ? error.message : "Failed to add photo to closet";
         toast.error(message);
         return null;
       }
     },
-    [addWardrobeItem],
+    [addClosetItem],
   );
 
-  // rename wardrobe item
-  const handleUpdateWardrobeItemName = useCallback(
+  // rename closet item
+  const handleUpdateClosetItemName = useCallback(
     async (id: string, name: string) => {
       try {
-        await updateWardrobeItemName(id, name);
+        await updateClosetItemName(id, name);
         toast.success(name.trim() ? "Wardrobe item renamed" : "Wardrobe item name cleared");
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to rename wardrobe item";
         toast.error(message);
       }
     },
-    [updateWardrobeItemName],
+    [updateClosetItemName],
   );
 
   // return the shared studio object
@@ -448,11 +451,11 @@ function useStudioInternal() {
     outfitName,
     setOutfitName,
     outfits,
-    wardrobeItems,
+    closetItems,
     isLoading,
-    wardrobeLoading,
+    closetLoading,
     isCloudSyncEnabled,
-    isWardrobeCloudSyncEnabled,
+    isClosetCloudSyncEnabled,
     handleItemGenerated,
     handleItemUpdate,
     handleDeleteGeneratedItem,
@@ -460,16 +463,16 @@ function useStudioInternal() {
     handleDeleteSavedGeneratedItem,
     handleUpdateSavedItemName,
     handleAddToCanvas,
-    handleAddWardrobeToCanvas,
+    handleAddClosetToCanvas,
     handleDeleteItem,
     handleSave,
     handleLoad,
     handleDeleteOutfit,
     handleUpdateOutfitName,
-    handleAddGeneratedToWardrobe,
-    handleDeleteWardrobeItem,
-    handleAddPhotoToWardrobe,
-    handleUpdateWardrobeItemName,
+    handleAddGeneratedToCloset,
+    handleDeleteClosetItem,
+    handleAddPhotoToCloset,
+    handleUpdateClosetItemName,
   };
 }
 
@@ -520,7 +523,7 @@ const Index = () => {
                 <span className="text-[10px] text-muted-foreground uppercase tracking-widest">AI Outfit Generator</span>
                 <span className="text-[10px] text-muted-foreground">
                   Outfits: {studio.isCloudSyncEnabled ? "Supabase" : "Local"} | Wardrobe: {" "}
-                  {studio.isWardrobeCloudSyncEnabled ? "Supabase" : "Local"}
+                  {studio.isClosetCloudSyncEnabled ? "Supabase" : "Local"}
                 </span>
               </div>
               <AuthTopbar className="hidden md:flex" />

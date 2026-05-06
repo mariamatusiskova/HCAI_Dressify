@@ -8,6 +8,7 @@ import {
   Loader2,
   ArrowUp,
   ArrowDown,
+  BookmarkPlus,
   ChevronsUp,
   ChevronsDown,
   Eraser,
@@ -46,6 +47,10 @@ interface CanvasEditorProps {
   items: CanvasItem[];
   onItemsChange: (items: CanvasItem[]) => void;
   onDeleteItem: (id: string) => void;
+  // Optional. When provided, each canvas item gets a "Save to closet"
+  // toolbar button that calls this callback with the item. The parent
+  // is responsible for rendering the SavePieceToClosetDialog UI.
+  onSavePieceToCloset?: (item: CanvasItem) => void;
   hideTitle?: boolean;
   className?: string;
   viewportClassName?: string;
@@ -79,6 +84,7 @@ const CanvasEditor = ({
   items,
   onItemsChange,
   onDeleteItem,
+  onSavePieceToCloset,
   hideTitle = false,
   className,
   viewportClassName,
@@ -535,7 +541,7 @@ const CanvasEditor = ({
   const helperMessage =
     emptyStateMessage ??
     (preUploadState
-      ? "Start with a full-body photo. Then generate pieces or add them from wardrobe."
+      ? "Start with a full-body photo. Then generate pieces or add them from your closet."
       : "Add pieces and arrange them on the photo.");
 
   return (
@@ -839,6 +845,22 @@ const CanvasEditor = ({
                   >
                     <Wand2 className="h-3.5 w-3.5" />
                   </Button>
+                  {onSavePieceToCloset ? (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={itemButtonClassName}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onSavePieceToCloset(item);
+                      }}
+                      title="Save to closet / collection"
+                      aria-label="Save to closet"
+                    >
+                      <BookmarkPlus className="h-3.5 w-3.5" />
+                    </Button>
+                  ) : null}
                   <div className="mx-0.5 h-6 w-px bg-border/70" />
                   <Button
                     variant="ghost"
