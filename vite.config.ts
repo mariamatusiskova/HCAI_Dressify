@@ -35,6 +35,10 @@ export default defineConfig(({ mode }) => {
   return {
     base: normalizeBasePath(env.VITE_BASE_PATH || process.env.VITE_BASE_PATH),
     envPrefix: ["VITE_", "APP_"],
+    optimizeDeps: {
+      // Prevent unstable prebundled chunk references for this heavy WASM/ONNX stack.
+      exclude: ["@imgly/background-removal", "onnxruntime-web"],
+    },
     server: {
       host: "::",
       port: 8080,
